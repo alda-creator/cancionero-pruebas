@@ -704,7 +704,7 @@
       sortableInstance = null;
     }
 
-    if (currentTab === 'set') {
+    if (currentTab === 'set' && typeof Sortable !== 'undefined') {
       sortableInstance = new Sortable(container, {
         animation: 150,
         handle: '.drag-handle',
