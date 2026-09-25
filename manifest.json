@@ -1,0 +1,20 @@
+{
+  "short_name": "Cancionero",
+  "name": "Cancionero de la Iglesia",
+  "icons": [
+    {
+      "src": "icon.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#1e3a8a",
+  "theme_color": "#1e3a8a",
+  "display": "standalone"
+}
