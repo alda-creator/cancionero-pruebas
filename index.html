@@ -1076,7 +1076,10 @@
 
   function showList() {  
     broadcastToMusicians({ type: 'CLOSE_SONG' });
-    stopAutoScroll();  
+    stopAutoScroll();
+    // Al volver a la lista ya no hay una canción abierta.
+    // Esto evita que los gestos de navegación actúen sobre la lista de Mi Set.
+    currentSong = null;
     document.getElementById('list-view').style.display = 'block';  
     document.getElementById('song-viewer').style.display = 'none';  
     document.getElementById('song-editor').style.display = 'none';  
@@ -1390,8 +1393,10 @@
     const horizontalSwipe = Math.abs(deltaX) >= 70 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && elapsed <= 700;
     if (!horizontalSwipe) return;
 
-    // Los gestos de navegación solo actúan dentro del Mi Set.
+    // Los gestos de navegación solo actúan dentro del Mi Set
+    // cuando hay una canción realmente abierta en el visor.
     if (currentTab !== 'set' || !currentSong || songSetIds.length === 0) return;
+    if (document.getElementById('song-viewer').style.display !== 'block') return;
 
     if (deltaX < 0) {
       navigateSetlist(1);
