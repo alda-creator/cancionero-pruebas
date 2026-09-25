@@ -633,6 +633,16 @@
   }  
 
   function renderCurrentTab() {  
+    // Mi Set guarda únicamente IDs de canciones existentes. Esto evita que
+    // referencias antiguas o canciones eliminadas queden ocupando el contador
+    // y rompan la navegación del Setlist.
+    const validSongIds = new Set(songs.map(song => song.id));
+    const cleanedSetIds = songSetIds.filter(id => validSongIds.has(id));
+    if (cleanedSetIds.length !== songSetIds.length) {
+      songSetIds = cleanedSetIds;
+      localStorage.setItem('church_song_set', JSON.stringify(songSetIds));
+    }
+
     document.getElementById('set-count').innerText = songSetIds.length;  
     
     let listToRender = [];
@@ -699,8 +709,19 @@
         animation: 150,
         handle: '.drag-handle',
         onEnd: function () {
-          const newOrderIds = Array.from(container.children).map(card => card.dataset.id).filter(Boolean);
-          songSetIds = newOrderIds;
+          const visibleOrderIds = Array.from(container.children)
+            .map(card => card.dataset.id)
+            .filter(Boolean);
+
+          // Si hay una búsqueda activa, solo parte del Set está visible.
+          // Reordenamos esas canciones sin perder las que quedaron ocultas.
+          const visibleIds = new Set(visibleOrderIds);
+          let visibleIndex = 0;
+          songSetIds = songSetIds.map(id => {
+            if (!visibleIds.has(id)) return id;
+            return visibleOrderIds[visibleIndex++];
+          });
+
           localStorage.setItem('church_song_set', JSON.stringify(songSetIds));
         }
       });
