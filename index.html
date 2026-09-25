@@ -547,7 +547,10 @@
   let songs = [];  
   let songSetIds = JSON.parse(localStorage.getItem('church_song_set') || '[]');  
   let currentTab = 'all';  
-  let currentSong = null;  
+  let currentSong = null;
+  // Contexto de origen de la canción abierta: permite que los gestos
+  // respeten la navegación desde resultados de búsqueda.
+  let songViewOrigin = 'list';  
   let editingSongId = null;  
   let currentTransposeSteps = 0;  
   let useLatinoNotation = false;  
@@ -906,7 +909,16 @@
     renderTransposedContent();  
   }  
 
-  function openSong(id) {  
+  function openSong(id, origin = null) {  
+    if (origin) {
+      songViewOrigin = origin;
+    } else {
+      const searchInput = document.getElementById('search-input');
+      songViewOrigin = (searchInput && searchInput.value.trim() !== '')
+        ? 'search'
+        : (currentTab === 'set' ? 'set' : 'list');
+    }
+
     broadcastToMusicians({ type: 'OPEN_SONG', songId: id, transpose: 0 });
     stopAutoScroll();  
     currentSong = songs.find(s => s.id === id);  
@@ -939,7 +951,7 @@
     const targetIndex = currentIndex + direction;
     if (targetIndex >= 0 && targetIndex < songSetIds.length) {
       const targetId = songSetIds[targetIndex];
-      openSong(targetId);
+      openSong(targetId, 'set');
       if (document.getElementById('live-screen').style.display !== 'none') {
         buildBlocksHTML(document.getElementById('live-body'));
       }
@@ -1080,6 +1092,7 @@
     // Al volver a la lista ya no hay una canción abierta.
     // Esto evita que los gestos de navegación actúen sobre la lista de Mi Set.
     currentSong = null;
+    songViewOrigin = 'list';
     document.getElementById('list-view').style.display = 'block';  
     document.getElementById('song-viewer').style.display = 'none';  
     document.getElementById('song-editor').style.display = 'none';  
@@ -1462,6 +1475,10 @@
       showList();
       return;
     }
+
+    // Una canción abierta desde resultados de búsqueda conserva ese contexto:
+    // los swipes centrales no saltan al Setlist.
+    if (songViewOrigin !== 'set') return;
 
     if (currentTab !== 'set' || songSetIds.length === 0) return;
 
