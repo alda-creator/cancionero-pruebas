@@ -356,7 +356,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">Versión 1.1.2 · Pruebas</div>
+        <div class="app-version">Versión 1.1.3 · Pruebas</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -1400,10 +1400,35 @@
 
     const listView = document.getElementById('list-view');
     const songViewer = document.getElementById('song-viewer');
+    const liveScreen = document.getElementById('live-screen');
     const isListVisible = listView && listView.style.display !== 'none';
     const isSongViewerVisible = songViewer && songViewer.style.display === 'block';
+    const isLiveVisible = liveScreen && liveScreen.style.display !== 'none';
+    const edgeBackSwipe = touchStartX <= 35 && deltaX >= 70;
 
-    // 1) En las listas: cambiar entre Todas y Mi Set.
+    // 1) En Modo En Vivo: el borde izquierdo siempre vuelve a la canción.
+    // No navega entre canciones y conserva la canción actualmente abierta.
+    if (isLiveVisible) {
+      if (edgeBackSwipe) {
+        closeLiveView();
+      }
+      return;
+    }
+
+    // 2) En resultados de búsqueda: el borde izquierdo limpia la búsqueda
+    // y regresa a la lista completa de la pestaña actual.
+    if (isListVisible) {
+      const searchInput = document.getElementById('search-input');
+      const hasSearchQuery = searchInput && searchInput.value.trim() !== '';
+
+      if (hasSearchQuery && edgeBackSwipe) {
+        searchInput.value = '';
+        renderCurrentTab();
+        return;
+      }
+    }
+
+    // 3) En las listas: cambiar entre Todas y Mi Set.
     // Solo usamos el sentido que tiene una navegación entre ambas páginas:
     // Todas --swipe izquierda--> Mi Set
     // Mi Set --swipe derecha--> Todas
@@ -1416,12 +1441,11 @@
       return;
     }
 
-    // 2) En una canción: el gesto desde el borde izquierdo vuelve a la lista.
+    // 4) En una canción: el gesto desde el borde izquierdo vuelve a la lista.
     // El resto de los swipes solo navega anterior/siguiente si la canción
     // fue abierta desde Mi Set.
     if (!isSongViewerVisible || !currentSong) return;
 
-    const edgeBackSwipe = touchStartX <= 35 && deltaX >= 70;
     if (edgeBackSwipe) {
       showList();
       return;
