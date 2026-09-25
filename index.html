@@ -949,7 +949,7 @@
     // Ocultar o mostrar botones de Siguiente y Anterior dependiendo si venimos de la pestaña Mi Set
     const navBtns = document.querySelectorAll('.nav-setlist-btns');
     navBtns.forEach(el => {
-      el.style.display = (currentTab === 'set') ? 'flex' : 'none';
+      el.style.display = (songViewOrigin === 'set') ? 'flex' : 'none';
     });
 
     document.getElementById('list-view').style.display = 'none';  
@@ -1128,7 +1128,9 @@
       const firestoreId = songToDelete?.firestoreId || deleteId;
 
       songs = songs.filter(s => s.id !== deleteId);
+      songSetIds = songSetIds.filter(id => id !== deleteId);
       localStorage.setItem('church_songs', JSON.stringify(songs));
+      localStorage.setItem('church_song_set', JSON.stringify(songSetIds));
       showList();
 
       // Para canciones nuevas, firestoreId e id son iguales.
@@ -1451,7 +1453,7 @@
         return;
       }
 
-      if (currentTab === 'set' && songSetIds.length > 0 && currentSong) {
+      if (songViewOrigin === 'set' && songSetIds.length > 0 && currentSong) {
         if (deltaX < 0) {
           navigateSetlist(1);
         } else {
