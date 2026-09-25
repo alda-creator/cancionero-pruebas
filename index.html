@@ -356,7 +356,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">Versión 1.1.3 · Pruebas</div>
+        <div class="app-version">Versión 1.1.4 · Pruebas</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -1406,11 +1406,23 @@
     const isLiveVisible = liveScreen && liveScreen.style.display !== 'none';
     const edgeBackSwipe = touchStartX <= 35 && deltaX >= 70;
 
-    // 1) En Modo En Vivo: el borde izquierdo siempre vuelve a la canción.
-    // No navega entre canciones y conserva la canción actualmente abierta.
+    // 1) En Modo En Vivo:
+    // - borde izquierdo -> salir de En Vivo y conservar la canción actual.
+    // - si la canción pertenece a Mi Set, los swipes centrales navegan
+    //   anterior/siguiente igual que en el visor.
+    // - si venimos de Todas, los swipes centrales no hacen nada.
     if (isLiveVisible) {
       if (edgeBackSwipe) {
         closeLiveView();
+        return;
+      }
+
+      if (currentTab === 'set' && songSetIds.length > 0 && currentSong) {
+        if (deltaX < 0) {
+          navigateSetlist(1);
+        } else {
+          navigateSetlist(-1);
+        }
       }
       return;
     }
