@@ -356,7 +356,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">Versión 1.1.6 · Pruebas</div>
+        <div class="app-version">Versión 1.1.7 · Pruebas</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -940,13 +940,23 @@
         : (currentTab === 'set' ? 'set' : 'list');
     }
 
-    broadcastToMusicians({ type: 'OPEN_SONG', songId: id, transpose: 0 });
+    // Una canción abierta por el Director tiene un contexto propio.
+    // Nunca debe heredar Mi Set, búsqueda u otro contexto local del músico.
+    const isRemoteOpen = songViewOrigin === 'remote';
+
     stopAutoScroll();  
     currentSong = songs.find(s => s.id === id);  
     if (!currentSong) return;  
-    currentTransposeSteps = 0;  
+    currentTransposeSteps = 0;
 
-    // Ocultar o mostrar botones de Siguiente y Anterior dependiendo si venimos de la pestaña Mi Set
+    // Solo el Director origina órdenes para los demás dispositivos.
+    // El músico nunca debe convertir una orden recibida en una nueva orden.
+    if (!isRemoteOpen) {
+      broadcastToMusicians({ type: 'OPEN_SONG', songId: id, transpose: 0 });
+    }
+
+    // Los botones de Anterior/Siguiente pertenecen exclusivamente al
+    // contexto local de Mi Set. Un músico seguidor nunca los necesita.
     const navBtns = document.querySelectorAll('.nav-setlist-btns');
     navBtns.forEach(el => {
       el.style.display = (songViewOrigin === 'set') ? 'flex' : 'none';
@@ -964,6 +974,9 @@
 
   // NAVEGACIÓN EXCLUSIVA PARA CANCIONES DEL SETLIST
   function navigateSetlist(direction) {
+    // La navegación del Setlist es una función del Director o del usuario
+    // local. Los músicos reciben el resultado mediante OPEN_SONG.
+    if (currentRole === 'musician') return;
     if (currentTab !== 'set' || songSetIds.length === 0 || !currentSong) return;
 
     const currentIndex = songSetIds.indexOf(currentSong.id);
@@ -1345,12 +1358,17 @@
 
   function handleDirectorCommand(data) {
     if (data.type === 'OPEN_SONG') {
-      openSong(data.songId);
+      // El Director define la canción y el tono, pero cada dispositivo
+      // conserva su propia preferencia de notación (C-D-E o Do-Re-Mi).
+      openSong(data.songId, 'remote');
+
       if (data.transpose !== undefined) {
         currentTransposeSteps = data.transpose;
         renderTransposedContent();
       }
+
       if (currentRole === 'musician') {
+        // El músico entra directamente a En Vivo y queda como seguidor.
         openLiveView();
       }
     } else if (data.type === 'TRANSPOSE') {
