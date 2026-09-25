@@ -356,7 +356,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">Versión 1.1.7 · Pruebas</div>
+        <div class="app-version">Versión 1.1.8 · Pruebas</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -553,7 +553,7 @@
   let songViewOrigin = 'list';  
   let editingSongId = null;  
   let currentTransposeSteps = 0;  
-  let useLatinoNotation = false;  
+  let useLatinoNotation = localStorage.getItem('church_notation') === 'latino';  
   let scrollInterval = null;  
   let isScrolling = false;  
   let scrollSpeed = 1;  
@@ -925,7 +925,8 @@
   }  
 
   function toggleNotation() {  
-    useLatinoNotation = !useLatinoNotation;  
+    useLatinoNotation = !useLatinoNotation;
+    localStorage.setItem('church_notation', useLatinoNotation ? 'latino' : 'anglo');
     document.getElementById('notation-btn').innerText = useLatinoNotation ? "Do»C" : "C»Do";  
     renderTransposedContent();  
   }  
@@ -1094,6 +1095,86 @@
     el.style.display = el.style.display === 'flex' ? 'none' : 'flex';
   }
 
+  const SCROLL_SYNC_GUIDE_RATIO = 0.22;
+let lastReadingSyncAt = 0;
+let remoteAutoScrollActive = false;
+
+function getReadingElements(container) {
+  return container === document.getElementById('live-screen')
+    ? Array.from(document.querySelectorAll('#live-body .line-pair'))
+    : Array.from(document.querySelectorAll('#song-content .line-pair'));
+}
+
+function getReadingAnchor(container) {
+  const elements = getReadingElements(container);
+  if (!elements.length) return null;
+
+  const viewportHeight = container === window
+    ? window.innerHeight
+    : container.clientHeight;
+  const viewportTop = container === window
+    ? 0
+    : container.getBoundingClientRect().top;
+  const guideY = viewportTop + viewportHeight * SCROLL_SYNC_GUIDE_RATIO;
+
+  let index = elements.findIndex(el => {
+    const rect = el.getBoundingClientRect();
+    return rect.bottom >= guideY;
+  });
+
+  if (index < 0) index = elements.length - 1;
+
+  const rect = elements[index].getBoundingClientRect();
+  const height = Math.max(rect.height, 1);
+  const offsetRatio = Math.max(0, Math.min(1, (guideY - rect.top) / height));
+
+  return { lineIndex: index, offsetRatio };
+}
+
+function broadcastReadingPosition(container, force = false) {
+  if (currentRole !== 'director' || isRemoteScroll) return;
+
+  const now = Date.now();
+  if (!force && now - lastReadingSyncAt < 80) return;
+  lastReadingSyncAt = now;
+
+  const anchor = getReadingAnchor(container);
+  if (anchor) {
+    broadcastToMusicians({ type: 'READING_POSITION', ...anchor });
+  }
+}
+
+function applyReadingPosition(container, data) {
+  const elements = getReadingElements(container);
+  if (!elements.length || data.lineIndex === undefined) return;
+
+  const index = Math.max(0, Math.min(elements.length - 1, Number(data.lineIndex)));
+  const element = elements[index];
+  if (!element) return;
+
+  const viewportHeight = container === window
+    ? window.innerHeight
+    : container.clientHeight;
+  const viewportTop = container === window
+    ? 0
+    : container.getBoundingClientRect().top;
+  const guideY = viewportTop + viewportHeight * SCROLL_SYNC_GUIDE_RATIO;
+  const ratio = Math.max(0, Math.min(1, Number(data.offsetRatio) || 0));
+  const rect = element.getBoundingClientRect();
+  const desiredScroll = (container === window ? window.scrollY : container.scrollTop)
+    + (rect.top - viewportTop)
+    + (ratio * Math.max(rect.height, 1))
+    - (guideY - viewportTop);
+
+  isRemoteScroll = true;
+  if (container === window) {
+    window.scrollTo({ top: Math.max(0, desiredScroll), behavior: 'auto' });
+  } else {
+    container.scrollTop = Math.max(0, desiredScroll);
+  }
+  setTimeout(() => { isRemoteScroll = false; }, 80);
+}
+
   function openLiveView() {
     if (!currentSong) return;
     const liveScreen = document.getElementById('live-screen');
@@ -1109,10 +1190,13 @@
 
     liveScreen.onscroll = () => {
       if (currentRole === 'director' && !isRemoteScroll) {
-        const scrollPercent = liveScreen.scrollTop / (liveScreen.scrollHeight - liveScreen.clientHeight);
-        broadcastToMusicians({ type: 'MANUAL_SCROLL', percent: scrollPercent });
+        broadcastReadingPosition(liveScreen);
       }
     };
+
+    if (currentRole === 'director') {
+      setTimeout(() => broadcastReadingPosition(liveScreen, true), 0);
+    }
   }
 
   function closeLiveView() {
@@ -1219,6 +1303,12 @@
         window.scrollBy(0, 1);  
       } else {
         targetContainer.scrollTop += 1;
+      }
+
+      // El Director envía periódicamente la posición semántica de lectura.
+      // Así cada músico adapta el seguimiento a su propio tamaño de pantalla.
+      if (currentRole === 'director') {
+        broadcastReadingPosition(targetContainer);
       }
     }, delay);  
     broadcastToMusicians({ type: 'SCROLL_START' });
@@ -1378,12 +1468,20 @@
         buildBlocksHTML(document.getElementById('live-body'));
       }
     } else if (data.type === 'SCROLL_START') {
+      // El músico ya no ejecuta un scroll de 1 px sincronizado por tiempo.
+      // Solo queda marcado como seguidor; la posición real llega como
+      // READING_POSITION y se adapta a su propio viewport.
+      remoteAutoScrollActive = true;
+    } else if (data.type === 'SCROLL_STOP') {
+      remoteAutoScrollActive = false;
+    } else if (data.type === 'READING_POSITION') {
       const isLive = document.getElementById('live-screen').style.display !== 'none';
       const target = isLive ? document.getElementById('live-screen') : window;
-      if (!isScrolling) startAutoScroll(target);
-    } else if (data.type === 'SCROLL_STOP') {
-      stopAutoScroll();
+      applyReadingPosition(target, data);
     } else if (data.type === 'MANUAL_SCROLL') {
+      // Compatibilidad con sesiones anteriores: si llega el formato viejo,
+      // seguimos aplicando el porcentaje. Las sesiones nuevas usan
+      // READING_POSITION.
       isRemoteScroll = true;
       const isLive = document.getElementById('live-screen').style.display !== 'none';
       if (isLive) {
@@ -1393,7 +1491,7 @@
         const targetY = data.percent * (document.documentElement.scrollHeight - window.innerHeight);
         window.scrollTo({ top: targetY });
       }
-      setTimeout(() => { isRemoteScroll = false; }, 50);
+      setTimeout(() => { isRemoteScroll = false; }, 80);
     } else if (data.type === 'CLOSE_SONG') {
       if (currentRole === 'musician') {
         closeLiveView();
@@ -1541,6 +1639,11 @@
 
   document.addEventListener('DOMContentLoaded', () => {  
     listenToSongs();  
+
+    const notationBtn = document.getElementById('notation-btn');
+    if (notationBtn) {
+      notationBtn.innerText = useLatinoNotation ? "Do»C" : "C»Do";
+    }
     
     const rawArea = document.getElementById('edit-raw');
     if (rawArea) {
@@ -1549,8 +1652,7 @@
 
     window.addEventListener('scroll', () => {
       if (currentRole === 'director' && currentSong && !isRemoteScroll) {
-        const scrollPercent = window.scrollY / (document.documentElement.scrollHeight - window.innerHeight);
-        broadcastToMusicians({ type: 'MANUAL_SCROLL', percent: scrollPercent });
+        broadcastReadingPosition(window);
       }
     });
   });  
