@@ -356,7 +356,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">Versión 1.1.1 · Pruebas</div>
+        <div class="app-version">Versión 1.1.2 · Pruebas</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -1365,7 +1365,9 @@
   }
 
   // --- GESTOS TÁCTILES ---
-  // Navegación del Mi Set sin interferir con el desplazamiento vertical normal.
+  // Navegación contextual: listas (Todas <-> Mi Set) y canciones.
+  // Los gestos horizontales no deben interferir con el scroll vertical,
+  // botones, campos de texto ni el ordenamiento táctil de Mi Set.
   let touchStartX = 0;
   let touchStartY = 0;
   let touchStartTime = 0;
@@ -1393,10 +1395,39 @@
     const horizontalSwipe = Math.abs(deltaX) >= 70 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && elapsed <= 700;
     if (!horizontalSwipe) return;
 
-    // Los gestos de navegación solo actúan dentro del Mi Set
-    // cuando hay una canción realmente abierta en el visor.
-    if (currentTab !== 'set' || !currentSong || songSetIds.length === 0) return;
-    if (document.getElementById('song-viewer').style.display !== 'block') return;
+    const target = event.target instanceof Element ? event.target : null;
+    if (target && target.closest('button, input, textarea, select, .drag-handle')) return;
+
+    const listView = document.getElementById('list-view');
+    const songViewer = document.getElementById('song-viewer');
+    const isListVisible = listView && listView.style.display !== 'none';
+    const isSongViewerVisible = songViewer && songViewer.style.display === 'block';
+
+    // 1) En las listas: cambiar entre Todas y Mi Set.
+    // Solo usamos el sentido que tiene una navegación entre ambas páginas:
+    // Todas --swipe izquierda--> Mi Set
+    // Mi Set --swipe derecha--> Todas
+    if (isListVisible) {
+      if (deltaX < 0 && currentTab === 'all') {
+        switchTab('set');
+      } else if (deltaX > 0 && currentTab === 'set') {
+        switchTab('all');
+      }
+      return;
+    }
+
+    // 2) En una canción: el gesto desde el borde izquierdo vuelve a la lista.
+    // El resto de los swipes solo navega anterior/siguiente si la canción
+    // fue abierta desde Mi Set.
+    if (!isSongViewerVisible || !currentSong) return;
+
+    const edgeBackSwipe = touchStartX <= 35 && deltaX >= 70;
+    if (edgeBackSwipe) {
+      showList();
+      return;
+    }
+
+    if (currentTab !== 'set' || songSetIds.length === 0) return;
 
     if (deltaX < 0) {
       navigateSetlist(1);
