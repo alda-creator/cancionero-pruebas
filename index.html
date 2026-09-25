@@ -64,6 +64,7 @@
 
     .brand-title { font-size: 22px; font-weight: 800; color: var(--text); margin: 0; }
     .brand-subtitle { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+    .app-version { font-size: 11px; color: var(--text-muted); margin-top: 4px; opacity: 0.85; }
 
     .status-bar {  
       display: flex;  
@@ -355,6 +356,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
+        <div class="app-version">Versión 1.1 · Pruebas</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -1358,6 +1360,45 @@
       alert('Código de sala copiado: ' + code);
     }
   }
+
+  // --- GESTOS TÁCTILES ---
+  // Navegación del Mi Set sin interferir con el desplazamiento vertical normal.
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchStartTime = 0;
+  let touchTracking = false;
+
+  document.addEventListener('touchstart', (event) => {
+    if (event.touches.length !== 1) return;
+    const touch = event.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    touchStartTime = Date.now();
+    touchTracking = true;
+  }, { passive: true });
+
+  document.addEventListener('touchend', (event) => {
+    if (!touchTracking || event.changedTouches.length !== 1) return;
+    touchTracking = false;
+
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - touchStartX;
+    const deltaY = touch.clientY - touchStartY;
+    const elapsed = Date.now() - touchStartTime;
+
+    // Solo consideramos un gesto rápido y claramente horizontal.
+    const horizontalSwipe = Math.abs(deltaX) >= 70 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && elapsed <= 700;
+    if (!horizontalSwipe) return;
+
+    // Los gestos de navegación solo actúan dentro del Mi Set.
+    if (currentTab !== 'set' || !currentSong || songSetIds.length === 0) return;
+
+    if (deltaX < 0) {
+      navigateSetlist(1);
+    } else {
+      navigateSetlist(-1);
+    }
+  }, { passive: true });
 
   // --- REGISTRO DEL SERVICE WORKER PARA PWA ---
   if ('serviceWorker' in navigator) {
