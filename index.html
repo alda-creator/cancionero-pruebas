@@ -575,6 +575,10 @@
   let isRemoteScroll = false;
   let isRemoteBlockNavigation = false;
   let remoteBlockNavigationFrame = null; 
+  // Estado explícito del seguimiento después de GO_TO_BLOCK.
+  // Debe existir desde el arranque: applyReadingPosition() lo consulta
+  // incluso antes de que se ejecute cualquier GO_TO_BLOCK.
+  let remoteBlockNavigationLock = false;
 
   function listenToSongs() {  
     if (songsCollection) {  
