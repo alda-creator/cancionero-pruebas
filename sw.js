@@ -1,18 +1,52 @@
-const CACHE_NAME = 'cancionero-cache-v5';
+const CACHE_NAME = 'cancionero-cache-v6';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
-  './js/peerjs.min.js'
+  './js/peerjs.min.js',
+  './director-fix.js'
 ];
 
+const DIRECTOR_FIX_TAG = '<script src="./director-fix.js"></script>';
+
+async function injectDirectorFix(response) {
+  if (!response || !response.ok) return response;
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('text/html')) return response;
+
+  const html = await response.text();
+  if (html.includes('director-fix.js')) return new Response(html, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers
+  });
+
+  const patchedHtml = html.replace(/<\/body>/i, `${DIRECTOR_FIX_TAG}\n</body>`);
+  return new Response(patchedHtml, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers
+  });
+}
+
 // Instalación: precargamos los recursos necesarios para que la PWA siga
-// funcionando sin conexión.
+// funcionando sin conexión. El index queda cacheado ya con el hotfix.
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
-  );
-  self.skipWaiting();
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.addAll([
+      './manifest.json',
+      './js/peerjs.min.js',
+      './director-fix.js'
+    ]);
+
+    const indexResponse = await fetch('./index.html', { cache: 'no-store' });
+    const patchedIndex = await injectDirectorFix(indexResponse);
+    await cache.put('./index.html', patchedIndex.clone());
+    await cache.put('./', patchedIndex.clone());
+
+    self.skipWaiting();
+  })());
 });
 
 // Activación: eliminamos versiones anteriores de la caché y tomamos el
@@ -41,13 +75,15 @@ self.addEventListener('fetch', (event) => {
   if (isNavigation || isAppShell) {
     event.respondWith(
       fetch(request)
-        .then((networkResponse) => {
+        .then(async (networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
+            const patchedResponse = await injectDirectorFix(networkResponse);
             event.waitUntil(
               caches.open(CACHE_NAME).then((cache) =>
-                cache.put(request, networkResponse.clone())
+                cache.put(request, patchedResponse.clone())
               )
             );
+            return patchedResponse;
           }
           return networkResponse;
         })
