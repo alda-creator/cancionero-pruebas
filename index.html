@@ -226,6 +226,10 @@
       text-transform: uppercase;
     }
 
+    .block-label.director-block-control { cursor: pointer; touch-action: manipulation; user-select: none; }
+    .song-block.remote-block-highlight { animation: remoteBlockHighlight 700ms ease-out; }
+    @keyframes remoteBlockHighlight { 0% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
+
     .line-pair {
       font-family: "Courier New", Courier, monospace;
       font-size: 16px;
@@ -356,7 +360,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">Versión 1.1.8 · Pruebas</div>
+        <div class="app-version">Versión 1.1.9 · Pruebas</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -565,7 +569,9 @@
   let musicianConns = [];
   let currentRole = 'none';
   let myRoomCode = '';
-  let isRemoteScroll = false; 
+  let isRemoteScroll = false;
+  let isRemoteBlockNavigation = false;
+  let remoteBlockNavigationFrame = null; 
 
   function listenToSongs() {  
     if (songsCollection) {  
@@ -825,6 +831,15 @@
     }
 
     if (currentBlock.lines.length > 0) blocks.push(currentBlock);
+
+    const blockOccurrences = new Map();
+    blocks.forEach(block => {
+      const labelKey = block.label.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'bloque';
+      const occurrence = (blockOccurrences.get(labelKey) || 0) + 1;
+      blockOccurrences.set(labelKey, occurrence);
+      block.id = /-\d+$/.test(labelKey) && occurrence === 1 ? labelKey : labelKey + '-' + occurrence;
+    });
+
     return { blocks: blocks, key: detectedKey };
   }
 
@@ -876,10 +891,21 @@
     parsed.blocks.forEach(block => {
       const blockDiv = document.createElement('div');
       blockDiv.className = 'song-block';
+      blockDiv.dataset.blockId = block.id;
 
       const label = document.createElement('div');
       label.className = 'block-label';
       label.innerText = block.label;
+      if (currentRole === 'director') {
+        label.classList.add('director-block-control');
+        label.setAttribute('role', 'button');
+        label.tabIndex = 0;
+        const sendGoToBlock = () => broadcastToMusicians({ type: 'GO_TO_BLOCK', blockId: block.id });
+        label.addEventListener('click', sendGoToBlock);
+        label.addEventListener('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); sendGoToBlock(); }
+        });
+      }
       blockDiv.appendChild(label);
 
       block.lines.forEach(line => {
@@ -1145,6 +1171,7 @@ function broadcastReadingPosition(container, force = false) {
 }
 
 function applyReadingPosition(container, data) {
+  if (isRemoteBlockNavigation) return;
   const elements = getReadingElements(container);
   if (!elements.length || data.lineIndex === undefined) return;
 
@@ -1174,6 +1201,46 @@ function applyReadingPosition(container, data) {
   }
   setTimeout(() => { isRemoteScroll = false; }, 80);
 }
+
+  function goToRemoteBlock(blockId) {
+    if (currentRole !== 'musician' || !blockId) return;
+    const liveScreen = document.getElementById('live-screen');
+    const liveBody = document.getElementById('live-body');
+    const songContent = document.getElementById('song-content');
+    const isLive = liveScreen && liveScreen.style.display !== 'none';
+    const container = isLive ? liveScreen : window;
+    const root = isLive ? liveBody : songContent;
+    if (!root) return;
+    const block = Array.from(root.querySelectorAll('.song-block')).find(item => item.dataset.blockId === blockId);
+    if (!block) return;
+    if (remoteBlockNavigationFrame) cancelAnimationFrame(remoteBlockNavigationFrame);
+    isRemoteBlockNavigation = true;
+    isRemoteScroll = true;
+    remoteAutoScrollActive = false;
+    const viewportHeight = container === window ? window.innerHeight : container.clientHeight;
+    const startScroll = container === window ? window.scrollY : container.scrollTop;
+    const viewportTop = container === window ? 0 : container.getBoundingClientRect().top;
+    const blockTop = block.getBoundingClientRect().top - viewportTop + startScroll;
+    const targetScroll = Math.max(0, blockTop - Math.min(56, viewportHeight * 0.12));
+    const startTime = performance.now();
+    const animate = now => {
+      const progress = Math.min(1, (now - startTime) / 400);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const nextScroll = startScroll + (targetScroll - startScroll) * eased;
+      if (container === window) window.scrollTo(0, nextScroll); else container.scrollTop = nextScroll;
+      if (progress < 1) remoteBlockNavigationFrame = requestAnimationFrame(animate);
+      else {
+        remoteBlockNavigationFrame = null;
+        isRemoteBlockNavigation = false;
+        isRemoteScroll = false;
+        block.classList.remove('remote-block-highlight');
+        void block.offsetWidth;
+        block.classList.add('remote-block-highlight');
+        setTimeout(() => block.classList.remove('remote-block-highlight'), 700);
+      }
+    };
+    remoteBlockNavigationFrame = requestAnimationFrame(animate);
+  }
 
   function openLiveView() {
     if (!currentSong) return;
@@ -1447,6 +1514,7 @@ function applyReadingPosition(container, data) {
   }
 
   function handleDirectorCommand(data) {
+    if (currentRole !== 'musician' || !data || !data.type) return;
     if (data.type === 'OPEN_SONG') {
       // El Director define la canción y el tono, pero cada dispositivo
       // conserva su propia preferencia de notación (C-D-E o Do-Re-Mi).
@@ -1461,6 +1529,8 @@ function applyReadingPosition(container, data) {
         // El músico entra directamente a En Vivo y queda como seguidor.
         openLiveView();
       }
+    } else if (data.type === 'GO_TO_BLOCK') {
+      goToRemoteBlock(data.blockId);
     } else if (data.type === 'TRANSPOSE') {
       currentTransposeSteps = data.steps;
       renderTransposedContent();
