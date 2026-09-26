@@ -168,6 +168,8 @@
 
     .viewer, .editor { display: none; }  
 
+    #song-viewer { touch-action: manipulation; }
+
     .song-header { margin-bottom: 16px; }  
     .song-title-large { font-size: 26px; font-weight: 800; margin: 0 0 6px 0; }  
     .song-meta-tags { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }  
@@ -360,7 +362,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.1.13 · Director Mode</div>
+        <div class="app-version">v1.1.14 · Director Mode</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -558,7 +560,6 @@
   let editingSongId = null;  
   let currentTransposeSteps = 0;  
   let useLatinoNotation = localStorage.getItem('church_notation') === 'latino';  
-  let scrollInterval = null;  
   let scrollAnimationFrame = null;  
   let scrollAnimationLastTime = 0;  
   let scrollTargetContainer = null;  
@@ -1560,59 +1561,6 @@
     }
   }
 
-  function toggleAutoScroll() { isScrolling ? stopAutoScroll() : startAutoScroll(window); }  
-  function toggleLiveScroll() { 
-    const screen = document.getElementById('live-screen');
-    isScrolling ? stopAutoScroll() : startAutoScroll(screen); 
-  }
-
-  function startAutoScroll(targetContainer) {  
-    stopAutoScroll();  
-    isScrolling = true;  
-    const btn = document.getElementById('scroll-toggle-btn');  
-    const liveBtn = document.getElementById('live-scroll-btn');
-    if (btn) btn.innerText = "⏸ Pausa";  
-    if (liveBtn) liveBtn.innerText = "⏸ Pausa";
-
-    const delay = Math.max(10, 50 - (scrollSpeed * 8));  
-    scrollInterval = setInterval(() => {  
-      if (targetContainer === window) {
-        window.scrollBy(0, 1);  
-      } else {
-        targetContainer.scrollTop += 1;
-      }
-
-      // El Director envía periódicamente la posición semántica de lectura.
-      // Así cada músico adapta el seguimiento a su propio tamaño de pantalla.
-      if (currentRole === 'director') {
-        broadcastReadingPosition(targetContainer);
-      }
-    }, delay);  
-    broadcastToMusicians({ type: 'SCROLL_START' });
-  }  
-
-  function stopAutoScroll() {  
-    isScrolling = false;  
-    if (scrollInterval) clearInterval(scrollInterval);  
-    const btn = document.getElementById('scroll-toggle-btn');  
-    const liveBtn = document.getElementById('live-scroll-btn');
-    if (btn) btn.innerText = "▶ Auto-Scroll";  
-    if (liveBtn) liveBtn.innerText = "▶ Auto-Scroll";
-    broadcastToMusicians({ type: 'SCROLL_STOP' });
-  }  
-
-  function changeScrollSpeed(delta) {  
-    scrollSpeed = Math.max(1, Math.min(5, scrollSpeed + delta));  
-    document.getElementById('scroll-speed-display').innerText = scrollSpeed + 'x';  
-    if (isScrolling) startAutoScroll(window);  
-  }  
-
-  function changeLiveSpeed(delta) {  
-    scrollSpeed = Math.max(1, Math.min(5, scrollSpeed + delta));  
-    document.getElementById('live-speed-display').innerText = scrollSpeed + 'x';  
-    if (isScrolling) startAutoScroll(document.getElementById('live-screen'));  
-  }  
-
   function toggleDarkMode() {  
     document.body.classList.toggle('light-mode');  
     const isLight = document.body.classList.contains('light-mode');  
@@ -1926,6 +1874,70 @@
       navigateSetlist(-1);
     }
   }, { passive: true });
+
+
+  // Doble toque en el centro de la canción -> entrar a Modo En Vivo.
+  // Solo se reconoce sobre el contenido de la canción, no sobre controles,
+  // botones ni campos interactivos.
+  (() => {
+    const songViewer = document.getElementById('song-viewer');
+    const songContent = document.getElementById('song-content');
+    if (!songViewer || !songContent) return;
+
+    let tapStartX = 0;
+    let tapStartY = 0;
+    let tapStartTime = 0;
+    let lastCenterTapAt = 0;
+    let lastCenterTapX = 0;
+    let lastCenterTapY = 0;
+
+    songViewer.addEventListener('touchstart', event => {
+      if (event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      tapStartX = touch.clientX;
+      tapStartY = touch.clientY;
+      tapStartTime = Date.now();
+    }, { passive: true });
+
+    songViewer.addEventListener('touchend', event => {
+      if (event.changedTouches.length !== 1 || !currentSong) return;
+
+      const touch = event.changedTouches[0];
+      const elapsed = Date.now() - tapStartTime;
+      const moveX = Math.abs(touch.clientX - tapStartX);
+      const moveY = Math.abs(touch.clientY - tapStartY);
+      if (elapsed > 300 || moveX > 20 || moveY > 20) return;
+
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target || !target.closest('#song-content') ||
+          target.closest('button, input, textarea, select, .drag-handle, .block-label')) {
+        return;
+      }
+
+      const width = window.innerWidth;
+      const isCenter = touch.clientX >= width * 0.25 && touch.clientX <= width * 0.75;
+      if (!isCenter) {
+        lastCenterTapAt = 0;
+        return;
+      }
+
+      const now = Date.now();
+      const doubleTap = now - lastCenterTapAt <= 350 &&
+        Math.abs(touch.clientX - lastCenterTapX) <= 60 &&
+        Math.abs(touch.clientY - lastCenterTapY) <= 60;
+
+      if (doubleTap) {
+        event.preventDefault();
+        lastCenterTapAt = 0;
+        openLiveView();
+        return;
+      }
+
+      lastCenterTapAt = now;
+      lastCenterTapX = touch.clientX;
+      lastCenterTapY = touch.clientY;
+    }, { passive: false });
+  })();
 
   // --- REGISTRO DEL SERVICE WORKER PARA PWA ---
   if ('serviceWorker' in navigator) {

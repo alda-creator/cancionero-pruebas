@@ -189,4 +189,4 @@ window.handleDirectorCommand = function(data) {
   }
 };
 
-console.info('[Cancionero] Director Mode v1.1.13 activo: rAF + sincronización semántica + timestamps.');
+console.info('[Cancionero] Director Mode v1.1.14 activo: rAF + sincronización semántica + timestamps.');
