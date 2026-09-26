@@ -2,21 +2,49 @@
 // Se carga al final de index.html mediante el Service Worker de pruebas.
 // No modifica Firebase ni producción.
 
-// Variables que faltaban en la implementación restaurada y que necesita
-// el motor híbrido de seguimiento del músico.
 var remoteAutoScrollActive = false;
 var remoteScrollSpeed = 1;
 var remoteScrollContainer = null;
 var remoteScrollCorrectionVelocity = 0;
 var remoteBlockNavigationTarget = null;
+var remoteBlockNavigationIssuedAt = 0;
+var autoScrollStartWatchdog = null;
 
-// El código restaurado conserva una implementación antigua de Auto-Scroll
-// más abajo en index.html. La anulamos para garantizar que exista un único
-// motor activo: requestAnimationFrame + posiciones semánticas.
+// Marca temporal para distinguir mensajes que estaban en tránsito antes de
+// GO_TO_BLOCK de posiciones nuevas realizadas después del salto.
+const originalBroadcastToMusicians = window.broadcastToMusicians;
+window.broadcastToMusicians = function(data) {
+  if (typeof originalBroadcastToMusicians !== 'function') return;
+  if (data && (data.type === 'READING_POSITION' || data.type === 'GO_TO_BLOCK')) {
+    originalBroadcastToMusicians({ ...data, sentAt: Date.now() });
+    return;
+  }
+  originalBroadcastToMusicians(data);
+};
+
+// Garantiza que exista un único motor activo: requestAnimationFrame +
+// posiciones semánticas, anulando la implementación antigua restaurada.
 window.startAutoScroll = function(targetContainer) {
   if (!targetContainer) return;
   stopAutoScroll(true);
+  const startPosition = getContainerScrollTop(targetContainer);
   startLocalScrollMotor(targetContainer, scrollSpeed, true);
+
+  // Si otro estado/evento detiene inmediatamente el motor al arrancar,
+  // recuperarlo una sola vez. No cambia la velocidad ni el algoritmo.
+  clearTimeout(autoScrollStartWatchdog);
+  autoScrollStartWatchdog = setTimeout(() => {
+    autoScrollStartWatchdog = null;
+    if (!isScrolling || scrollTargetContainer !== targetContainer) {
+      const maxScroll = targetContainer === window
+        ? Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
+        : Math.max(0, targetContainer.scrollHeight - targetContainer.clientHeight);
+      if (startPosition < maxScroll - 1) {
+        startLocalScrollMotor(targetContainer, scrollSpeed, false);
+      }
+    }
+  }, 350);
+
   const btn = document.getElementById('scroll-toggle-btn');
   const liveBtn = document.getElementById('live-scroll-btn');
   if (btn) btn.innerText = '⏸ Pausa';
@@ -24,6 +52,8 @@ window.startAutoScroll = function(targetContainer) {
 };
 
 window.stopAutoScroll = function(silent = false) {
+  clearTimeout(autoScrollStartWatchdog);
+  autoScrollStartWatchdog = null;
   isScrolling = false;
   scrollTargetContainer = null;
   if (scrollAnimationFrame) cancelAnimationFrame(scrollAnimationFrame);
@@ -62,9 +92,6 @@ window.changeLiveSpeed = function(delta) {
   else if (currentRole === 'director') broadcastToMusicians({ type: 'SCROLL_SPEED', speed: scrollSpeed });
 };
 
-// GO_TO_BLOCK debe proteger al músico de posiciones que estaban en tránsito
-// antes del salto, pero el bloqueo debe liberarse automáticamente cuando el
-// Director realmente alcanza el bloque solicitado.
 const originalGoToRemoteBlock = window.goToRemoteBlock;
 window.goToRemoteBlock = function(blockId) {
   remoteBlockNavigationTarget = blockId || null;
@@ -77,14 +104,20 @@ window.applyReadingPosition = function(container, data) {
   if (isRemoteBlockNavigation) return;
 
   if (remoteBlockNavigationLock) {
+    // Toda posición emitida antes de GO_TO_BLOCK queda descartada aunque
+    // llegue después por latencia de la conexión.
+    if (remoteBlockNavigationIssuedAt && data.sentAt && data.sentAt <= remoteBlockNavigationIssuedAt) {
+      return;
+    }
+
     if (data.source === 'manual') {
       remoteBlockNavigationLock = false;
       remoteBlockNavigationTarget = null;
+      remoteBlockNavigationIssuedAt = 0;
     } else if (remoteBlockNavigationTarget && data.blockId === remoteBlockNavigationTarget) {
-      // El Director ya llegó al bloque pedido. A partir de aquí las posiciones
-      // semánticas nuevas vuelven a ser válidas para el seguimiento continuo.
       remoteBlockNavigationLock = false;
       remoteBlockNavigationTarget = null;
+      remoteBlockNavigationIssuedAt = 0;
     } else {
       return;
     }
@@ -115,8 +148,6 @@ window.applyReadingPosition = function(container, data) {
   setTimeout(() => { isRemoteScroll = false; }, 30);
 };
 
-// Garantiza que GO_TO_BLOCK no quede bloqueado por una implementación antigua
-// si el Director ya se encuentra en el bloque solicitado.
 window.startFollowerAutoScroll = function(speed) {
   remoteScrollCorrectionVelocity = 0;
   remoteAutoScrollActive = true;
@@ -139,21 +170,25 @@ window.stopFollowerAutoScroll = function() {
   updateSyncDiagnostic();
 };
 
-// Evita que una orden de STOP o cambio de velocidad deje un lock viejo de
-// GO_TO_BLOCK activo para siempre.
 const originalHandleDirectorCommand = window.handleDirectorCommand;
 window.handleDirectorCommand = function(data) {
+  if (data && data.type === 'GO_TO_BLOCK' && currentRole === 'musician') {
+    remoteBlockNavigationIssuedAt = Number(data.sentAt) || Date.now();
+    remoteBlockNavigationTarget = data.blockId || null;
+  }
   if (data && data.type === 'SCROLL_START' && currentRole === 'musician') {
     remoteBlockNavigationLock = false;
     remoteBlockNavigationTarget = null;
+    remoteBlockNavigationIssuedAt = 0;
   }
   if (data && data.type === 'SCROLL_STOP' && currentRole === 'musician') {
     remoteBlockNavigationLock = false;
     remoteBlockNavigationTarget = null;
+    remoteBlockNavigationIssuedAt = 0;
   }
   if (typeof originalHandleDirectorCommand === 'function') {
     originalHandleDirectorCommand(data);
   }
 };
 
-console.info('[Cancionero] Director Mode hotfix activo: motor rAF + seguimiento semántico.');
+console.info('[Cancionero] Director Mode hotfix v2 activo: rAF + sincronización semántica + timestamps.');
