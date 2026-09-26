@@ -633,9 +633,13 @@
   // de Android/navegador recorra las vistas internas antes de salir de la PWA.
   let isApplyingHistoryState = false;
   let historyInitialized = false;
+  let suppressNextHistoryPush = false;
 
   function pushNavigationState(view, extra = {}) {
-    if (isApplyingHistoryState || !historyInitialized) return;
+    if (isApplyingHistoryState || suppressNextHistoryPush || !historyInitialized) {
+      suppressNextHistoryPush = false;
+      return;
+    }
     const state = {
       app: 'cancionero',
       view,
@@ -1097,14 +1101,27 @@
     if (currentRole === 'musician') return;
     if (currentTab !== 'set' || songSetIds.length === 0 || !currentSong) return;
 
+    const wasLive = document.getElementById('live-screen').style.display !== 'none';
+
     const currentIndex = songSetIds.indexOf(currentSong.id);
     if (currentIndex === -1) return;
 
     const targetIndex = currentIndex + direction;
     if (targetIndex >= 0 && targetIndex < songSetIds.length) {
       const targetId = songSetIds[targetIndex];
+
+      // Al navegar entre canciones mientras En Vivo está abierto, la vista
+      // histórica sigue siendo En Vivo; no creamos una entrada "canción"
+      // intermedia que alteraría el botón Atrás.
+      if (wasLive) suppressNextHistoryPush = true;
       openSong(targetId, 'set');
-      if (document.getElementById('live-screen').style.display !== 'none') {
+
+      if (wasLive) {
+        replaceNavigationState('live', {
+          tab: currentTab,
+          songId: currentSong?.id || targetId,
+          songViewOrigin
+        });
         buildBlocksHTML(document.getElementById('live-body'));
       }
     }
