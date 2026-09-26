@@ -1152,11 +1152,17 @@
 
     if (index < 0) index = elements.length - 1;
 
-    const rect = elements[index].getBoundingClientRect();
+    const element = elements[index];
+    const rect = element.getBoundingClientRect();
     const height = Math.max(rect.height, 1);
     const offsetRatio = Math.max(0, Math.min(1, (guideY - rect.top) / height));
+    const block = element.closest('.song-block');
 
-    return { lineIndex: index, offsetRatio };
+    return {
+      lineIndex: index,
+      offsetRatio,
+      blockId: block?.dataset.blockId || null
+    };
   }
 
   function getScrollPixelsPerSecond(speed) {
@@ -1212,6 +1218,14 @@
 
   function applyReadingPosition(container, data) {
     if (isRemoteBlockNavigation) return;
+
+    // Después de GO_TO_BLOCK, las posiciones que todavía pertenecen al bloque
+    // anterior del Director no deben devolver al músico a donde estaba.
+    // El bloqueo se libera cuando el Director realmente llega al bloque solicitado.
+    if (remoteBlockLockId) {
+      if (data.blockId !== remoteBlockLockId) return;
+      remoteBlockLockId = null;
+    }
 
     const desiredScroll = getDesiredScrollForReadingPosition(container, data);
     if (desiredScroll === null) return;
@@ -1374,6 +1388,11 @@
     const resumeFollowerAfterBlock = remoteAutoScrollActive;
     const followerSpeedAfterBlock = remoteScrollSpeed;
     if (resumeFollowerAfterBlock) stopFollowerAutoScroll();
+
+    // Mantener este bloqueo hasta que el Director llegue realmente al bloque
+    // solicitado evita que una READING_POSITION antigua deshaga GO_TO_BLOCK.
+    remoteBlockLockId = blockId;
+
     isRemoteBlockNavigation = true;
     isRemoteScroll = true;
     const viewportHeight = container === window ? window.innerHeight : container.clientHeight;
@@ -1399,6 +1418,12 @@
         void block.offsetWidth;
         block.classList.add('remote-block-highlight');
         setTimeout(() => block.classList.remove('remote-block-highlight'), 700);
+
+        // Si el Director tenía Auto-Scroll activo, el músico continúa desde
+        // el bloque solicitado, no desde la posición anterior.
+        if (resumeFollowerAfterBlock) {
+          startFollowerAutoScroll(followerSpeedAfterBlock);
+        }
       }
     };
     remoteBlockNavigationFrame = requestAnimationFrame(animate);
