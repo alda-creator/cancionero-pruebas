@@ -360,12 +360,10 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version" onclick="toggleSyncDiagnostic()" style="cursor:pointer;">Prueba 1.1.11.1 · Diagnóstico · código base v1.1.12</div>
+        <div class="app-version">v1.1.13 · Director Mode</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
-
-    <div id="sync-diagnostic-panel" style="display:none; margin:-6px 0 12px; padding:8px 10px; background:var(--card); border:1px dashed var(--card-border); border-radius:8px; font-size:10px; line-height:1.5; color:var(--text-muted);"></div>
 
     <div class="status-bar">  
       <span id="connection-status">Cargando...</span>  
@@ -1203,9 +1201,6 @@
         ...anchor,
         source: isScrolling ? 'auto' : 'manual'
       });
-      syncDiagnostic.txReadingPosition++;
-      syncDiagnostic.lastSource = isScrolling ? 'auto' : 'manual';
-      updateSyncDiagnostic();
     }
   }
 
@@ -1277,6 +1272,8 @@
     setTimeout(() => { isRemoteScroll = false; }, 30);
   }
 
+  let scrollAnimationCarry = 0;
+
   function startLocalScrollMotor(targetContainer, speed, broadcastStart = false) {
     if (!targetContainer) return;
 
@@ -1285,6 +1282,7 @@
 
     scrollTargetContainer = targetContainer;
     scrollAnimationLastTime = performance.now();
+    scrollAnimationCarry = 0;
     isScrolling = true;
 
     const tick = (now) => {
@@ -1297,7 +1295,13 @@
       const correctionPixels = remoteAutoScrollActive && targetContainer === remoteScrollContainer
         ? remoteScrollCorrectionVelocity
         : 0;
-      const pixels = Math.max(0, basePixels + correctionPixels) * elapsed / 1000;
+
+      // Acumulamos fracciones y aplicamos el movimiento cuando existe al menos
+      // 1 px real. Así 1x/2x no pueden parecer detenidos por redondeos.
+      scrollAnimationCarry += (basePixels + correctionPixels) * elapsed / 1000;
+      const pixels = Math.trunc(scrollAnimationCarry);
+      scrollAnimationCarry -= pixels;
+
       const before = getContainerScrollTop(targetContainer);
       const maxScroll = targetContainer === window
         ? Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
@@ -1332,7 +1336,6 @@
     const isLive = document.getElementById('live-screen').style.display !== 'none';
     remoteScrollContainer = isLive ? document.getElementById('live-screen') : window;
     startLocalScrollMotor(remoteScrollContainer, remoteScrollSpeed, false);
-    updateSyncDiagnostic();
   }
 
   function stopFollowerAutoScroll() {
@@ -1344,7 +1347,6 @@
       scrollAnimationFrame = null;
       isScrolling = false;
     }
-    updateSyncDiagnostic();
   }
 
   function toggleAutoScroll() {
@@ -1396,8 +1398,6 @@
 
   function goToRemoteBlock(blockId) {
     if (currentRole !== 'musician' || !blockId) return;
-    syncDiagnostic.lastBlock = blockId;
-    updateSyncDiagnostic();
     const liveScreen = document.getElementById('live-screen');
     const liveBody = document.getElementById('live-body');
     const songContent = document.getElementById('song-content');
@@ -1734,49 +1734,8 @@
       document.getElementById('sync-status-msg').style.color = "var(--danger)";
     });
   }
-
-  const SYNC_DIAGNOSTIC_BUILD = '1.1.11.1-diagnostico';
-  const syncDiagnostic = {
-    rxTotal: 0,
-    rxScrollStart: 0,
-    rxReadingPosition: 0,
-    rxGoToBlock: 0,
-    txReadingPosition: 0,
-    lastCommand: '—',
-    lastSource: '—',
-    lastBlock: '—'
-  };
-
-  function updateSyncDiagnostic() {
-    const el = document.getElementById('sync-diagnostic');
-    if (!el) return;
-    el.innerHTML = 
-      '<div><strong>' + SYNC_DIAGNOSTIC_BUILD + '</strong></div>' +
-      '<div>Rol: ' + (currentRole || 'none') + ' · Auto local: ' + (isScrolling ? 'ON' : 'OFF') + ' · Auto remoto: ' + (remoteAutoScrollActive ? 'ON' : 'OFF') + '</div>' +
-      '<div>RX total: ' + syncDiagnostic.rxTotal + ' · START: ' + syncDiagnostic.rxScrollStart + ' · POS: ' + syncDiagnostic.rxReadingPosition + ' · BLOCK: ' + syncDiagnostic.rxGoToBlock + '</div>' +
-      '<div>TX POS: ' + syncDiagnostic.txReadingPosition + ' · Último: ' + syncDiagnostic.lastCommand + ' · source: ' + syncDiagnostic.lastSource + '</div>' +
-      '<div>Bloque: ' + syncDiagnostic.lastBlock + '</div>';
-  }
-
-  function toggleSyncDiagnostic() {
-    const panel = document.getElementById('sync-diagnostic-panel');
-    if (!panel) return;
-    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-    updateSyncDiagnostic();
-  }
-
   function handleDirectorCommand(data) {
     if (currentRole !== 'musician' || !data || !data.type) return;
-    syncDiagnostic.rxTotal++;
-    syncDiagnostic.lastCommand = data.type;
-    syncDiagnostic.lastSource = data.source || '—';
-    if (data.type === 'SCROLL_START') syncDiagnostic.rxScrollStart++;
-    if (data.type === 'READING_POSITION') syncDiagnostic.rxReadingPosition++;
-    if (data.type === 'GO_TO_BLOCK') {
-      syncDiagnostic.rxGoToBlock++;
-      syncDiagnostic.lastBlock = data.blockId || '—';
-    }
-    updateSyncDiagnostic();
     if (data.type === 'OPEN_SONG') {
       // El Director define la canción y el tono, pero cada dispositivo
       // conserva su propia preferencia de notación (C-D-E o Do-Re-Mi).

@@ -155,7 +155,6 @@ window.startFollowerAutoScroll = function(speed) {
   const isLive = document.getElementById('live-screen').style.display !== 'none';
   remoteScrollContainer = isLive ? document.getElementById('live-screen') : window;
   startLocalScrollMotor(remoteScrollContainer, remoteScrollSpeed, false);
-  updateSyncDiagnostic();
 };
 
 window.stopFollowerAutoScroll = function() {
@@ -167,7 +166,6 @@ window.stopFollowerAutoScroll = function() {
     scrollAnimationFrame = null;
     isScrolling = false;
   }
-  updateSyncDiagnostic();
 };
 
 const originalHandleDirectorCommand = window.handleDirectorCommand;
@@ -191,4 +189,4 @@ window.handleDirectorCommand = function(data) {
   }
 };
 
-console.info('[Cancionero] Director Mode hotfix v2 activo: rAF + sincronización semántica + timestamps.');
+console.info('[Cancionero] Director Mode v1.1.13 activo: rAF + sincronización semántica + timestamps.');
