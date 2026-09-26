@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cancionero-cache-v6';
+const CACHE_NAME = 'cancionero-cache-v7';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -49,8 +49,6 @@ self.addEventListener('install', (event) => {
   })());
 });
 
-// Activación: eliminamos versiones anteriores de la caché y tomamos el
-// control de los clientes inmediatamente.
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => Promise.all(
