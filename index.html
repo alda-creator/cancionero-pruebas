@@ -1192,7 +1192,11 @@
 
     const anchor = getReadingAnchor(container);
     if (anchor) {
-      broadcastToMusicians({ type: 'READING_POSITION', ...anchor });
+      broadcastToMusicians({
+        type: 'READING_POSITION',
+        ...anchor,
+        source: isScrolling ? 'auto' : 'manual'
+      });
     }
   }
 
@@ -1222,9 +1226,15 @@
     // Después de GO_TO_BLOCK, las posiciones que todavía pertenecen al bloque
     // anterior del Director no deben devolver al músico a donde estaba.
     // El bloqueo se libera cuando el Director realmente llega al bloque solicitado.
-    if (remoteBlockLockId) {
-      if (data.blockId !== remoteBlockLockId) return;
-      remoteBlockLockId = null;
+    if (remoteBlockNavigationLock) {
+      // Las posiciones que ya estaban en tránsito antes de GO_TO_BLOCK no
+      // pueden deshacer la orden. Una nueva interacción manual del Director
+      // sí es una orden válida y libera el bloqueo.
+      if (data.source === 'manual') {
+        remoteBlockNavigationLock = false;
+      } else {
+        return;
+      }
     }
 
     const desiredScroll = getDesiredScrollForReadingPosition(container, data);
@@ -1391,7 +1401,7 @@
 
     // Mantener este bloqueo hasta que el Director llegue realmente al bloque
     // solicitado evita que una READING_POSITION antigua deshaga GO_TO_BLOCK.
-    remoteBlockLockId = blockId;
+    remoteBlockNavigationLock = true;
 
     isRemoteBlockNavigation = true;
     isRemoteScroll = true;
@@ -1737,9 +1747,15 @@
         buildBlocksHTML(document.getElementById('live-body'));
       }
     } else if (data.type === 'SCROLL_START') {
-      if (currentRole === 'musician') startFollowerAutoScroll(data.speed || 1);
+      if (currentRole === 'musician') {
+        remoteBlockNavigationLock = false;
+        startFollowerAutoScroll(data.speed || 1);
+      }
     } else if (data.type === 'SCROLL_STOP') {
-      if (currentRole === 'musician') stopFollowerAutoScroll();
+      if (currentRole === 'musician') {
+        remoteBlockNavigationLock = false;
+        stopFollowerAutoScroll();
+      }
     } else if (data.type === 'SCROLL_SPEED') {
       if (currentRole === 'musician' && remoteAutoScrollActive) {
         remoteScrollSpeed = Math.max(1, Math.min(5, Number(data.speed) || 1));
