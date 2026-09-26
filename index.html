@@ -1433,6 +1433,16 @@ function applyReadingPosition(container, data) {
     } else {
       msg.innerText = "";
     }
+
+    // Si el rol cambia con una canción ya abierta, reconstruimos los bloques
+    // para que los encabezados reflejen inmediatamente el nuevo rol.
+    if (currentSong) {
+      buildBlocksHTML(document.getElementById('song-content'));
+      const liveScreen = document.getElementById('live-screen');
+      if (liveScreen && liveScreen.style.display !== 'none') {
+        buildBlocksHTML(document.getElementById('live-body'));
+      }
+    }
   }
 
   function generateShortCode() {
