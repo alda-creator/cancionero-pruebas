@@ -1223,13 +1223,17 @@
     // Durante el auto-scroll local corregimos solo una fracción del desfase.
     // Esto evita los saltos de v1.1.8 y conserva el movimiento continuo.
     if (remoteAutoScrollActive) {
-      if (now - lastRemoteCorrectionAt < SCROLL_CORRECTION_INTERVAL) return;
-      if (Math.abs(error) < SCROLL_CORRECTION_THRESHOLD) return;
-
-      lastRemoteCorrectionAt = now;
-      isRemoteScroll = true;
-      setContainerScrollTop(container, currentScroll + error * SCROLL_CORRECTION_FACTOR);
-      setTimeout(() => { isRemoteScroll = false; }, 30);
+      // Nunca corregimos cambiando scrollTop de golpe. El desfase se convierte
+      // en una pequeña velocidad adicional que el motor local absorbe suavemente.
+      if (Math.abs(error) < SCROLL_CORRECTION_THRESHOLD) {
+        remoteScrollCorrectionVelocity *= 0.7;
+        if (Math.abs(remoteScrollCorrectionVelocity) < 0.5) remoteScrollCorrectionVelocity = 0;
+        return;
+      }
+      if (now - lastRemoteCorrectionAt >= SCROLL_CORRECTION_INTERVAL) {
+        lastRemoteCorrectionAt = now;
+        remoteScrollCorrectionVelocity = Math.max(-12, Math.min(12, error * 0.35));
+      }
       return;
     }
 
@@ -1256,7 +1260,11 @@
       const elapsed = Math.min(64, Math.max(0, now - scrollAnimationLastTime));
       scrollAnimationLastTime = now;
 
-      const pixels = getScrollPixelsPerSecond(speed) * elapsed / 1000;
+      const basePixels = getScrollPixelsPerSecond(speed);
+      const correctionPixels = remoteAutoScrollActive && targetContainer === remoteScrollContainer
+        ? remoteScrollCorrectionVelocity
+        : 0;
+      const pixels = Math.max(0, basePixels + correctionPixels) * elapsed / 1000;
       const before = getContainerScrollTop(targetContainer);
       const maxScroll = targetContainer === window
         ? Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
@@ -1285,6 +1293,7 @@
   }
 
   function startFollowerAutoScroll(speed) {
+    remoteScrollCorrectionVelocity = 0;
     remoteAutoScrollActive = true;
     remoteScrollSpeed = Math.max(1, Math.min(5, Number(speed) || 1));
     const isLive = document.getElementById('live-screen').style.display !== 'none';
@@ -1293,6 +1302,7 @@
   }
 
   function stopFollowerAutoScroll() {
+    remoteScrollCorrectionVelocity = 0;
     remoteAutoScrollActive = false;
     remoteScrollContainer = null;
     if (currentRole === 'musician' && scrollAnimationFrame) {
@@ -1370,7 +1380,9 @@
     const startScroll = container === window ? window.scrollY : container.scrollTop;
     const viewportTop = container === window ? 0 : container.getBoundingClientRect().top;
     const blockTop = block.getBoundingClientRect().top - viewportTop + startScroll;
-    const targetScroll = Math.max(0, blockTop - Math.min(56, viewportHeight * 0.12));
+    // Alinear el encabezado con la misma guía de lectura de la sincronización.
+    const guideOffset = viewportHeight * SCROLL_SYNC_GUIDE_RATIO;
+    const targetScroll = Math.max(0, blockTop - guideOffset);
     const startTime = performance.now();
     const animate = now => {
       const progress = Math.min(1, (now - startTime) / 400);
@@ -1382,6 +1394,7 @@
         remoteBlockNavigationFrame = null;
         isRemoteBlockNavigation = false;
         isRemoteScroll = false;
+        remoteScrollCorrectionVelocity = 0;
         block.classList.remove('remote-block-highlight');
         void block.offsetWidth;
         block.classList.add('remote-block-highlight');
