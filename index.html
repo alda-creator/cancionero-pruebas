@@ -1557,11 +1557,19 @@
     if (!currentSong) return;
 
     if (!isApplyingHistoryState) {
-      pushNavigationState('live', {
+      const liveState = {
         tab: currentTab,
         songId: currentSong.id,
         songViewOrigin
-      });
+      };
+
+      // En un músico, una orden remota reemplaza la vista En Vivo actual;
+      // no acumulamos una entrada por cada canción que cambie el Director.
+      if (songViewOrigin === 'remote') {
+        replaceNavigationState('live', liveState);
+      } else {
+        pushNavigationState('live', liveState);
+      }
     }
 
     const liveScreen = document.getElementById('live-screen');
@@ -1864,9 +1872,16 @@
       setTimeout(() => { isRemoteScroll = false; }, 80);
     } else if (data.type === 'CLOSE_SONG') {
       if (currentRole === 'musician') {
+        // Esta orden ya representa una navegación remota completa.
+        // Evitamos que closeLiveView/showList intenten consumir dos entradas
+        // del historial local del músico.
+        isApplyingHistoryState = true;
         closeLiveView();
+        showList();
+        isApplyingHistoryState = false;
+      } else {
+        showList();
       }
-      showList();
     }
   }
 
