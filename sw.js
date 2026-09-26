@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cancionero-cache-v4';
+const CACHE_NAME = 'cancionero-cache-v5';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -6,8 +6,8 @@ const ASSETS_TO_CACHE = [
   './js/peerjs.min.js'
 ];
 
-// Instalación del Service Worker y guardado en caché.
-// Solo incluimos archivos que existen realmente en el repositorio.
+// Instalación: precargamos los recursos necesarios para que la PWA siga
+// funcionando sin conexión.
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
@@ -15,33 +15,59 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activación y limpieza de cachés antiguas.
+// Activación: eliminamos versiones anteriores de la caché y tomamos el
+// control de los clientes inmediatamente.
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
-            return caches.delete(cache);
-          }
-        })
-      );
-    })
+    caches.keys().then((cacheNames) => Promise.all(
+      cacheNames
+        .filter((cacheName) => cacheName !== CACHE_NAME)
+        .map((cacheName) => caches.delete(cacheName))
+    ))
   );
   self.clients.claim();
 });
 
-// Estrategia: primero caché para permitir arranque offline;
-// si no existe, intenta red y guarda la respuesta.
+// Navegación / index.html: red primero para que una nueva versión publicada
+// no quede atrapada en una copia antigua del Service Worker. Si no hay red,
+// usamos la copia almacenada para conservar el funcionamiento offline.
+//
+// Recursos estáticos: caché primero + actualización en segundo plano.
 self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      const fetchPromise = fetch(event.request)
+  const request = event.request;
+  const isNavigation = request.mode === 'navigate';
+  const isAppShell = new URL(request.url).pathname.endsWith('/index.html');
+
+  if (isNavigation || isAppShell) {
+    event.respondWith(
+      fetch(request)
         .then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, networkResponse.clone());
-            });
+            event.waitUntil(
+              caches.open(CACHE_NAME).then((cache) =>
+                cache.put(request, networkResponse.clone())
+              )
+            );
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(request).then((cachedResponse) => {
+          return cachedResponse || caches.match('./index.html');
+        }))
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(request).then((cachedResponse) => {
+      const fetchPromise = fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            event.waitUntil(
+              caches.open(CACHE_NAME).then((cache) =>
+                cache.put(request, networkResponse.clone())
+              )
+            );
           }
           return networkResponse;
         })
