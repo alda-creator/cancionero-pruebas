@@ -626,7 +626,86 @@
   }  
 
   window.addEventListener('online', updateSyncStatus);  
-  window.addEventListener('offline', updateSyncStatus);  
+  window.addEventListener('offline', updateSyncStatus);
+
+  // --- HISTORIAL INTERNO DE NAVEGACIÓN ---
+  // Cancionero es una SPA: estas entradas permiten que el botón Atrás
+  // de Android/navegador recorra las vistas internas antes de salir de la PWA.
+  let isApplyingHistoryState = false;
+  let historyInitialized = false;
+  let suppressNextHistoryPush = false;
+
+  function pushNavigationState(view, extra = {}) {
+    if (isApplyingHistoryState || suppressNextHistoryPush || !historyInitialized) {
+      suppressNextHistoryPush = false;
+      return;
+    }
+    const state = {
+      app: 'cancionero',
+      view,
+      tab: currentTab,
+      songId: currentSong?.id || null,
+      songViewOrigin: songViewOrigin || null,
+      ...extra
+    };
+    history.pushState(state, '', window.location.href);
+  }
+
+  function replaceNavigationState(view, extra = {}) {
+    const state = {
+      app: 'cancionero',
+      view,
+      tab: currentTab,
+      songId: currentSong?.id || null,
+      songViewOrigin: songViewOrigin || null,
+      ...extra
+    };
+    history.replaceState(state, '', window.location.href);
+  }
+
+  function initializeNavigationHistory() {
+    if (historyInitialized) return;
+    historyInitialized = true;
+    replaceNavigationState('list', { tab: currentTab });
+  }
+
+  window.addEventListener('popstate', event => {
+    const state = event.state;
+    if (!state || state.app !== 'cancionero') return;
+
+    isApplyingHistoryState = true;
+    try {
+      if (state.view === 'live' && state.songId) {
+        const song = songs.find(s => s.id === state.songId);
+        if (!song) {
+          showList();
+          return;
+        }
+        currentTab = state.tab || currentTab;
+        openSong(state.songId, state.songViewOrigin || 'list');
+        openLiveView();
+        return;
+      }
+
+      if (state.view === 'song' && state.songId) {
+        const song = songs.find(s => s.id === state.songId);
+        if (!song) {
+          showList();
+          return;
+        }
+        currentTab = state.tab || currentTab;
+        openSong(state.songId, state.songViewOrigin || 'list');
+        return;
+      }
+
+      currentTab = state.tab || 'all';
+      showList();
+    } finally {
+      isApplyingHistoryState = false;
+    }
+  });
+
+  
 
   function switchTab(tab) {  
     currentTab = tab;  
@@ -979,6 +1058,14 @@
     // Nunca debe heredar Mi Set, búsqueda u otro contexto local del músico.
     const isRemoteOpen = songViewOrigin === 'remote';
 
+    if (!isRemoteOpen) {
+      pushNavigationState('song', {
+        tab: currentTab,
+        songId: id,
+        songViewOrigin
+      });
+    }
+
     stopAutoScroll();  
     currentSong = songs.find(s => s.id === id);  
     if (!currentSong) return;  
@@ -1014,14 +1101,27 @@
     if (currentRole === 'musician') return;
     if (currentTab !== 'set' || songSetIds.length === 0 || !currentSong) return;
 
+    const wasLive = document.getElementById('live-screen').style.display !== 'none';
+
     const currentIndex = songSetIds.indexOf(currentSong.id);
     if (currentIndex === -1) return;
 
     const targetIndex = currentIndex + direction;
     if (targetIndex >= 0 && targetIndex < songSetIds.length) {
       const targetId = songSetIds[targetIndex];
+
+      // Al navegar entre canciones mientras En Vivo está abierto, la vista
+      // histórica sigue siendo En Vivo; no creamos una entrada "canción"
+      // intermedia que alteraría el botón Atrás.
+      if (wasLive) suppressNextHistoryPush = true;
       openSong(targetId, 'set');
-      if (document.getElementById('live-screen').style.display !== 'none') {
+
+      if (wasLive) {
+        replaceNavigationState('live', {
+          tab: currentTab,
+          songId: currentSong?.id || targetId,
+          songViewOrigin
+        });
         buildBlocksHTML(document.getElementById('live-body'));
       }
     }
@@ -1455,6 +1555,23 @@
 
   function openLiveView() {
     if (!currentSong) return;
+
+    if (!isApplyingHistoryState) {
+      const liveState = {
+        tab: currentTab,
+        songId: currentSong.id,
+        songViewOrigin
+      };
+
+      // En un músico, una orden remota reemplaza la vista En Vivo actual;
+      // no acumulamos una entrada por cada canción que cambie el Director.
+      if (songViewOrigin === 'remote') {
+        replaceNavigationState('live', liveState);
+      } else {
+        pushNavigationState('live', liveState);
+      }
+    }
+
     const liveScreen = document.getElementById('live-screen');
     const liveBody = document.getElementById('live-body');
     
@@ -1480,9 +1597,23 @@
   function closeLiveView() {
     stopAutoScroll();
     document.getElementById('live-screen').style.display = 'none';
+
+    // Si el cierre fue provocado por un gesto/botón explícito, sincronizamos
+    // el historial sin crear otra entrada. El botón Atrás usa popstate.
+    if (!isApplyingHistoryState && history.state?.app === 'cancionero' &&
+        history.state.view === 'live') {
+      history.back();
+    }
   }
 
-  function showList() {  
+  function showList() {
+    if (!isApplyingHistoryState &&
+        history.state?.app === 'cancionero' &&
+        (history.state.view === 'song' || history.state.view === 'live')) {
+      history.back();
+      return;
+    }
+
     broadcastToMusicians({ type: 'CLOSE_SONG' });
     stopAutoScroll();
     // Al volver a la lista ya no hay una canción abierta.
@@ -1741,9 +1872,16 @@
       setTimeout(() => { isRemoteScroll = false; }, 80);
     } else if (data.type === 'CLOSE_SONG') {
       if (currentRole === 'musician') {
+        // Esta orden ya representa una navegación remota completa.
+        // Evitamos que closeLiveView/showList intenten consumir dos entradas
+        // del historial local del músico.
+        isApplyingHistoryState = true;
         closeLiveView();
+        showList();
+        isApplyingHistoryState = false;
+      } else {
+        showList();
       }
-      showList();
     }
   }
 
@@ -1948,7 +2086,8 @@
     });
   }
 
-  document.addEventListener('DOMContentLoaded', () => {  
+  document.addEventListener('DOMContentLoaded', () => {
+    initializeNavigationHistory();
     listenToSongs();  
 
     const notationBtn = document.getElementById('notation-btn');
