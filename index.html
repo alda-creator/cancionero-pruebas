@@ -360,7 +360,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">Versión 1.1.9 · Pruebas</div>
+        <div class="app-version">Versión 1.1.10 · Pruebas</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -559,6 +559,9 @@
   let currentTransposeSteps = 0;  
   let useLatinoNotation = localStorage.getItem('church_notation') === 'latino';  
   let scrollInterval = null;  
+  let scrollAnimationFrame = null;  
+  let scrollAnimationLastTime = 0;  
+  let scrollTargetContainer = null;  
   let isScrolling = false;  
   let scrollSpeed = 1;  
   let sortableInstance = null;
@@ -1122,85 +1125,229 @@
   }
 
   const SCROLL_SYNC_GUIDE_RATIO = 0.22;
-let lastReadingSyncAt = 0;
-let remoteAutoScrollActive = false;
+  const SCROLL_CORRECTION_INTERVAL = 250;
+  const SCROLL_CORRECTION_THRESHOLD = 28;
+  const SCROLL_CORRECTION_FACTOR = 0.32;
+  let lastReadingSyncAt = 0;
+  let lastRemoteCorrectionAt = 0;
 
-function getReadingElements(container) {
-  return container === document.getElementById('live-screen')
-    ? Array.from(document.querySelectorAll('#live-body .line-pair'))
-    : Array.from(document.querySelectorAll('#song-content .line-pair'));
-}
-
-function getReadingAnchor(container) {
-  const elements = getReadingElements(container);
-  if (!elements.length) return null;
-
-  const viewportHeight = container === window
-    ? window.innerHeight
-    : container.clientHeight;
-  const viewportTop = container === window
-    ? 0
-    : container.getBoundingClientRect().top;
-  const guideY = viewportTop + viewportHeight * SCROLL_SYNC_GUIDE_RATIO;
-
-  let index = elements.findIndex(el => {
-    const rect = el.getBoundingClientRect();
-    return rect.bottom >= guideY;
-  });
-
-  if (index < 0) index = elements.length - 1;
-
-  const rect = elements[index].getBoundingClientRect();
-  const height = Math.max(rect.height, 1);
-  const offsetRatio = Math.max(0, Math.min(1, (guideY - rect.top) / height));
-
-  return { lineIndex: index, offsetRatio };
-}
-
-function broadcastReadingPosition(container, force = false) {
-  if (currentRole !== 'director' || isRemoteScroll) return;
-
-  const now = Date.now();
-  if (!force && now - lastReadingSyncAt < 80) return;
-  lastReadingSyncAt = now;
-
-  const anchor = getReadingAnchor(container);
-  if (anchor) {
-    broadcastToMusicians({ type: 'READING_POSITION', ...anchor });
+  function getReadingElements(container) {
+    return container === document.getElementById('live-screen')
+      ? Array.from(document.querySelectorAll('#live-body .line-pair'))
+      : Array.from(document.querySelectorAll('#song-content .line-pair'));
   }
-}
 
-function applyReadingPosition(container, data) {
-  if (isRemoteBlockNavigation) return;
-  const elements = getReadingElements(container);
-  if (!elements.length || data.lineIndex === undefined) return;
+  function getReadingAnchor(container) {
+    const elements = getReadingElements(container);
+    if (!elements.length) return null;
 
-  const index = Math.max(0, Math.min(elements.length - 1, Number(data.lineIndex)));
-  const element = elements[index];
-  if (!element) return;
+    const viewportHeight = container === window ? window.innerHeight : container.clientHeight;
+    const viewportTop = container === window ? 0 : container.getBoundingClientRect().top;
+    const guideY = viewportTop + viewportHeight * SCROLL_SYNC_GUIDE_RATIO;
 
-  const viewportHeight = container === window
-    ? window.innerHeight
-    : container.clientHeight;
-  const viewportTop = container === window
-    ? 0
-    : container.getBoundingClientRect().top;
-  const guideY = viewportTop + viewportHeight * SCROLL_SYNC_GUIDE_RATIO;
-  const ratio = Math.max(0, Math.min(1, Number(data.offsetRatio) || 0));
-  const rect = element.getBoundingClientRect();
-  const desiredScroll = (container === window ? window.scrollY : container.scrollTop)
-    + (rect.top - viewportTop)
-    + (ratio * Math.max(rect.height, 1))
-    - (guideY - viewportTop);
+    let index = elements.findIndex(el => {
+      const rect = el.getBoundingClientRect();
+      return rect.bottom >= guideY;
+    });
 
-  isRemoteScroll = true;
-  if (container === window) {
-    window.scrollTo({ top: Math.max(0, desiredScroll), behavior: 'auto' });
-  } else {
-    container.scrollTop = Math.max(0, desiredScroll);
+    if (index < 0) index = elements.length - 1;
+
+    const rect = elements[index].getBoundingClientRect();
+    const height = Math.max(rect.height, 1);
+    const offsetRatio = Math.max(0, Math.min(1, (guideY - rect.top) / height));
+
+    return { lineIndex: index, offsetRatio };
   }
-  setTimeout(() => { isRemoteScroll = false; }, 80);
-}
+
+  function getScrollPixelsPerSecond(speed) {
+    const normalizedSpeed = Math.max(1, Math.min(5, Number(speed) || 1));
+    return 24 * normalizedSpeed;
+  }
+
+  function getContainerScrollTop(container) {
+    return container === window ? window.scrollY : container.scrollTop;
+  }
+
+  function setContainerScrollTop(container, value) {
+    const maxScroll = container === window
+      ? Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
+      : Math.max(0, container.scrollHeight - container.clientHeight);
+    const next = Math.max(0, Math.min(maxScroll, value));
+    if (container === window) window.scrollTo({ top: next, behavior: 'auto' });
+    else container.scrollTop = next;
+  }
+
+  function broadcastReadingPosition(container, force = false) {
+    if (currentRole !== 'director' || isRemoteScroll) return;
+
+    const now = Date.now();
+    if (!force && now - lastReadingSyncAt < SCROLL_CORRECTION_INTERVAL) return;
+    lastReadingSyncAt = now;
+
+    const anchor = getReadingAnchor(container);
+    if (anchor) {
+      broadcastToMusicians({ type: 'READING_POSITION', ...anchor });
+    }
+  }
+
+  function getDesiredScrollForReadingPosition(container, data) {
+    const elements = getReadingElements(container);
+    if (!elements.length || data.lineIndex === undefined) return null;
+
+    const index = Math.max(0, Math.min(elements.length - 1, Number(data.lineIndex)));
+    const element = elements[index];
+    if (!element) return null;
+
+    const viewportHeight = container === window ? window.innerHeight : container.clientHeight;
+    const viewportTop = container === window ? 0 : container.getBoundingClientRect().top;
+    const guideY = viewportTop + viewportHeight * SCROLL_SYNC_GUIDE_RATIO;
+    const ratio = Math.max(0, Math.min(1, Number(data.offsetRatio) || 0));
+    const rect = element.getBoundingClientRect();
+
+    return getContainerScrollTop(container)
+      + (rect.top - viewportTop)
+      + (ratio * Math.max(rect.height, 1))
+      - (guideY - viewportTop);
+  }
+
+  function applyReadingPosition(container, data) {
+    if (isRemoteBlockNavigation) return;
+
+    const desiredScroll = getDesiredScrollForReadingPosition(container, data);
+    if (desiredScroll === null) return;
+
+    const currentScroll = getContainerScrollTop(container);
+    const error = desiredScroll - currentScroll;
+    const now = Date.now();
+
+    // Durante el auto-scroll local corregimos solo una fracción del desfase.
+    // Esto evita los saltos de v1.1.8 y conserva el movimiento continuo.
+    if (remoteAutoScrollActive) {
+      if (now - lastRemoteCorrectionAt < SCROLL_CORRECTION_INTERVAL) return;
+      if (Math.abs(error) < SCROLL_CORRECTION_THRESHOLD) return;
+
+      lastRemoteCorrectionAt = now;
+      isRemoteScroll = true;
+      setContainerScrollTop(container, currentScroll + error * SCROLL_CORRECTION_FACTOR);
+      setTimeout(() => { isRemoteScroll = false; }, 30);
+      return;
+    }
+
+    // Si el seguimiento remoto no está activo, mantenemos la compatibilidad
+    // con una corrección directa para una posición enviada puntualmente.
+    isRemoteScroll = true;
+    setContainerScrollTop(container, desiredScroll);
+    setTimeout(() => { isRemoteScroll = false; }, 30);
+  }
+
+  function startLocalScrollMotor(targetContainer, speed, broadcastStart = false) {
+    if (!targetContainer) return;
+
+    if (scrollAnimationFrame) cancelAnimationFrame(scrollAnimationFrame);
+    scrollAnimationFrame = null;
+
+    scrollTargetContainer = targetContainer;
+    scrollAnimationLastTime = performance.now();
+    isScrolling = true;
+
+    const tick = (now) => {
+      if (!isScrolling || scrollTargetContainer !== targetContainer) return;
+
+      const elapsed = Math.min(64, Math.max(0, now - scrollAnimationLastTime));
+      scrollAnimationLastTime = now;
+
+      const pixels = getScrollPixelsPerSecond(speed) * elapsed / 1000;
+      const before = getContainerScrollTop(targetContainer);
+      const maxScroll = targetContainer === window
+        ? Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
+        : Math.max(0, targetContainer.scrollHeight - targetContainer.clientHeight);
+      const next = Math.min(maxScroll, before + pixels);
+
+      if (next !== before) {
+        if (targetContainer === window) window.scrollTo({ top: next, behavior: 'auto' });
+        else targetContainer.scrollTop = next;
+      }
+
+      if (currentRole === 'director') broadcastReadingPosition(targetContainer);
+      if (next >= maxScroll - 1) {
+        stopAutoScroll(true);
+        return;
+      }
+
+      scrollAnimationFrame = requestAnimationFrame(tick);
+    };
+
+    scrollAnimationFrame = requestAnimationFrame(tick);
+
+    if (broadcastStart) {
+      broadcastToMusicians({ type: 'SCROLL_START', speed: Math.max(1, Math.min(5, Number(speed) || 1)) });
+    }
+  }
+
+  function startFollowerAutoScroll(speed) {
+    remoteAutoScrollActive = true;
+    remoteScrollSpeed = Math.max(1, Math.min(5, Number(speed) || 1));
+    const isLive = document.getElementById('live-screen').style.display !== 'none';
+    remoteScrollContainer = isLive ? document.getElementById('live-screen') : window;
+    startLocalScrollMotor(remoteScrollContainer, remoteScrollSpeed, false);
+  }
+
+  function stopFollowerAutoScroll() {
+    remoteAutoScrollActive = false;
+    remoteScrollContainer = null;
+    if (currentRole === 'musician' && scrollAnimationFrame) {
+      cancelAnimationFrame(scrollAnimationFrame);
+      scrollAnimationFrame = null;
+      isScrolling = false;
+    }
+  }
+
+  function toggleAutoScroll() {
+    isScrolling ? stopAutoScroll() : startAutoScroll(window);
+  }
+
+  function toggleLiveScroll() {
+    const screen = document.getElementById('live-screen');
+    isScrolling ? stopAutoScroll() : startAutoScroll(screen);
+  }
+
+  function startAutoScroll(targetContainer) {
+    stopAutoScroll(true);
+    startLocalScrollMotor(targetContainer, scrollSpeed, true);
+    const btn = document.getElementById('scroll-toggle-btn');
+    const liveBtn = document.getElementById('live-scroll-btn');
+    if (btn) btn.innerText = "⏸ Pausa";
+    if (liveBtn) liveBtn.innerText = "⏸ Pausa";
+  }
+
+  function stopAutoScroll(silent = false) {
+    isScrolling = false;
+    scrollTargetContainer = null;
+    if (scrollAnimationFrame) cancelAnimationFrame(scrollAnimationFrame);
+    scrollAnimationFrame = null;
+
+    const btn = document.getElementById('scroll-toggle-btn');
+    const liveBtn = document.getElementById('live-scroll-btn');
+    if (btn) btn.innerText = "▶ Auto-Scroll";
+    if (liveBtn) liveBtn.innerText = "▶ Auto-Scroll";
+
+    if (!silent) broadcastToMusicians({ type: 'SCROLL_STOP' });
+  }
+
+  function changeScrollSpeed(delta) {
+    scrollSpeed = Math.max(1, Math.min(5, scrollSpeed + delta));
+    document.getElementById('scroll-speed-display').innerText = scrollSpeed + 'x';
+    if (isScrolling) startAutoScroll(window);
+    else if (currentRole === 'director') broadcastToMusicians({ type: 'SCROLL_SPEED', speed: scrollSpeed });
+  }
+
+  function changeLiveSpeed(delta) {
+    scrollSpeed = Math.max(1, Math.min(5, scrollSpeed + delta));
+    document.getElementById('live-speed-display').innerText = scrollSpeed + 'x';
+    if (isScrolling) startAutoScroll(document.getElementById('live-screen'));
+    else if (currentRole === 'director') broadcastToMusicians({ type: 'SCROLL_SPEED', speed: scrollSpeed });
+  }
+
 
   function goToRemoteBlock(blockId) {
     if (currentRole !== 'musician' || !blockId) return;
@@ -1214,9 +1361,11 @@ function applyReadingPosition(container, data) {
     const block = Array.from(root.querySelectorAll('.song-block')).find(item => item.dataset.blockId === blockId);
     if (!block) return;
     if (remoteBlockNavigationFrame) cancelAnimationFrame(remoteBlockNavigationFrame);
+    const resumeFollowerAfterBlock = remoteAutoScrollActive;
+    const followerSpeedAfterBlock = remoteScrollSpeed;
+    if (resumeFollowerAfterBlock) stopFollowerAutoScroll();
     isRemoteBlockNavigation = true;
     isRemoteScroll = true;
-    remoteAutoScrollActive = false;
     const viewportHeight = container === window ? window.innerHeight : container.clientHeight;
     const startScroll = container === window ? window.scrollY : container.scrollTop;
     const viewportTop = container === window ? 0 : container.getBoundingClientRect().top;
@@ -1412,6 +1561,8 @@ function applyReadingPosition(container, data) {
   // --- LÓGICA MODO DIRECTOR (PEERJS) ---
 
   function changeSyncRole(role) {
+    if (currentRole === 'musician' && role !== 'musician') stopFollowerAutoScroll();
+    if (currentRole === 'director' && role !== 'director') stopAutoScroll(true);
     currentRole = role;
     const dirCtrl = document.getElementById('director-controls');
     const musCtrl = document.getElementById('musician-controls');
@@ -1548,12 +1699,14 @@ function applyReadingPosition(container, data) {
         buildBlocksHTML(document.getElementById('live-body'));
       }
     } else if (data.type === 'SCROLL_START') {
-      // El músico ya no ejecuta un scroll de 1 px sincronizado por tiempo.
-      // Solo queda marcado como seguidor; la posición real llega como
-      // READING_POSITION y se adapta a su propio viewport.
-      remoteAutoScrollActive = true;
+      if (currentRole === 'musician') startFollowerAutoScroll(data.speed || 1);
     } else if (data.type === 'SCROLL_STOP') {
-      remoteAutoScrollActive = false;
+      if (currentRole === 'musician') stopFollowerAutoScroll();
+    } else if (data.type === 'SCROLL_SPEED') {
+      if (currentRole === 'musician' && remoteAutoScrollActive) {
+        remoteScrollSpeed = Math.max(1, Math.min(5, Number(data.speed) || 1));
+        startFollowerAutoScroll(remoteScrollSpeed);
+      }
     } else if (data.type === 'READING_POSITION') {
       const isLive = document.getElementById('live-screen').style.display !== 'none';
       const target = isLive ? document.getElementById('live-screen') : window;
