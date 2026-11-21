@@ -537,36 +537,97 @@
 
   let db = null;  
   let songsCollection = null;  
-  let firebaseAuthReady = Promise.resolve(false);  
-  let firebaseAuthenticated = false;  
+  let firebaseAuth = null;
+  let firebaseAuthReady = null;
+  let firebaseAuthenticated = false;
   let firebaseAuthError = null;
+  let songsUnsubscribe = null;
+  let pendingFirestoreSync = Promise.resolve();
+  const PENDING_SYNC_KEY = 'church_firestore_pending_sync_v1';
 
   try {  
     if (typeof firebase !== 'undefined') {  
       firebase.initializeApp(firebaseConfig);  
-      const auth = firebase.auth();
+      firebaseAuth = firebase.auth();
       db = firebase.firestore();  
       db.enablePersistence().catch(() => {});  
       songsCollection = db.collection('songs');
 
       // Firestore ya no se consulta sin sesión. La cuenta anónima identifica
       // cada instalación sin pedir al usuario correo ni contraseña.
-      firebaseAuthReady = auth.signInAnonymously()
-        .then(() => {
-          firebaseAuthenticated = true;
-          firebaseAuthError = null;
-          return true;
-        })
-        .catch((error) => {
-          firebaseAuthenticated = false;
-          firebaseAuthError = error;
-          console.error('No fue posible iniciar sesión anónima en Firebase:', error);
-          return false;
-        });
+      firebaseAuthReady = ensureFirebaseAuthentication();
     }  
   } catch (e) {
     console.error('No fue posible inicializar Firebase:', e);
   }  
+
+  function ensureFirebaseAuthentication() {
+    if (!firebaseAuth) return Promise.resolve(false);
+    if (firebaseAuth.currentUser) {
+      firebaseAuthenticated = true;
+      firebaseAuthError = null;
+      return Promise.resolve(true);
+    }
+    if (firebaseAuthReady) return firebaseAuthReady;
+    firebaseAuthReady = firebaseAuth.signInAnonymously()
+      .then(() => {
+        firebaseAuthenticated = true;
+        firebaseAuthError = null;
+        updateSyncStatus();
+        return true;
+      })
+      .catch(error => {
+        firebaseAuthenticated = false;
+        firebaseAuthError = error;
+        console.error('No fue posible iniciar sesión anónima en Firebase:', error);
+        updateSyncStatus();
+        return false;
+      })
+      .finally(() => { if (!firebaseAuthenticated) firebaseAuthReady = null; });
+    return firebaseAuthReady;
+  }
+
+  function readPendingFirestoreSync() {
+    try {
+      const items = JSON.parse(localStorage.getItem(PENDING_SYNC_KEY) || '[]');
+      return Array.isArray(items) ? items : [];
+    } catch (error) {
+      console.warn('No se pudo leer la cola local de sincronización:', error);
+      return [];
+    }
+  }
+
+  function queueFirestoreSync(operation) {
+    const items = readPendingFirestoreSync();
+    const index = items.findIndex(item => item.firestoreId === operation.firestoreId);
+    if (index >= 0) items[index] = operation;
+    else items.push(operation);
+    localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(items));
+    syncPendingFirestoreChanges();
+  }
+
+  function syncPendingFirestoreChanges() {
+    if (!songsCollection || !navigator.onLine) return pendingFirestoreSync;
+    pendingFirestoreSync = pendingFirestoreSync.then(async () => {
+      if (!await ensureFirebaseAuthentication()) return;
+      let items = readPendingFirestoreSync();
+      while (items.length) {
+        const operation = items[0];
+        try {
+          const ref = songsCollection.doc(operation.firestoreId);
+          if (operation.type === 'delete') await ref.delete();
+          else await ref.set(operation.data, { merge: true });
+          items = items.filter(item => item.firestoreId !== operation.firestoreId);
+          localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(items));
+        } catch (error) {
+          console.error('La sincronización quedó pendiente:', error);
+          break;
+        }
+      }
+      updateSyncStatus();
+    }).catch(error => console.error('Error en la cola de sincronización:', error));
+    return pendingFirestoreSync;
+  }
 
   const scaleA = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];  
   const angloToLatinoMap = { 'C':'Do', 'D':'Re', 'E':'Mi', 'F':'Fa', 'G':'Sol', 'A':'La', 'B':'Si', 'C#':'Do#', 'D#':'Re#', 'F#':'Fa#', 'G#':'Sol#', 'A#':'La#', 'Db':'Reb', 'Eb':'Mib', 'Gb':'Solb', 'Ab':'Lab', 'Bb':'Sib' };  
@@ -603,37 +664,34 @@
   // incluso antes de que se ejecute cualquier GO_TO_BLOCK.
   let remoteBlockNavigationLock = false;
 
-  async function listenToSongs() {  
-    if (songsCollection) {
-      const authenticated = await firebaseAuthReady;
-      if (!authenticated) {
-        loadLocalSongs();
-        updateSyncStatus();
-        return;
-      }
-      songsCollection.orderBy('title').onSnapshot(snapshot => {  
-        songs = [];  
-        snapshot.forEach(doc => {
-          const data = doc.data() || {};
-          // Conservamos la identidad lógica existente y, aparte, el ID real de Firestore.
-          // En canciones nuevas ambos valores son iguales.
-          songs.push({
-            ...data,
-            id: data.id || doc.id,
-            firestoreId: doc.id
-          });
-        });  
-        localStorage.setItem('church_songs', JSON.stringify(songs));  
-        if (document.getElementById('list-view').style.display !== 'none') renderCurrentTab();  
-        updateSyncStatus();  
-      }, () => {
-        loadLocalSongs();
-        updateSyncStatus();
-      });  
-    } else {  
+    async function listenToSongs() {
+    if (!songsCollection || !navigator.onLine) {
       loadLocalSongs();
-      updateSyncStatus();  
-    }  
+      updateSyncStatus();
+      return;
+    }
+    if (!await ensureFirebaseAuthentication()) {
+      loadLocalSongs();
+      updateSyncStatus();
+      return;
+    }
+    await syncPendingFirestoreChanges();
+    if (songsUnsubscribe) return;
+    songsUnsubscribe = songsCollection.orderBy('title').onSnapshot(snapshot => {
+      songs = [];
+      snapshot.forEach(doc => {
+        const data = doc.data() || {};
+        songs.push({ ...data, id: data.id || doc.id, firestoreId: doc.id });
+      });
+      localStorage.setItem('church_songs', JSON.stringify(songs));
+      if (document.getElementById('list-view').style.display !== 'none') renderCurrentTab();
+      updateSyncStatus();
+    }, error => {
+      console.error('No se pudo sincronizar el cancionero:', error);
+      songsUnsubscribe = null;
+      loadLocalSongs();
+      updateSyncStatus();
+    });
   }  
 
   function loadLocalSongs() {  
@@ -659,7 +717,7 @@
     }  
   }  
 
-  window.addEventListener('online', updateSyncStatus);  
+  window.addEventListener('online', () => { updateSyncStatus(); listenToSongs(); syncPendingFirestoreChanges(); });
   window.addEventListener('offline', updateSyncStatus);  
 
   function switchTab(tab) {  
@@ -1529,77 +1587,39 @@
     renderCurrentTab();  
   }  
 
-  async function deleteCurrentSong() {  
-    if (!currentSong) return;  
-    if (confirm(`¿Eliminar "${currentSong.title}"?`)) {  
+    function deleteCurrentSong() {
+    if (!currentSong) return;
+    if (confirm(`¿Eliminar "${currentSong.title}"?`)) {
       const deleteId = currentSong.id;
-      const songToDelete = songs.find(s => s.id === deleteId);
+      const songToDelete = songs.find(song => song.id === deleteId);
       const firestoreId = songToDelete?.firestoreId || deleteId;
-
-      songs = songs.filter(s => s.id !== deleteId);
+      songs = songs.filter(song => song.id !== deleteId);
       songSetIds = songSetIds.filter(id => id !== deleteId);
       localStorage.setItem('church_songs', JSON.stringify(songs));
       localStorage.setItem('church_song_set', JSON.stringify(songSetIds));
       showList();
-
-      // Para canciones nuevas, firestoreId e id son iguales.
-      // Para canciones antiguas, usamos el ID real del documento de Firestore.
-      if (songsCollection) {
-        firebaseAuthReady.then((authenticated) => {
-          if (authenticated) {
-            return songsCollection.doc(firestoreId).delete();
-          }
-        }).catch((error) => console.error('No se pudo eliminar en Firestore:', error));
-      }  
-    }  
+      if (songsCollection) queueFirestoreSync({ type: 'delete', firestoreId });
+    }
   }  
 
-  function saveSong() {  
-    const title = document.getElementById('edit-title').value.trim();  
-    const author = document.getElementById('edit-author').value.trim();  
-    const rawText = document.getElementById('edit-raw').value;  
-    if (!title || !rawText.trim()) { alert("Ingresa un título y el contenido."); return; }  
-
+    function saveSong() {
+    const title = document.getElementById('edit-title').value.trim();
+    const author = document.getElementById('edit-author').value.trim();
+    const rawText = document.getElementById('edit-raw').value;
+    if (!title || !rawText.trim()) { alert("Ingresa un título y el contenido."); return; }
     const parsed = parseRawSongWithBlocks(rawText);
-
-    // Cada canción recibe una identidad estable que se conserva tanto localmente
-    // como en Firestore. Nunca usamos collection.add(), porque ese método genera
-    // un ID diferente y puede convertir una canción offline en un duplicado.
-    const newId = editingSongId || (
-      'song_' + (typeof crypto !== 'undefined' && crypto.randomUUID
-        ? crypto.randomUUID()
-        : Date.now() + '_' + Math.random().toString(36).slice(2))
-    );
-
-    const songData = { 
-      id: newId, 
-      title: title, 
-      author: author || "Iglesia de Dios 7d", 
-      originalKey: parsed.key, 
-      rawText: rawText 
-    };  
-
-    const index = songs.findIndex(s => s.id === newId);
+    const newId = editingSongId || ('song_' + (typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID() : Date.now() + '_' + Math.random().toString(36).slice(2)));
+    const songData = { id: newId, title, author: author || "Iglesia de Dios 7d", originalKey: parsed.key, rawText };
+    const index = songs.findIndex(song => song.id === newId);
     const existingSong = index >= 0 ? songs[index] : null;
     const firestoreId = existingSong?.firestoreId || newId;
-    const localSongData = firestoreId === newId
-      ? songData
-      : { ...songData, firestoreId };
-
-    if (index >= 0) songs[index] = localSongData; else songs.push(localSongData);
-    localStorage.setItem('church_songs', JSON.stringify(songs));  
-
+    const localSongData = firestoreId === newId ? songData : { ...songData, firestoreId };
+    if (index >= 0) songs[index] = localSongData;
+    else songs.push(localSongData);
+    localStorage.setItem('church_songs', JSON.stringify(songs));
     showList();
-
-    if (songsCollection) {
-      // Esperamos la sesión anónima antes de escribir. La copia local ya quedó
-      // guardada y se conserva aunque Firebase no esté disponible.
-      firebaseAuthReady.then((authenticated) => {
-        if (authenticated) {
-          return songsCollection.doc(firestoreId).set(songData, { merge: true });
-        }
-      }).catch((error) => console.error('No se pudo guardar en Firestore:', error));
-    }
+    if (songsCollection) queueFirestoreSync({ type: 'set', firestoreId, data: songData });
   }
 
   function toggleDarkMode() {  
