@@ -372,7 +372,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.1.17 · Director Mode · Mi Set por tono (PRUEBAS)</div>
+        <div class="app-version">v1.1.18 · Director Mode · Mi Set por tono y secuencia (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -707,14 +707,6 @@
       if (usedInstances.has(instanceId)) instanceId = createSequenceInstanceId();
       usedInstances.add(instanceId);
       normalized.push({ instanceId, blockId: item.blockId });
-    });
-    blocks.forEach(block => {
-      if (!normalized.some(item => item.blockId === block.id)) {
-        let instanceId = 'original_' + block.id;
-        if (usedInstances.has(instanceId)) instanceId = createSequenceInstanceId();
-        usedInstances.add(instanceId);
-        normalized.push({ instanceId, blockId: block.id });
-      }
     });
     return normalized.length ? normalized : originalBlockSequence(blocks);
   }
