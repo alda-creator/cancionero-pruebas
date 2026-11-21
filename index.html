@@ -1170,7 +1170,11 @@
     const byId=new Map(parsed.blocks.map(block=>[block.id,block]));
     const sequence=getEffectiveBlockSequence(parsed.blocks);
     list.innerHTML='';
-    const totals={},seen={};
+    const totals={},seen={},sourceLabelTotals={},sourceLabelOrdinals={};
+    parsed.blocks.forEach(block=>{
+      sourceLabelTotals[block.label]=(sourceLabelTotals[block.label]||0)+1;
+      sourceLabelOrdinals[block.id]=sourceLabelTotals[block.label];
+    });
     sequence.forEach(item=>totals[item.blockId]=(totals[item.blockId]||0)+1);
     sequence.forEach(item=>{
       const block=byId.get(item.blockId); if(!block)return;
@@ -1178,7 +1182,7 @@
       const row=document.createElement('div'); row.className='sequence-editor-row'; row.dataset.instanceId=item.instanceId;
       const handle=document.createElement('span'); handle.className='sequence-drag-handle'; handle.textContent='☰'; handle.setAttribute('aria-label','Arrastrar para reordenar');
       const name=document.createElement('span'); name.className='sequence-row-label';
-      name.textContent=block.label+(totals[item.blockId]>1?' · '+seen[item.blockId]+'/'+totals[item.blockId]:'');
+      name.textContent=block.label+(sourceLabelTotals[block.label]>1?' · original '+sourceLabelOrdinals[block.id]:'')+(totals[item.blockId]>1?' · repetición '+seen[item.blockId]+'/'+totals[item.blockId]:'');
       const up=document.createElement('button'); up.className='btn-action'; up.type='button'; up.textContent='↑'; up.title='Mover arriba'; up.disabled=sequence.findIndex(entry=>entry.instanceId===item.instanceId)===0;
       up.addEventListener('click',()=>moveSequenceBlock(item.instanceId,-1));
       const down=document.createElement('button'); down.className='btn-action'; down.type='button'; down.textContent='↓'; down.title='Mover abajo'; down.disabled=sequence.findIndex(entry=>entry.instanceId===item.instanceId)===sequence.length-1;
@@ -1188,7 +1192,11 @@
       row.append(handle,name,up,down,remove); list.appendChild(row);
     });
     select.innerHTML='';
-    parsed.blocks.forEach(block=>{const option=document.createElement('option');option.value=block.id;option.textContent=block.label;select.appendChild(option);});
+    parsed.blocks.forEach(block=>{
+      const option=document.createElement('option');option.value=block.id;
+      option.textContent=block.label+(sourceLabelTotals[block.label]>1?' · original '+sourceLabelOrdinals[block.id]:'');
+      select.appendChild(option);
+    });
     if(sequenceSortableInstance)sequenceSortableInstance.destroy();
     if(typeof Sortable!=='undefined')sequenceSortableInstance=new Sortable(list,{
       animation:150,handle:'.sequence-drag-handle',ghostClass:'sequence-sort-ghost',
