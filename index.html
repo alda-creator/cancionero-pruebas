@@ -372,7 +372,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.1.20 · Tonalidad original manual · (PRUEBAS)</div>
+        <div class="app-version">v1.1.21 · Biblioteca de acordes · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -416,13 +416,23 @@
 
     <div style="display: flex; gap: 8px;">  
       <input type="text" class="search-bar" id="search-input" placeholder="Buscar título, letra o tono..." oninput="filterSongs()">  
-      <button class="btn-action primary" style="height: 45px; white-space: nowrap;" onclick="openEditor()">+ Nuevo</button>  
+      <button class="btn-action primary" style="height: 45px; white-space: nowrap;" onclick="openEditor()">+ Nuevo</button>
+      <button class="btn-action" style="height:45px;white-space:nowrap;" onclick="openChordLibrary()">♬ Acordes</button>  
     </div>  
 
     <div id="song-container" class="song-list"></div>  
   </div>  
 
-  <div id="song-viewer" class="viewer">  
+  
+  <div id="chord-library" style="display:none;position:fixed;inset:0;z-index:10000;background:var(--bg);color:var(--text);padding:16px;overflow-y:auto;">
+    <div style="max-width:650px;margin:0 auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><h2 style="margin:6px 0 14px;">📚 Diccionario de acordes</h2><button class="btn-action" onclick="closeChordLibrary()">Cerrar</button></div>
+      <p style="font-size:13px;color:var(--text-muted);">Consulta la estructura y las notas que forman acordes comunes. La notación de las notas se adapta a tu preferencia anglosajona o latina.</p>
+      <input id="chord-library-search" class="search-bar" placeholder="Buscar (ej. maj7, menor, sus4, Do)..." oninput="renderChordLibrary()" />
+      <div id="chord-library-list"></div>
+    </div>
+  </div>
+<div id="song-viewer" class="viewer">  
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 6px; flex-wrap: wrap;">  
       <button class="btn-action" onclick="showList()">← Volver</button>  
       
@@ -2396,6 +2406,62 @@
       lastCenterTapY = touch.clientY;
     }, { passive: false });
   })();
+
+
+  // --- BIBLIOTECA DE ACORDES (CONSULTA INDEPENDIENTE) ---
+  const chordLibraryEntries = [
+    {name:"Mayor",aliases:["","maj","M"],formula:"1 · 3 · 5",steps:[0,4,7],notes:"Triada mayor"},
+    {name:"Menor",aliases:["m","min"],formula:"1 · ♭3 · 5",steps:[0,3,7],notes:"Triada menor"},
+    {name:"Mayor séptima",aliases:["maj7","M7"],formula:"1 · 3 · 5 · 7",steps:[0,4,7,11]},
+    {name:"Séptima dominante",aliases:["7"],formula:"1 · 3 · 5 · ♭7",steps:[0,4,7,10]},
+    {name:"Menor séptima",aliases:["m7","min7"],formula:"1 · ♭3 · 5 · ♭7",steps:[0,3,7,10]},
+    {name:"Menor con séptima mayor",aliases:["m(maj7)","mMaj7"],formula:"1 · ♭3 · 5 · 7",steps:[0,3,7,11]},
+    {name:"Menor séptima bemol cinco / semidisminuido",aliases:["m7b5","ø","ø7"],formula:"1 · ♭3 · ♭5 · ♭7",steps:[0,3,6,10]},
+    {name:"Disminuido",aliases:["dim","°"],formula:"1 · ♭3 · ♭5",steps:[0,3,6]},
+    {name:"Disminuido séptima",aliases:["dim7","°7"],formula:"1 · ♭3 · ♭5 · 6",steps:[0,3,6,9]},
+    {name:"Aumentado",aliases:["aug","+","5+"],formula:"1 · 3 · ♯5",steps:[0,4,8]},
+    {name:"Sus2",aliases:["sus2"],formula:"1 · 2 · 5",steps:[0,2,7]},
+    {name:"Sus4",aliases:["sus4","sus"],formula:"1 · 4 · 5",steps:[0,5,7]},
+    {name:"Mayor sexta",aliases:["6"],formula:"1 · 3 · 5 · 6",steps:[0,4,7,9]},
+    {name:"Menor sexta",aliases:["m6"],formula:"1 · ♭3 · 5 · 6",steps:[0,3,7,9]},
+    {name:"Séptima con novena",aliases:["9"],formula:"1 · 3 · 5 · ♭7 · 9",steps:[0,4,7,10,2]},
+    {name:"Mayor novena",aliases:["maj9","M9"],formula:"1 · 3 · 5 · 7 · 9",steps:[0,4,7,11,2]},
+    {name:"Menor novena",aliases:["m9"],formula:"1 · ♭3 · 5 · ♭7 · 9",steps:[0,3,7,10,2]},
+    {name:"Séptima bemol nueve",aliases:["7b9"],formula:"1 · 3 · 5 · ♭7 · ♭9",steps:[0,4,7,10,1]},
+    {name:"Séptima sostenido nueve",aliases:["7#9"],formula:"1 · 3 · 5 · ♭7 · ♯9",steps:[0,4,7,10,3]},
+    {name:"Séptima sostenido cinco",aliases:["7#5"],formula:"1 · 3 · ♯5 · ♭7",steps:[0,4,8,10]},
+    {name:"Séptima bemol cinco",aliases:["7b5"],formula:"1 · 3 · ♭5 · ♭7",steps:[0,4,6,10]},
+    {name:"Add9",aliases:["add9"],formula:"1 · 3 · 5 · 9",steps:[0,4,7,2]},
+    {name:"Menor add9",aliases:["madd9","m(add9)"],formula:"1 · ♭3 · 5 · 9",steps:[0,3,7,2]},
+    {name:"6/9",aliases:["6/9"],formula:"1 · 3 · 5 · 6 · 9",steps:[0,4,7,9,2]},
+    {name:"Quinta / power chord",aliases:["5"],formula:"1 · 5",steps:[0,7]}
+  ];
+  const chordLibraryRoots=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+  const chordLibraryRootNames={C:"Do",C#:"Do♯ / Re♭",D:"Re",D#:"Re♯ / Mi♭",E:"Mi",F:"Fa",F#:"Fa♯ / Sol♭",G:"Sol",G#:"Sol♯ / La♭",A:"La",A#:"La♯ / Si♭",B:"Si"};
+  function chordLibraryNote(root,steps){const n=chordLibraryRoots[(chordLibraryRoots.indexOf(root)+steps+12)%12];return useLatinoNotation?(angloToLatinoMap[n]||n):n;}
+  function openChordLibrary(){document.getElementById('chord-library').style.display='block';document.getElementById('chord-library-search').value='';renderChordLibrary();}
+  function closeChordLibrary(){document.getElementById('chord-library').style.display='none';}
+  function renderChordLibrary(){
+    const container=document.getElementById('chord-library-list');if(!container)return;
+    const query=(document.getElementById('chord-library-search').value||'').trim().toLowerCase();
+    container.innerHTML='';
+    chordLibraryEntries.forEach(entry=>{
+      const searchable=[entry.name,...entry.aliases,entry.formula].join(' ').toLowerCase();
+      if(query&&!searchable.includes(query))return;
+      const card=document.createElement('div');card.style.cssText='border:1px solid var(--card-border);background:var(--card);border-radius:12px;padding:12px;margin-bottom:10px;';
+      const heading=document.createElement('div');heading.style.cssText='font-weight:700;font-size:15px;margin-bottom:4px;';heading.textContent=entry.name;card.appendChild(heading);
+      const aliases=document.createElement('div');aliases.style.cssText='font-size:12px;color:var(--text-muted);margin-bottom:8px;';aliases.textContent='Variantes: '+entry.aliases.map(a=>a||'(sin sufijo)').join(', ');card.appendChild(aliases);
+      const formula=document.createElement('div');formula.style.cssText='font-size:13px;margin-bottom:10px;';formula.textContent='Fórmula: '+entry.formula;card.appendChild(formula);
+      const noteLine=document.createElement('div');noteLine.style.cssText='display:flex;gap:6px;flex-wrap:wrap;';
+      chordLibraryRoots.forEach(root=>{
+        const chord= document.createElement('span');chord.style.cssText='border:1px solid var(--card-border);border-radius:7px;padding:5px 8px;font-size:12px;';
+        const notes=entry.steps.map(step=>chordLibraryNote(root,step)).join(' · ');
+        chord.textContent=(useLatinoNotation?(angloToLatinoMap[root]||root):root)+': '+notes;noteLine.appendChild(chord);
+      });
+      card.appendChild(noteLine);container.appendChild(card);
+    });
+    if(!container.children.length){container.textContent='No se encontraron acordes para esa búsqueda.';}
+  }
 
   // --- REGISTRO DEL SERVICE WORKER PARA PWA ---
   if ('serviceWorker' in navigator) {
