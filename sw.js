@@ -4,7 +4,8 @@ const ASSETS_TO_CACHE = [
   './index.html',
   './manifest.json',
   './js/peerjs.min.js',
-  './director-fix.js',\n      './meeting-fix.js'
+  './director-fix.js',
+  './meeting-fix.js'
 ];
 
 const DIRECTOR_FIX_TAG = '<script src="./director-fix.js"></script>\\n<script src="./meeting-fix.js"></script>';
