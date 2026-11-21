@@ -362,7 +362,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.1.15 · Director Mode · Mi Set por tono (PRUEBAS)</div>
+        <div class="app-version">v1.1.16 · Director Mode · Mi Set por tono (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -699,22 +699,27 @@
     if (saved) { songs = JSON.parse(saved); renderCurrentTab(); }  
   }  
 
-  function updateSyncStatus() {  
-    const statusEl = document.getElementById('connection-status');  
-    const syncEl = document.getElementById('pending-sync');  
+    function updateSyncStatus() {
+    const statusEl = document.getElementById('connection-status');
+    const syncEl = document.getElementById('pending-sync');
+    const pendingCount = readPendingFirestoreSync().length;
+    const pendingLabel = pendingCount
+      ? pendingCount + ' cambio(s) pendiente(s) de sincronizar'
+      : '';
+
     if (!navigator.onLine) {
       statusEl.innerHTML = '<span class="badge-offline">● Modo Offline</span>';
-      syncEl.innerText = 'Cargado localmente';
+      syncEl.innerText = pendingLabel || 'Cargado localmente';
     } else if (songsCollection && firebaseAuthenticated) {
       statusEl.innerHTML = '<span class="badge-online">● En línea</span>';
-      syncEl.innerText = '';
+      syncEl.innerText = pendingLabel;
     } else if (firebaseAuthError) {
       statusEl.innerHTML = '<span class="badge-offline">● Firebase sin sesión</span>';
-      syncEl.innerText = 'Solo datos locales · revisa Authentication';
+      syncEl.innerText = pendingLabel || 'Solo datos locales · reintentaremos al recuperar conexión';
     } else {
       statusEl.innerHTML = '<span class="badge-offline">● Conectando a Firebase…</span>';
-      syncEl.innerText = 'Esperando autenticación';
-    }  
+      syncEl.innerText = pendingLabel || 'Esperando autenticación';
+    }
   }  
 
   window.addEventListener('online', () => { updateSyncStatus(); listenToSongs(); syncPendingFirestoreChanges(); });
