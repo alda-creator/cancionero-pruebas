@@ -1149,8 +1149,9 @@
     const parsed = parseChordToken(token);
     if (!parsed) return token;
     const root = steps ? transposeNote(parsed.root, steps) : parsed.root;
-    const bass = parsed.bass ? '/' + (steps ? transposeNote(parsed.bass, steps) : parsed.bass) : '';
-    return formatChordNote(root) + parsed.suffix + (parsed.suffix.endsWith('/9') ? '' : bass);
+    const bassNote = parsed.bass ? (steps ? transposeNote(parsed.bass, steps) : parsed.bass) : null;
+    const bass = bassNote ? '/' + formatChordNote(bassNote) : '';
+    return formatChordNote(root) + parsed.suffix + bass;
   }
 
   function transposeChordLine(chordLine, steps) {
