@@ -976,7 +976,7 @@
     'DO#':'C#', 'RE#':'D#', 'FA#':'F#', 'SOL#':'G#', 'LA#':'A#',
     REB:'Db', MIB:'Eb', SOLB:'Gb', LAB:'Ab', SIB:'Bb'
   };
-  const chordSuffixPattern = /^(?:(?:maj|min|m|dim|aug|sus(?:2|4)?|add|M)?(?:2|4|5|6|7|9|11|13)?(?:sus(?:2|4)?)?(?:add(?:2|4|9|11|13))?(?:b5|#5|b9|#9|#11|b13)?(?:\((?:b|#)?(?:5|9|11|13)(?:,(?:b|#)?(?:5|9|11|13))*\))?)$/i;
+  const chordSuffixPattern = /^(?:(?:maj|min|m|-|dim|°|ø|aug|\+|sus(?:2|4)?|add|M)?(?:2|4|5|6|7|9|11|13)?(?:sus(?:2|4)?)?(?:add(?:2|4|9|11|13))?(?:b5|#5|b9|#9|#11|b13)?(?:\((?:b|#)?(?:5|9|11|13)(?:,(?:b|#)?(?:5|9|11|13))*\))?)$/i;
 
   function parseChordNote(note) {
     if (typeof note !== 'string') return null;
