@@ -39,7 +39,8 @@ Orden de trabajo recomendado. El orden podrá ajustarse si las pruebas descubren
 
 | Prioridad | Mejora | Estado | Criterio de aceptación |
 |---|---|---|---|
-| P0 | Motor unificado de reconocimiento y transposición de acordes | Implementado en rama; pruebas técnicas internas superadas; pendiente validación en la PWA | Reconoce y transpone acordes básicos, extendidos, alterados, inversiones y bajos; conserva sufijos y espaciado; funciona en ambas nomenclaturas. |
+| P0 | Motor unificado de reconocimiento y transposición de acordes | Implementado y probado por usuario | Reconoce y transpone acordes básicos, extendidos, alterados, inversiones y bajos; conserva sufijos y espaciado; funciona en ambas nomenclaturas. |
+| P0 | Selector manual de tonalidad original independiente del primer acorde | Implementado en v1.1.20; pendiente prueba en PWA | En alta/edición se selecciona y guarda la tonalidad original; el detector de primer acorde solo sugiere, y las canciones antiguas conservan su tonalidad. |
 | P0 | Biblioteca/diccionario de acordes | Pendiente | Variantes y equivalencias, nombres latinos, bajos alternativos y diagramas/posiciones de guitarra. |
 | P0 | Editor visual de acordes sobre la letra | Pendiente | Permite colocar cada acorde en cualquier posición horizontal: antes, encima, entre, sobre o después de palabras; sin depender de insertar espacios manualmente. |
 | P0 | Compatibilidad con pegado e importación de canciones antiguas | Pendiente | Reconoce formatos antiguos cuando sea posible; conserva siempre el texto original y ofrece alternativa manual si hay ambigüedad. |
@@ -99,6 +100,7 @@ No se descartan. Se mantienen registradas y se priorizarán después de asegurar
 ## 7. Registro de versiones y cambios
 
 - **v1.1.18:** Mi Set por tono y secuencia personalizada de bloques; funcionamiento offline y persistencia confirmados por el usuario en dos iPhone.
-- **v1.1.19:** Motor unificado de reconocimiento/transposición de acordes y roadmap maestro; validación técnica automatizada completada, pendiente prueba funcional del usuario.
+- **v1.1.19:** Motor unificado de reconocimiento/transposición de acordes; pruebas funcionales del usuario confirmadas.
+- **v1.1.20 (en desarrollo):** selector manual de tonalidad original independiente del primer acorde.
 - **Rama de implementación del motor:** `feature/acordes-configurables`.
-- **Trabajo actual:** motor unificado de reconocimiento, normalización y transposición de acordes. Pruebas técnicas: sintaxis JavaScript válida; 25 variantes de acordes y 625 combinaciones de transposición verificadas en notación anglosajona y latina, sin errores de tono raíz/bajo ni pérdida de sufijos. Pendiente integración en `main` de pruebas y validación del usuario en la PWA.
+- **Trabajo actual:** selector manual de tonalidad original (v1.1.20) en rama `feature/tono-original-manual`.
