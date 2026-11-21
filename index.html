@@ -1061,11 +1061,19 @@
     if (currentBlock.lines.length > 0) blocks.push(currentBlock);
 
     const blockOccurrences = new Map();
+    const usedBlockIds = new Set();
     blocks.forEach(block => {
       const labelKey = block.label.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'bloque';
       const occurrence = (blockOccurrences.get(labelKey) || 0) + 1;
       blockOccurrences.set(labelKey, occurrence);
-      block.id = /-\d+$/.test(labelKey) && occurrence === 1 ? labelKey : labelKey + '-' + occurrence;
+      const baseId = /-\d+$/.test(labelKey) && occurrence === 1 ? labelKey : labelKey + '-' + occurrence;
+      let blockId = baseId;
+      let collisionSuffix = 2;
+      while (usedBlockIds.has(blockId)) {
+        blockId = baseId + '-' + collisionSuffix++;
+      }
+      usedBlockIds.add(blockId);
+      block.id = blockId;
     });
 
     return { blocks: blocks, key: detectedKey };
@@ -1307,6 +1315,8 @@
     stopAutoScroll();  
     currentSong = songs.find(s => s.id === id);  
     if (!currentSong) return;  
+    const sequencePanel = document.getElementById('set-sequence-panel');
+    if (sequencePanel) sequencePanel.style.display = 'none';
     currentTransposeSteps = 0;
 
     // Solo el Director origina órdenes para los demás dispositivos.
