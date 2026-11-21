@@ -1,0 +1,16 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // El cancionero es compartido: los clientes autenticados pueden leer
+    // y editar canciones. La app inicia sesión con Firebase Anonymous Auth.
+    match /songs/{songId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Ninguna otra colección queda expuesta por estas reglas.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
