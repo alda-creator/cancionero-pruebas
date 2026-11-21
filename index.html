@@ -970,20 +970,83 @@
     return useLatinoNotation ? (angloToLatinoMap[key] || key) : key;  
   }  
 
-  const CHORD_REGEX = /^([A-G]|DO|RE|MI|FA|SOL|LA|SI)[#b]?(m|maj|min|dim|aug|sus)?[0-9]?(\/([A-G]|DO|RE|MI|FA|SOL|LA|SI)[#b]?)?$/i;  
-  function isChordToken(token) { return token ? CHORD_REGEX.test(token.trim()) : false; }  
-  function isChordLine(line) {  
-    const tokens = line.trim().split(/\s+/);  
-    if (!tokens.length || tokens[0] === "") return false;  
-    let chordCount = 0;  
-    tokens.forEach(t => { if (isChordToken(t)) chordCount++; });  
-    return (chordCount / tokens.length) >= 0.5;  
-  }  
+  // Motor unificado: analiza la nota raíz, calidad/extensión y bajo opcional.
+  const chordSpanishToAnglo = {
+    DO:'C', RE:'D', MI:'E', FA:'F', SOL:'G', LA:'A', SI:'B',
+    'DO#':'C#', 'RE#':'D#', 'FA#':'F#', 'SOL#':'G#', 'LA#':'A#',
+    REB:'Db', MIB:'Eb', SOLB:'Gb', LAB:'Ab', SIB:'Bb'
+  };
+  const chordSuffixPattern = /^(?:(?:maj|min|m|-|dim|°|ø|aug|\+|sus(?:2|4)?|add|M)?(?:2|4|5|6|7|9|11|13)?(?:sus(?:2|4)?)?(?:add(?:2|4|9|11|13))?(?:b5|#5|b9|#9|#11|b13)?(?:\((?:b|#)?(?:5|9|11|13)(?:,(?:b|#)?(?:5|9|11|13))*\))?)$/i;
+
+  function parseChordNote(note) {
+    if (typeof note !== 'string') return null;
+    const value = note.trim();
+    if (!value) return null;
+
+    // Primero prueba los nombres latinos completos; si el prefijo coincide
+    // pero deja un sufijo inválido (por ejemplo Fadd9 leído como FA + dd9),
+    // vuelve a intentar con la nota anglosajona de una sola letra.
+    const rootNames = ['SOL','DO','RE','MI','FA','LA','SI'];
+    for (const rootName of rootNames) {
+      if (!value.toUpperCase().startsWith(rootName)) continue;
+      const rest = value.slice(rootName.length);
+      const accidental = /^[#b]/i.test(rest) ? rest[0] : '';
+      const suffix = rest.slice(accidental ? 1 : 0);
+      if (!chordSuffixPattern.test(suffix)) continue;
+      const root = accidental
+        ? (chordSpanishToAnglo[rootName + accidental.toUpperCase()] || chordSpanishToAnglo[rootName] + accidental)
+        : chordSpanishToAnglo[rootName];
+      return { root, suffix };
+    }
+
+    const match = value.match(/^([A-G])([#b]?)(.*)$/i);
+    if (!match) return null;
+    const root = match[1].toUpperCase() + match[2];
+    const suffix = match[3] || '';
+    if (!chordSuffixPattern.test(suffix)) return null;
+    return { root, suffix };
+  }
+  function parseChordToken(token) {
+    if (typeof token !== 'string') return null;
+    const value = token.trim();
+    if (!value) return null;
+    const slashParts = value.split('/');
+    if (slashParts.length > 2) return null;
+    const main = parseChordNote(slashParts[0]);
+    if (!main) return null;
+    let suffix = main.suffix;
+    let bass = null;
+    // La escritura 6/9 es una extensión, no una inversión.
+    if (slashParts.length === 2 && /^(?:6|7|9)$/.test(suffix) && slashParts[1] === '9') {
+      suffix += '/9';
+    } else if (slashParts.length === 2) {
+      const parsedBass = parseChordNote(slashParts[1]);
+      if (!parsedBass || parsedBass.suffix) return null;
+      bass = parsedBass.root;
+    }
+    if (!chordSuffixPattern.test(suffix) && !/^(?:6|7|9)\/9$/i.test(suffix)) return null;
+    return { root: main.root, suffix, bass };
+  }
+
+  function isChordToken(token) { return !!parseChordToken(token); }
+  function isChordLine(line) {
+    const tokens = line.trim().split(/\s+/);
+    if (!tokens.length || tokens[0] === '') return false;
+    let chordCount = 0;
+    tokens.forEach(token => { if (isChordToken(token)) chordCount++; });
+    return (chordCount / tokens.length) >= 0.5;
+  }
 
   function isTagLine(line) { return /^\[.*\]$/.test(line.trim()); }
 
-  function normalizeChordToAnglo(chord) {  
-    return chord.replace(/([A-Z]+[#b]?)/gi, (m) => latinoToAngloMap[m.toUpperCase()] || m);  
+  function normalizeChordToAnglo(chord) {
+    const parsed = parseChordToken(chord);
+    if (!parsed) return chord;
+    return parsed.root + parsed.suffix + (parsed.bass ? '/' + parsed.bass : '');
+  }
+
+  function normalizeChordLineToAnglo(line) {
+    return line.replace(/\S+/g, token => normalizeChordToAnglo(token));
   }  
 
   function formatValueToString(val) {
@@ -1040,7 +1103,7 @@
       }
 
       if (isChordLine(line)) {
-        line = line.replace(/([A-ZÑa-z]+[#b]?(?:m|maj|min|dim|aug|sus)?[0-9]?(?:\/[A-ZÑa-z]+[#b]?)?)/gi, (m) => normalizeChordToAnglo(m));
+        line = normalizeChordLineToAnglo(line);
         if (!firstChordFound) {
           const firstChord = line.trim().split(/\s+/)[0];
           const match = firstChord.match(/^([A-G][#b]?)/);
@@ -1080,37 +1143,33 @@
     return { blocks: blocks, key: detectedKey };
   }
 
-  function transposeNote(note, steps) {  
-    const regex = /^([A-G][#b]?)(.*)/;  
-    const match = note.match(regex);  
-    if (!match) return note;  
-    let root = match[1];  
-    let suffix = match[2];  
-    const flats = {'Db':'C#', 'Eb':'D#', 'Gb':'F#', 'Ab':'G#', 'Bb':'A#'};  
-    if (flats[root]) root = flats[root];  
-    let index = scaleA.indexOf(root);  
-    if (index === -1) return note;  
-    let newIndex = (index + steps) % 12;  
-    if (newIndex < 0) newIndex += 12;  
-    return scaleA[newIndex] + suffix;  
-  }  
+  function transposeNote(note, steps) {
+    const parsed = parseChordNote(note);
+    if (!parsed) return note;
+    const flatToSharp = {Db:'C#', Eb:'D#', Gb:'F#', Ab:'G#', Bb:'A#'};
+    const normalized = flatToSharp[parsed.root] || parsed.root;
+    let index = scaleA.indexOf(normalized);
+    if (index < 0) return note;
+    index = (index + (steps % 12) + 12) % 12;
+    return scaleA[index] + parsed.suffix;
+  }
 
-  function transposeChordLine(chordLine, steps) {  
-    if (!chordLine) return chordLine;  
-    let transposed = chordLine;  
-    if (steps !== 0) {  
-      transposed = chordLine.replace(/([A-G][#b]?(?:m|maj|min|dim|aug|sus)?[0-9]?(?:\/[A-G][#b]?)?)/g, (match) => {  
-        if (match.includes('/')) {  
-          const parts = match.split('/');  
-          return transposeNote(parts[0], steps) + '/' + transposeNote(parts[1], steps);  
-        }  
-        return transposeNote(match, steps);  
-      });  
-    }  
-    if (useLatinoNotation) {  
-      transposed = transposed.replace(/([A-G][#b]?)/g, (m) => angloToLatinoMap[m] || m);  
-    }  
-    return transposed;  
+  function formatChordNote(root) {
+    return useLatinoNotation ? (angloToLatinoMap[root] || root) : root;
+  }
+
+  function transposeChordToken(token, steps) {
+    const parsed = parseChordToken(token);
+    if (!parsed) return token;
+    const root = steps ? transposeNote(parsed.root, steps) : parsed.root;
+    const bassNote = parsed.bass ? (steps ? transposeNote(parsed.bass, steps) : parsed.bass) : null;
+    const bass = bassNote ? '/' + formatChordNote(bassNote) : '';
+    return formatChordNote(root) + parsed.suffix + bass;
+  }
+
+  function transposeChordLine(chordLine, steps) {
+    if (!chordLine) return chordLine;
+    return chordLine.replace(/\S+/g, token => transposeChordToken(token, steps));
   }  
 
   function buildBlocksHTML(targetContainer) {
