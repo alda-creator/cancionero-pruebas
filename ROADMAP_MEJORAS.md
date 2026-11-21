@@ -39,7 +39,7 @@ Orden de trabajo recomendado. El orden podrá ajustarse si las pruebas descubren
 
 | Prioridad | Mejora | Estado | Criterio de aceptación |
 |---|---|---|---|
-| P0 | Motor unificado de reconocimiento y transposición de acordes | En desarrollo | Reconoce y transpone acordes básicos, extendidos, alterados, inversiones y bajos; conserva sufijos y espaciado; funciona en ambas nomenclaturas. |
+| P0 | Motor unificado de reconocimiento y transposición de acordes | Implementado en rama; pruebas técnicas internas superadas; pendiente validación en la PWA | Reconoce y transpone acordes básicos, extendidos, alterados, inversiones y bajos; conserva sufijos y espaciado; funciona en ambas nomenclaturas. |
 | P0 | Biblioteca/diccionario de acordes | Pendiente | Variantes y equivalencias, nombres latinos, bajos alternativos y diagramas/posiciones de guitarra. |
 | P0 | Editor visual de acordes sobre la letra | Pendiente | Permite colocar cada acorde en cualquier posición horizontal: antes, encima, entre, sobre o después de palabras; sin depender de insertar espacios manualmente. |
 | P0 | Compatibilidad con pegado e importación de canciones antiguas | Pendiente | Reconoce formatos antiguos cuando sea posible; conserva siempre el texto original y ofrece alternativa manual si hay ambigüedad. |
@@ -100,4 +100,4 @@ No se descartan. Se mantienen registradas y se priorizarán después de asegurar
 
 - **v1.1.18:** Mi Set por tono y secuencia personalizada de bloques; funcionamiento offline y persistencia confirmados por el usuario en dos iPhone.
 - **Rama actual:** `feature/acordes-configurables`.
-- **Trabajo actual:** motor unificado de reconocimiento, normalización y transposición de acordes. Aún no integrado en `main` de pruebas ni validado por el usuario en la PWA.
+- **Trabajo actual:** motor unificado de reconocimiento, normalización y transposición de acordes. Pruebas técnicas: sintaxis JavaScript válida; 25 variantes de acordes y 625 combinaciones de transposición verificadas en notación anglosajona y latina, sin errores de tono raíz/bajo ni pérdida de sufijos. Pendiente integración en `main` de pruebas y validación del usuario en la PWA.
