@@ -1179,9 +1179,13 @@
       const handle=document.createElement('span'); handle.className='sequence-drag-handle'; handle.textContent='☰'; handle.setAttribute('aria-label','Arrastrar para reordenar');
       const name=document.createElement('span'); name.className='sequence-row-label';
       name.textContent=block.label+(totals[item.blockId]>1?' · '+seen[item.blockId]+'/'+totals[item.blockId]:'');
+      const up=document.createElement('button'); up.className='btn-action'; up.type='button'; up.textContent='↑'; up.title='Mover arriba'; up.disabled=sequence.findIndex(entry=>entry.instanceId===item.instanceId)===0;
+      up.addEventListener('click',()=>moveSequenceBlock(item.instanceId,-1));
+      const down=document.createElement('button'); down.className='btn-action'; down.type='button'; down.textContent='↓'; down.title='Mover abajo'; down.disabled=sequence.findIndex(entry=>entry.instanceId===item.instanceId)===sequence.length-1;
+      down.addEventListener('click',()=>moveSequenceBlock(item.instanceId,1));
       const remove=document.createElement('button'); remove.className='sequence-remove-btn'; remove.type='button'; remove.textContent='×'; remove.title='Quitar este bloque';
       remove.addEventListener('click',()=>removeSequenceBlock(item.instanceId));
-      row.append(handle,name,remove); list.appendChild(row);
+      row.append(handle,name,up,down,remove); list.appendChild(row);
     });
     select.innerHTML='';
     parsed.blocks.forEach(block=>{const option=document.createElement('option');option.value=block.id;option.textContent=block.label;select.appendChild(option);});
@@ -1217,6 +1221,16 @@
     const parsed=parseRawSongWithBlocks(getSongRawText(currentSong));
     const sequence=getEffectiveBlockSequence(parsed.blocks);
     sequence.push({instanceId:createSequenceInstanceId(),blockId:id});
+    persistCurrentSequence(sequence);
+  }
+  function moveSequenceBlock(instanceId, direction) {
+    if(!canEditCurrentSetSequence())return;
+    const parsed=parseRawSongWithBlocks(getSongRawText(currentSong));
+    const sequence=getEffectiveBlockSequence(parsed.blocks);
+    const index=sequence.findIndex(item=>item.instanceId===instanceId);
+    const target=index+direction;
+    if(index<0||target<0||target>=sequence.length)return;
+    [sequence[index],sequence[target]]=[sequence[target],sequence[index]];
     persistCurrentSequence(sequence);
   }
   function removeSequenceBlock(instanceId) {
