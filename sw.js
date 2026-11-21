@@ -1,14 +1,13 @@
-const CACHE_NAME = 'cancionero-cache-v13';
+const CACHE_NAME = 'cancionero-cache-v14';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
   './js/peerjs.min.js',
-  './director-fix.js',
-  './meeting-fix.js'
+  './director-fix.js'
 ];
 
-const DIRECTOR_FIX_TAG = '<script src="./director-fix.js"></script>\n<script src="./meeting-fix.js"></script>';
+const DIRECTOR_FIX_TAG = '<script src="./director-fix.js"></script>';
 
 async function injectDirectorFix(response) {
   if (!response || !response.ok) return response;
@@ -16,7 +15,7 @@ async function injectDirectorFix(response) {
   if (!contentType.includes('text/html')) return response;
 
   const html = await response.text();
-  if (html.includes('meeting-fix.js')) return new Response(html, {
+  if (html.includes('director-fix.js')) return new Response(html, {
     status: response.status,
     statusText: response.statusText,
     headers: response.headers
@@ -38,8 +37,7 @@ self.addEventListener('install', (event) => {
     await cache.addAll([
       './manifest.json',
       './js/peerjs.min.js',
-      './director-fix.js',
-      './meeting-fix.js'
+      './director-fix.js'
     ]);
 
     const indexResponse = await fetch('./index.html', { cache: 'no-store' });
