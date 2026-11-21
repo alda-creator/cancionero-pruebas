@@ -537,7 +537,9 @@
 
   let db = null;  
   let songsCollection = null;  
-  let firebaseAuthReady = Promise.resolve(false);
+  let firebaseAuthReady = Promise.resolve(false);  
+  let firebaseAuthenticated = false;  
+  let firebaseAuthError = null;
 
   try {  
     if (typeof firebase !== 'undefined') {  
@@ -550,8 +552,14 @@
       // Firestore ya no se consulta sin sesión. La cuenta anónima identifica
       // cada instalación sin pedir al usuario correo ni contraseña.
       firebaseAuthReady = auth.signInAnonymously()
-        .then(() => true)
+        .then(() => {
+          firebaseAuthenticated = true;
+          firebaseAuthError = null;
+          return true;
+        })
         .catch((error) => {
+          firebaseAuthenticated = false;
+          firebaseAuthError = error;
           console.error('No fue posible iniciar sesión anónima en Firebase:', error);
           return false;
         });
@@ -636,12 +644,18 @@
   function updateSyncStatus() {  
     const statusEl = document.getElementById('connection-status');  
     const syncEl = document.getElementById('pending-sync');  
-    if (navigator.onLine && songsCollection) {  
-      statusEl.innerHTML = '<span class="badge-online">● En línea</span>';  
-      syncEl.innerText = '';  
-    } else {  
-      statusEl.innerHTML = '<span class="badge-offline">● Modo Offline</span>';  
-      syncEl.innerText = 'Cargado localmente';  
+    if (!navigator.onLine) {
+      statusEl.innerHTML = '<span class="badge-offline">● Modo Offline</span>';
+      syncEl.innerText = 'Cargado localmente';
+    } else if (songsCollection && firebaseAuthenticated) {
+      statusEl.innerHTML = '<span class="badge-online">● En línea</span>';
+      syncEl.innerText = '';
+    } else if (firebaseAuthError) {
+      statusEl.innerHTML = '<span class="badge-offline">● Firebase sin sesión</span>';
+      syncEl.innerText = 'Solo datos locales · revisa Authentication';
+    } else {
+      statusEl.innerHTML = '<span class="badge-offline">● Conectando a Firebase…</span>';
+      syncEl.innerText = 'Esperando autenticación';
     }  
   }  
 
@@ -1531,7 +1545,11 @@
       // Para canciones nuevas, firestoreId e id son iguales.
       // Para canciones antiguas, usamos el ID real del documento de Firestore.
       if (songsCollection) {
-        songsCollection.doc(firestoreId).delete().catch(() => {});
+        firebaseAuthReady.then((authenticated) => {
+          if (authenticated) {
+            return songsCollection.doc(firestoreId).delete();
+          }
+        }).catch((error) => console.error('No se pudo eliminar en Firestore:', error));
       }  
     }  
   }  
@@ -1574,10 +1592,13 @@
     showList();
 
     if (songsCollection) {
-      // Usamos exactamente el mismo ID local/remoto. Firestore Persistence
-      // puede mantener esta escritura pendiente cuando el dispositivo está offline
-      // y completarla al recuperar conexión.
-      songsCollection.doc(firestoreId).set(songData, { merge: true }).catch(() => {});
+      // Esperamos la sesión anónima antes de escribir. La copia local ya quedó
+      // guardada y se conserva aunque Firebase no esté disponible.
+      firebaseAuthReady.then((authenticated) => {
+        if (authenticated) {
+          return songsCollection.doc(firestoreId).set(songData, { merge: true });
+        }
+      }).catch((error) => console.error('No se pudo guardar en Firestore:', error));
     }
   }
 
