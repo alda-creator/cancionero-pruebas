@@ -641,7 +641,34 @@
   // respeten la navegación desde resultados de búsqueda.
   let songViewOrigin = 'list';  
   let editingSongId = null;  
-  let currentTransposeSteps = 0;  
+  let currentTransposeSteps = 0;
+  const SET_TONE_STORAGE_KEY = 'church_song_set_transpose_v1';
+
+  function readSetTonePreferences() {
+    try {
+      const value = JSON.parse(localStorage.getItem(SET_TONE_STORAGE_KEY) || '{}');
+      return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    } catch (error) {
+      console.warn('No se pudieron leer los tonos personalizados de Mi Set:', error);
+      return {};
+    }
+  }
+
+  function saveSetTonePreference(songId, steps) {
+    if (!songId || !Array.isArray(songSetIds) || !songSetIds.includes(songId)) return;
+    const preferences = readSetTonePreferences();
+    if (steps === 0) delete preferences[songId];
+    else preferences[songId] = steps;
+    localStorage.setItem(SET_TONE_STORAGE_KEY, JSON.stringify(preferences));
+  }
+
+  function removeSetTonePreference(songId) {
+    const preferences = readSetTonePreferences();
+    if (!Object.prototype.hasOwnProperty.call(preferences, songId)) return;
+    delete preferences[songId];
+    localStorage.setItem(SET_TONE_STORAGE_KEY, JSON.stringify(preferences));
+  }
+  
   let useLatinoNotation = localStorage.getItem('church_notation') === 'latino';  
   let scrollAnimationFrame = null;  
   let scrollAnimationLastTime = 0;  
@@ -748,10 +775,11 @@
 
   function toggleSetItem(e, id) {  
     e.stopPropagation();  
-    if (songSetIds.includes(id)) {  
-      songSetIds = songSetIds.filter(item => item !== id);  
-    } else {  
-      songSetIds.push(id);  
+    if (songSetIds.includes(id)) {
+      songSetIds = songSetIds.filter(item => item !== id);
+      removeSetTonePreference(id);
+    } else {
+      songSetIds.push(id);
     }  
     localStorage.setItem('church_song_set', JSON.stringify(songSetIds));  
     renderCurrentTab();  
@@ -1057,15 +1085,19 @@
     buildBlocksHTML(document.getElementById('song-content'));
   }  
 
-  function transpose(steps) { 
-    currentTransposeSteps += steps; 
-    renderTransposedContent(); 
+  function transpose(steps) {
+    currentTransposeSteps += steps;
+    if (songViewOrigin === 'set' && currentSong && songSetIds.includes(currentSong.id)) {
+      saveSetTonePreference(currentSong.id, currentTransposeSteps);
+    }
+    renderTransposedContent();
     broadcastToMusicians({ type: 'TRANSPOSE', steps: currentTransposeSteps });
   }  
 
-  function resetKey() { 
-    currentTransposeSteps = 0; 
-    renderTransposedContent(); 
+  function resetKey() {
+    currentTransposeSteps = 0;
+    if (songViewOrigin === 'set' && currentSong) removeSetTonePreference(currentSong.id);
+    renderTransposedContent();
     broadcastToMusicians({ type: 'TRANSPOSE', steps: 0 });
   }  
 
@@ -1113,8 +1145,19 @@
     document.getElementById('song-viewer').style.display = 'block';  
     document.getElementById('admin-actions').style.display = 'none';
     document.getElementById('song-title').innerText = currentSong.title;  
-    document.getElementById('song-author').innerText = currentSong.author || 'Iglesia de Dios 7d';  
-    renderTransposedContent();  
+    document.getElementById('song-author').innerText = currentSong.author || 'Iglesia de Dios 7d';
+
+    // Cada canción conserva su propio tono cuando se abre desde Mi Set.
+    // Fuera de Mi Set (búsqueda, Todas o apertura remota) siempre inicia en tono original.
+    if (!isRemoteOpen && songViewOrigin === 'set' && songSetIds.includes(id)) {
+      const savedSteps = readSetTonePreferences()[id];
+      currentTransposeSteps = Number.isInteger(savedSteps) ? savedSteps : 0;
+    }
+
+    renderTransposedContent();
+    if (!isRemoteOpen && songViewOrigin === 'set' && currentRole === 'director' && currentTransposeSteps !== 0) {
+      broadcastToMusicians({ type: 'TRANSPOSE', steps: currentTransposeSteps });
+    }
     window.scrollTo(0, 0);  
   }  
 
@@ -1614,6 +1657,7 @@
       const firestoreId = songToDelete?.firestoreId || deleteId;
       songs = songs.filter(song => song.id !== deleteId);
       songSetIds = songSetIds.filter(id => id !== deleteId);
+      removeSetTonePreference(deleteId);
       localStorage.setItem('church_songs', JSON.stringify(songs));
       localStorage.setItem('church_song_set', JSON.stringify(songSetIds));
       showList();
