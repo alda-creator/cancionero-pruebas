@@ -1302,9 +1302,11 @@
       songViewOrigin = origin;
     } else {
       const searchInput = document.getElementById('search-input');
-      songViewOrigin = (searchInput && searchInput.value.trim() !== '')
-        ? 'search'
-        : (currentTab === 'set' ? 'set' : 'list');
+      // Una búsqueda dentro de Mi Set sigue perteneciendo al contexto personal:
+      // conserva tonos y secuencia propios. En Todas, la búsqueda es general.
+      songViewOrigin = currentTab === 'set'
+        ? 'set'
+        : ((searchInput && searchInput.value.trim() !== '') ? 'search' : 'list');
     }
 
     // Una canción abierta por el Director tiene un contexto propio.
