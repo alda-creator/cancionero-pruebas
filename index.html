@@ -2437,7 +2437,7 @@
     {name:"Quinta / power chord",aliases:["5"],formula:"1 · 5",steps:[0,7]}
   ];
   const chordLibraryRoots=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
-  const chordLibraryRootNames={C:"Do",C#:"Do♯ / Re♭",D:"Re",D#:"Re♯ / Mi♭",E:"Mi",F:"Fa",F#:"Fa♯ / Sol♭",G:"Sol",G#:"Sol♯ / La♭",A:"La",A#:"La♯ / Si♭",B:"Si"};
+  const chordLibraryRootNames={"C":"Do","C#":"Do♯ / Re♭","D":"Re","D#":"Re♯ / Mi♭","E":"Mi","F":"Fa","F#":"Fa♯ / Sol♭","G":"Sol","G#":"Sol♯ / La♭","A":"La","A#":"La♯ / Si♭","B":"Si"};
   function chordLibraryNote(root,steps){const n=chordLibraryRoots[(chordLibraryRoots.indexOf(root)+steps+12)%12];return useLatinoNotation?(angloToLatinoMap[n]||n):n;}
   function openChordLibrary(){document.getElementById('chord-library').style.display='block';document.getElementById('chord-library-search').value='';renderChordLibrary();}
   function closeChordLibrary(){document.getElementById('chord-library').style.display='none';}
