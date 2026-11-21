@@ -207,6 +207,16 @@
 
     .btn-action.primary { background: var(--accent); color: white; border: none; }  
 
+    .sequence-editor{margin:12px 0 18px;padding:12px;border:1px solid var(--card-border);border-radius:12px;background:var(--card)}
+    .sequence-editor-list{display:flex;flex-direction:column;gap:7px;margin:10px 0}
+    .sequence-editor-row{display:flex;align-items:center;gap:9px;padding:10px;border:1px solid var(--card-border);border-radius:9px;background:var(--bg)}
+    .sequence-drag-handle{color:var(--text-muted);cursor:grab;padding:4px;touch-action:none}
+    .sequence-row-label{flex:1;font-size:13px;font-weight:650}
+    .sequence-remove-btn{border:0;border-radius:7px;padding:6px 10px;color:var(--danger);background:transparent;font-size:18px}
+    .sequence-editor-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+    .sequence-add-row{display:flex;gap:7px;margin-top:10px}
+    .sequence-add-row select{min-width:0;flex:1;padding:9px;border-radius:8px;border:1px solid var(--card-border);background:var(--bg);color:var(--text)}
+    .sequence-sort-ghost{opacity:.35}
     .song-block {
       background: var(--block-bg);
       border: 1px solid var(--card-border);
@@ -362,7 +372,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.1.17 · Director Mode · Mi Set por tono (PRUEBAS)</div>
+        <div class="app-version">v1.1.18 · Director Mode · Mi Set por tono y secuencia (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -458,8 +468,21 @@
       </div>  
     </div>  
 
-    <div id="song-content"></div>  
-
+    <div id="song-content"></div>
+    <div id="set-sequence-tools" class="sequence-editor" style="display:none;">
+      <button class="btn-action" style="width:100%;" onclick="toggleSequenceEditor()">🧩 Editar secuencia de Mi Set</button>
+      <div id="set-sequence-panel" style="display:none;">
+        <p style="font-size:12px;color:var(--text-muted);margin:10px 0;">Arrastra los bloques para cambiar el orden. Puedes repetir un bloque o quitarlo sin modificar la canción original.</p>
+        <div id="set-sequence-list" class="sequence-editor-list"></div>
+        <div class="sequence-add-row">
+          <select id="sequence-add-select" aria-label="Seleccionar bloque para agregar"></select>
+          <button class="btn-action primary" onclick="addSequenceBlock()">＋ Agregar</button>
+        </div>
+        <div class="sequence-editor-actions">
+          <button class="btn-action" onclick="restoreOriginalSequence()">↩ Restaurar original</button>
+        </div>
+      </div>
+    </div>
     <div class="admin-menu">
       <button class="btn-action" style="width:100%; border:none; background:transparent;" onclick="toggleAdminActions()">⚙️ Opciones de Edición</button>
       <div id="admin-actions" class="admin-actions">
@@ -643,6 +666,63 @@
   let editingSongId = null;  
   let currentTransposeSteps = 0;
   const SET_TONE_STORAGE_KEY = 'church_song_set_transpose_v1';
+  const SET_SEQUENCE_STORAGE_KEY = 'church_song_set_sequences_v1';
+  let remoteSequenceOverride = null;
+  let sequenceSortableInstance = null;
+
+  function createSequenceInstanceId() {
+    return 'seq_' + (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now() + '_' + Math.random().toString(36).slice(2));
+  }
+  function readSetSongSequences() {
+    try {
+      const value = JSON.parse(localStorage.getItem(SET_SEQUENCE_STORAGE_KEY) || '{}');
+      return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    } catch (error) {
+      console.warn('No se pudieron leer las secuencias personalizadas de Mi Set:', error);
+      return {};
+    }
+  }
+  function saveSetSongSequence(songId, sequence) {
+    if (!songId || !songSetIds.includes(songId) || !Array.isArray(sequence)) return;
+    const sequences = readSetSongSequences();
+    sequences[songId] = sequence.map(item => ({ instanceId: item.instanceId, blockId: item.blockId }));
+    localStorage.setItem(SET_SEQUENCE_STORAGE_KEY, JSON.stringify(sequences));
+  }
+  function removeSetSongSequence(songId) {
+    const sequences = readSetSongSequences();
+    if (!Object.prototype.hasOwnProperty.call(sequences, songId)) return;
+    delete sequences[songId];
+    localStorage.setItem(SET_SEQUENCE_STORAGE_KEY, JSON.stringify(sequences));
+  }
+  function originalBlockSequence(blocks) {
+    return blocks.map(block => ({ instanceId: 'original_' + block.id, blockId: block.id }));
+  }
+  function normalizeBlockSequence(sequence, blocks) {
+    const validBlocks = new Map(blocks.map(block => [block.id, block]));
+    const normalized = [];
+    const usedInstances = new Set();
+    if (Array.isArray(sequence)) sequence.forEach(item => {
+      if (!item || !validBlocks.has(item.blockId)) return;
+      let instanceId = typeof item.instanceId === 'string' && item.instanceId ? item.instanceId : createSequenceInstanceId();
+      if (usedInstances.has(instanceId)) instanceId = createSequenceInstanceId();
+      usedInstances.add(instanceId);
+      normalized.push({ instanceId, blockId: item.blockId });
+    });
+    return normalized.length ? normalized : originalBlockSequence(blocks);
+  }
+  function getEffectiveBlockSequence(blocks) {
+    if (songViewOrigin === 'remote' && Array.isArray(remoteSequenceOverride)) return normalizeBlockSequence(remoteSequenceOverride, blocks);
+    if (songViewOrigin === 'set' && currentSong && songSetIds.includes(currentSong.id)) {
+      const saved = readSetSongSequences()[currentSong.id];
+      return saved ? normalizeBlockSequence(saved, blocks) : originalBlockSequence(blocks);
+    }
+    return originalBlockSequence(blocks);
+  }
+  function getCurrentSequenceSnapshot() {
+    if (!currentSong) return [];
+    const parsed = parseRawSongWithBlocks(getSongRawText(currentSong));
+    return getEffectiveBlockSequence(parsed.blocks).map(item => ({ ...item }));
+  }
 
   function readSetTonePreferences() {
     try {
@@ -685,7 +765,8 @@
   let myRoomCode = '';
   let isRemoteScroll = false;
   let isRemoteBlockNavigation = false;
-  let remoteBlockNavigationFrame = null; 
+  let remoteBlockNavigationFrame = null;
+  let directorBlockNavigationFrame = null; 
   // Estado explícito del seguimiento después de GO_TO_BLOCK.
   // Debe existir desde el arranque: applyReadingPosition() lo consulta
   // incluso antes de que se ejecute cualquier GO_TO_BLOCK.
@@ -778,6 +859,7 @@
     if (songSetIds.includes(id)) {
       songSetIds = songSetIds.filter(item => item !== id);
       removeSetTonePreference(id);
+      removeSetSongSequence(id);
     } else {
       songSetIds.push(id);
     }  
@@ -980,11 +1062,19 @@
     if (currentBlock.lines.length > 0) blocks.push(currentBlock);
 
     const blockOccurrences = new Map();
+    const usedBlockIds = new Set();
     blocks.forEach(block => {
       const labelKey = block.label.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'bloque';
       const occurrence = (blockOccurrences.get(labelKey) || 0) + 1;
       blockOccurrences.set(labelKey, occurrence);
-      block.id = /-\d+$/.test(labelKey) && occurrence === 1 ? labelKey : labelKey + '-' + occurrence;
+      const baseId = /-\d+$/.test(labelKey) && occurrence === 1 ? labelKey : labelKey + '-' + occurrence;
+      let blockId = baseId;
+      let collisionSuffix = 2;
+      while (usedBlockIds.has(blockId)) {
+        blockId = baseId + '-' + collisionSuffix++;
+      }
+      usedBlockIds.add(blockId);
+      block.id = blockId;
     });
 
     return { blocks: blocks, key: detectedKey };
@@ -1024,22 +1114,21 @@
   }  
 
   function buildBlocksHTML(targetContainer) {
-    if (!currentSong) return;
+    if (!currentSong || !targetContainer) return;
     targetContainer.innerHTML = '';
-
-    const rawText = getSongRawText(currentSong);
-    const parsed = parseRawSongWithBlocks(rawText);
-    
-    if (parsed.blocks.length === 0) {
-      targetContainer.innerHTML = `<div style="padding:20px; text-align:center; color:var(--text-muted);">Esta canción no contiene texto registrado o el formato no es compatible. Pulsa Editar para corregirla.</div>`;
+    const parsed = parseRawSongWithBlocks(getSongRawText(currentSong));
+    if (!parsed.blocks.length) {
+      targetContainer.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-muted);">Esta canción no contiene texto registrado o el formato no es compatible. Pulsa Editar para corregirla.</div>`;
       return;
     }
-
-    parsed.blocks.forEach(block => {
+    const byId = new Map(parsed.blocks.map(block => [block.id, block]));
+    getEffectiveBlockSequence(parsed.blocks).forEach(entry => {
+      const block = byId.get(entry.blockId);
+      if (!block) return;
       const blockDiv = document.createElement('div');
       blockDiv.className = 'song-block';
       blockDiv.dataset.blockId = block.id;
-
+      blockDiv.dataset.blockInstanceId = entry.instanceId;
       const label = document.createElement('div');
       label.className = 'block-label';
       label.innerText = block.label;
@@ -1047,35 +1136,138 @@
         label.classList.add('director-block-control');
         label.setAttribute('role', 'button');
         label.tabIndex = 0;
-        const sendGoToBlock = () => broadcastToMusicians({ type: 'GO_TO_BLOCK', blockId: block.id });
-        label.addEventListener('click', sendGoToBlock);
-        label.addEventListener('keydown', event => {
-          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); sendGoToBlock(); }
-        });
+        const send = () => {
+          goToDirectorBlock(block.id, entry.instanceId);
+          broadcastToMusicians({type:'GO_TO_BLOCK',blockId:block.id,instanceId:entry.instanceId});
+        };
+        label.addEventListener('click', send);
+        label.addEventListener('keydown', event => { if(event.key==='Enter'||event.key===' '){event.preventDefault();send();} });
       }
       blockDiv.appendChild(label);
-
       block.lines.forEach(line => {
         const pair = document.createElement('div');
         pair.className = 'line-pair';
-
         if (line.chords) {
-          const chordDiv = document.createElement('div');
-          chordDiv.className = 'chord-line';
-          chordDiv.innerText = transposeChordLine(line.chords, currentTransposeSteps);
-          pair.appendChild(chordDiv);
+          const chord = document.createElement('div');
+          chord.className = 'chord-line';
+          chord.innerText = transposeChordLine(line.chords,currentTransposeSteps);
+          pair.appendChild(chord);
         }
         if (line.text) {
-          const textDiv = document.createElement('div');
-          textDiv.className = 'text-line';
-          textDiv.innerText = line.text;
-          pair.appendChild(textDiv);
+          const lyric = document.createElement('div');
+          lyric.className = 'text-line';
+          lyric.innerText = line.text;
+          pair.appendChild(lyric);
         }
         blockDiv.appendChild(pair);
       });
-
       targetContainer.appendChild(blockDiv);
     });
+  }
+
+  function canEditCurrentSetSequence() {
+    return !!(currentSong && songViewOrigin==='set' && songSetIds.includes(currentSong.id));
+  }
+  function updateSequenceEditorUI() {
+    const tools=document.getElementById('set-sequence-tools'), list=document.getElementById('set-sequence-list');
+    const select=document.getElementById('sequence-add-select'), panel=document.getElementById('set-sequence-panel');
+    if(!tools||!list||!select||!panel)return;
+    tools.style.display=canEditCurrentSetSequence()?'block':'none';
+    if(!canEditCurrentSetSequence()){
+      panel.style.display='none';
+      if(sequenceSortableInstance){sequenceSortableInstance.destroy();sequenceSortableInstance=null;}
+      return;
+    }
+    const parsed=parseRawSongWithBlocks(getSongRawText(currentSong));
+    const byId=new Map(parsed.blocks.map(block=>[block.id,block]));
+    const sequence=getEffectiveBlockSequence(parsed.blocks);
+    list.innerHTML='';
+    const totals={},seen={},sourceLabelTotals={},sourceLabelOrdinals={};
+    parsed.blocks.forEach(block=>{
+      sourceLabelTotals[block.label]=(sourceLabelTotals[block.label]||0)+1;
+      sourceLabelOrdinals[block.id]=sourceLabelTotals[block.label];
+    });
+    sequence.forEach(item=>totals[item.blockId]=(totals[item.blockId]||0)+1);
+    sequence.forEach(item=>{
+      const block=byId.get(item.blockId); if(!block)return;
+      seen[item.blockId]=(seen[item.blockId]||0)+1;
+      const row=document.createElement('div'); row.className='sequence-editor-row'; row.dataset.instanceId=item.instanceId;
+      const handle=document.createElement('span'); handle.className='sequence-drag-handle'; handle.textContent='☰'; handle.setAttribute('aria-label','Arrastrar para reordenar');
+      const name=document.createElement('span'); name.className='sequence-row-label';
+      name.textContent=block.label+(sourceLabelTotals[block.label]>1?' · original '+sourceLabelOrdinals[block.id]:'')+(totals[item.blockId]>1?' · repetición '+seen[item.blockId]+'/'+totals[item.blockId]:'');
+      const up=document.createElement('button'); up.className='btn-action'; up.type='button'; up.textContent='↑'; up.title='Mover arriba'; up.disabled=sequence.findIndex(entry=>entry.instanceId===item.instanceId)===0;
+      up.addEventListener('click',()=>moveSequenceBlock(item.instanceId,-1));
+      const down=document.createElement('button'); down.className='btn-action'; down.type='button'; down.textContent='↓'; down.title='Mover abajo'; down.disabled=sequence.findIndex(entry=>entry.instanceId===item.instanceId)===sequence.length-1;
+      down.addEventListener('click',()=>moveSequenceBlock(item.instanceId,1));
+      const remove=document.createElement('button'); remove.className='sequence-remove-btn'; remove.type='button'; remove.textContent='×'; remove.title='Quitar este bloque';
+      remove.addEventListener('click',()=>removeSequenceBlock(item.instanceId));
+      row.append(handle,name,up,down,remove); list.appendChild(row);
+    });
+    select.innerHTML='';
+    parsed.blocks.forEach(block=>{
+      const option=document.createElement('option');option.value=block.id;
+      option.textContent=block.label+(sourceLabelTotals[block.label]>1?' · original '+sourceLabelOrdinals[block.id]:'');
+      select.appendChild(option);
+    });
+    if(sequenceSortableInstance)sequenceSortableInstance.destroy();
+    if(typeof Sortable!=='undefined')sequenceSortableInstance=new Sortable(list,{
+      animation:150,handle:'.sequence-drag-handle',ghostClass:'sequence-sort-ghost',
+      onEnd:()=>{
+        const ids=Array.from(list.children).map(row=>row.dataset.instanceId);
+        const current=getEffectiveBlockSequence(parsed.blocks),map=new Map(current.map(item=>[item.instanceId,item]));
+        persistCurrentSequence(ids.map(id=>map.get(id)).filter(Boolean));
+      }
+    });
+  }
+  function persistCurrentSequence(sequence) {
+    if(!canEditCurrentSetSequence())return;
+    const parsed=parseRawSongWithBlocks(getSongRawText(currentSong));
+    const normalized=normalizeBlockSequence(sequence,parsed.blocks);
+    saveSetSongSequence(currentSong.id,normalized);
+    renderTransposedContent();
+    const live=document.getElementById('live-screen');
+    if(live&&live.style.display!=='none')buildBlocksHTML(document.getElementById('live-body'));
+    broadcastToMusicians({type:'UPDATE_SEQUENCE',sequence:normalized});
+  }
+  function toggleSequenceEditor() {
+    if(!canEditCurrentSetSequence())return;
+    const panel=document.getElementById('set-sequence-panel');
+    panel.style.display=panel.style.display==='none'?'block':'none';
+    updateSequenceEditorUI();
+  }
+  function addSequenceBlock() {
+    if(!canEditCurrentSetSequence())return;
+    const id=document.getElementById('sequence-add-select').value;if(!id)return;
+    const parsed=parseRawSongWithBlocks(getSongRawText(currentSong));
+    const sequence=getEffectiveBlockSequence(parsed.blocks);
+    sequence.push({instanceId:createSequenceInstanceId(),blockId:id});
+    persistCurrentSequence(sequence);
+  }
+  function moveSequenceBlock(instanceId, direction) {
+    if(!canEditCurrentSetSequence())return;
+    const parsed=parseRawSongWithBlocks(getSongRawText(currentSong));
+    const sequence=getEffectiveBlockSequence(parsed.blocks);
+    const index=sequence.findIndex(item=>item.instanceId===instanceId);
+    const target=index+direction;
+    if(index<0||target<0||target>=sequence.length)return;
+    [sequence[index],sequence[target]]=[sequence[target],sequence[index]];
+    persistCurrentSequence(sequence);
+  }
+  function removeSequenceBlock(instanceId) {
+    if(!canEditCurrentSetSequence())return;
+    const parsed=parseRawSongWithBlocks(getSongRawText(currentSong));
+    const sequence=getEffectiveBlockSequence(parsed.blocks).filter(item=>item.instanceId!==instanceId);
+    if(!sequence.length){alert('La secuencia debe conservar al menos un bloque.');return;}
+    persistCurrentSequence(sequence);
+  }
+  function restoreOriginalSequence() {
+    if(!canEditCurrentSetSequence())return;
+    if(!confirm('¿Restaurar el orden original de esta canción en Mi Set?'))return;
+    removeSetSongSequence(currentSong.id);
+    renderTransposedContent();
+    const live=document.getElementById('live-screen');
+    if(live&&live.style.display!=='none')buildBlocksHTML(document.getElementById('live-body'));
+    broadcastToMusicians({type:'UPDATE_SEQUENCE',sequence:getCurrentSequenceSnapshot()});
   }
 
   function renderTransposedContent() {  
@@ -1083,6 +1275,7 @@
     const baseKey = transposeNote(currentSong.originalKey || 'C', currentTransposeSteps);  
     document.getElementById('current-key-display').innerText = formatKeyDisplay(baseKey);  
     buildBlocksHTML(document.getElementById('song-content'));
+    updateSequenceEditorUI();
   }  
 
   function transpose(steps) {
@@ -1108,29 +1301,34 @@
     renderTransposedContent();  
   }  
 
-  function openSong(id, origin = null) {  
+  function openSong(id, origin = null, sequenceOverride = null) {  
     if (origin) {
       songViewOrigin = origin;
     } else {
       const searchInput = document.getElementById('search-input');
-      songViewOrigin = (searchInput && searchInput.value.trim() !== '')
-        ? 'search'
-        : (currentTab === 'set' ? 'set' : 'list');
+      // Una búsqueda dentro de Mi Set sigue perteneciendo al contexto personal:
+      // conserva tonos y secuencia propios. En Todas, la búsqueda es general.
+      songViewOrigin = currentTab === 'set'
+        ? 'set'
+        : ((searchInput && searchInput.value.trim() !== '') ? 'search' : 'list');
     }
 
     // Una canción abierta por el Director tiene un contexto propio.
     // Nunca debe heredar Mi Set, búsqueda u otro contexto local del músico.
     const isRemoteOpen = songViewOrigin === 'remote';
+    remoteSequenceOverride = isRemoteOpen && Array.isArray(sequenceOverride) ? sequenceOverride : null;
 
     stopAutoScroll();  
     currentSong = songs.find(s => s.id === id);  
     if (!currentSong) return;  
+    const sequencePanel = document.getElementById('set-sequence-panel');
+    if (sequencePanel) sequencePanel.style.display = 'none';
     currentTransposeSteps = 0;
 
     // Solo el Director origina órdenes para los demás dispositivos.
     // El músico nunca debe convertir una orden recibida en una nueva orden.
     if (!isRemoteOpen) {
-      broadcastToMusicians({ type: 'OPEN_SONG', songId: id, transpose: 0 });
+      broadcastToMusicians({ type: 'OPEN_SONG', songId: id, transpose: 0, sequence: getCurrentSequenceSnapshot() });
     }
 
     // Los botones de Anterior/Siguiente pertenecen exclusivamente al
@@ -1158,6 +1356,7 @@
     if (!isRemoteOpen && songViewOrigin === 'set' && currentRole === 'director' && currentTransposeSteps !== 0) {
       broadcastToMusicians({ type: 'TRANSPOSE', steps: currentTransposeSteps });
     }
+    updateSequenceEditorUI();
     window.scrollTo(0, 0);  
   }  
 
@@ -1551,8 +1750,8 @@
   }
 
 
-  function goToRemoteBlock(blockId) {
-    if (currentRole !== 'musician' || !blockId) return;
+  function goToDirectorBlock(blockId, instanceId = null) {
+    if (currentRole !== 'director' || (!blockId && !instanceId)) return;
     const liveScreen = document.getElementById('live-screen');
     const liveBody = document.getElementById('live-body');
     const songContent = document.getElementById('song-content');
@@ -1560,7 +1759,65 @@
     const container = isLive ? liveScreen : window;
     const root = isLive ? liveBody : songContent;
     if (!root) return;
-    const block = Array.from(root.querySelectorAll('.song-block')).find(item => item.dataset.blockId === blockId);
+    const rendered = Array.from(root.querySelectorAll('.song-block'));
+    const block = (instanceId && rendered.find(item => item.dataset.blockInstanceId === instanceId)) || rendered.find(item => item.dataset.blockId === blockId);
+    if (!block) return;
+
+    if (directorBlockNavigationFrame) cancelAnimationFrame(directorBlockNavigationFrame);
+    const resumeAutoScroll = isScrolling;
+    const resumeSpeed = scrollSpeed;
+    if (resumeAutoScroll) stopAutoScroll(true);
+
+    isRemoteScroll = true;
+    const viewportHeight = container === window ? window.innerHeight : container.clientHeight;
+    const startScroll = container === window ? window.scrollY : container.scrollTop;
+    const viewportTop = container === window ? 0 : container.getBoundingClientRect().top;
+    const blockTop = block.getBoundingClientRect().top - viewportTop + startScroll;
+    const targetScroll = Math.max(0, blockTop - viewportHeight * SCROLL_SYNC_GUIDE_RATIO);
+    const startTime = performance.now();
+
+    const animate = now => {
+      const progress = Math.min(1, (now - startTime) / 400);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const nextScroll = startScroll + (targetScroll - startScroll) * eased;
+      if (container === window) window.scrollTo(0, nextScroll);
+      else container.scrollTop = nextScroll;
+
+      if (progress < 1) {
+        directorBlockNavigationFrame = requestAnimationFrame(animate);
+      } else {
+        directorBlockNavigationFrame = null;
+        isRemoteScroll = false;
+        block.classList.remove('remote-block-highlight');
+        void block.offsetWidth;
+        block.classList.add('remote-block-highlight');
+        setTimeout(() => block.classList.remove('remote-block-highlight'), 700);
+
+        if (resumeAutoScroll) {
+          startLocalScrollMotor(container, resumeSpeed, false);
+          const btn = document.getElementById('scroll-toggle-btn');
+          const liveBtn = document.getElementById('live-scroll-btn');
+          if (btn) btn.innerText = "⏸ Pausa";
+          if (liveBtn) liveBtn.innerText = "⏸ Pausa";
+        } else {
+          broadcastReadingPosition(container, true);
+        }
+      }
+    };
+    directorBlockNavigationFrame = requestAnimationFrame(animate);
+  }
+
+  function goToRemoteBlock(blockId, instanceId = null) {
+    if (currentRole !== 'musician' || (!blockId && !instanceId)) return;
+    const liveScreen = document.getElementById('live-screen');
+    const liveBody = document.getElementById('live-body');
+    const songContent = document.getElementById('song-content');
+    const isLive = liveScreen && liveScreen.style.display !== 'none';
+    const container = isLive ? liveScreen : window;
+    const root = isLive ? liveBody : songContent;
+    if (!root) return;
+    const rendered = Array.from(root.querySelectorAll('.song-block'));
+    const block = (instanceId && rendered.find(item => item.dataset.blockInstanceId === instanceId)) || rendered.find(item => item.dataset.blockId === blockId);
     if (!block) return;
     if (remoteBlockNavigationFrame) cancelAnimationFrame(remoteBlockNavigationFrame);
     const resumeFollowerAfterBlock = remoteAutoScrollActive;
@@ -1614,6 +1871,7 @@
     
     buildBlocksHTML(liveBody);
     liveScreen.style.display = 'flex';
+    updateSequenceEditorUI();
 
     const exitBtn = document.getElementById('live-exit-btn');
     if (exitBtn) {
@@ -1643,6 +1901,7 @@
     // Esto evita que los gestos de navegación actúen sobre la lista de Mi Set.
     currentSong = null;
     songViewOrigin = 'list';
+    remoteSequenceOverride = null;
     document.getElementById('list-view').style.display = 'block';  
     document.getElementById('song-viewer').style.display = 'none';  
     document.getElementById('song-editor').style.display = 'none';  
@@ -1658,6 +1917,7 @@
       songs = songs.filter(song => song.id !== deleteId);
       songSetIds = songSetIds.filter(id => id !== deleteId);
       removeSetTonePreference(deleteId);
+      removeSetSongSequence(deleteId);
       localStorage.setItem('church_songs', JSON.stringify(songs));
       localStorage.setItem('church_song_set', JSON.stringify(songSetIds));
       showList();
@@ -1753,7 +2013,8 @@
           conn.send({
             type: 'OPEN_SONG',
             songId: currentSong.id,
-            transpose: currentTransposeSteps
+            transpose: currentTransposeSteps,
+            sequence: getCurrentSequenceSnapshot()
           });
         });
       }
@@ -1811,7 +2072,7 @@
     if (data.type === 'OPEN_SONG') {
       // El Director define la canción y el tono, pero cada dispositivo
       // conserva su propia preferencia de notación (C-D-E o Do-Re-Mi).
-      openSong(data.songId, 'remote');
+      openSong(data.songId, 'remote', data.sequence);
 
       if (data.transpose !== undefined) {
         currentTransposeSteps = data.transpose;
@@ -1823,7 +2084,11 @@
         openLiveView();
       }
     } else if (data.type === 'GO_TO_BLOCK') {
-      goToRemoteBlock(data.blockId);
+      goToRemoteBlock(data.blockId, data.instanceId);
+    } else if (data.type === 'UPDATE_SEQUENCE') {
+      remoteSequenceOverride = Array.isArray(data.sequence) ? data.sequence : null;
+      renderTransposedContent();
+      if (document.getElementById('live-screen').style.display !== 'none') buildBlocksHTML(document.getElementById('live-body'));
     } else if (data.type === 'TRANSPOSE') {
       currentTransposeSteps = data.steps;
       renderTransposedContent();
