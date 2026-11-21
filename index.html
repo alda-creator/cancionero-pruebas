@@ -1154,7 +1154,7 @@
   }
 
   function canEditCurrentSetSequence() {
-    return !!(currentSong && songViewOrigin==='set' && songSetIds.includes(currentSong.id) && currentRole!=='musician');
+    return !!(currentSong && songViewOrigin==='set' && songSetIds.includes(currentSong.id));
   }
   function updateSequenceEditorUI() {
     const tools=document.getElementById('set-sequence-tools'), list=document.getElementById('set-sequence-list');
