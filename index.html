@@ -765,7 +765,8 @@
   let myRoomCode = '';
   let isRemoteScroll = false;
   let isRemoteBlockNavigation = false;
-  let remoteBlockNavigationFrame = null; 
+  let remoteBlockNavigationFrame = null;
+  let directorBlockNavigationFrame = null; 
   // Estado explícito del seguimiento después de GO_TO_BLOCK.
   // Debe existir desde el arranque: applyReadingPosition() lo consulta
   // incluso antes de que se ejecute cualquier GO_TO_BLOCK.
@@ -1135,7 +1136,10 @@
         label.classList.add('director-block-control');
         label.setAttribute('role', 'button');
         label.tabIndex = 0;
-        const send = () => broadcastToMusicians({type:'GO_TO_BLOCK',blockId:block.id,instanceId:entry.instanceId});
+        const send = () => {
+          goToDirectorBlock(block.id, entry.instanceId);
+          broadcastToMusicians({type:'GO_TO_BLOCK',blockId:block.id,instanceId:entry.instanceId});
+        };
         label.addEventListener('click', send);
         label.addEventListener('keydown', event => { if(event.key==='Enter'||event.key===' '){event.preventDefault();send();} });
       }
@@ -1745,6 +1749,63 @@
     else if (currentRole === 'director') broadcastToMusicians({ type: 'SCROLL_SPEED', speed: scrollSpeed });
   }
 
+
+  function goToDirectorBlock(blockId, instanceId = null) {
+    if (currentRole !== 'director' || (!blockId && !instanceId)) return;
+    const liveScreen = document.getElementById('live-screen');
+    const liveBody = document.getElementById('live-body');
+    const songContent = document.getElementById('song-content');
+    const isLive = liveScreen && liveScreen.style.display !== 'none';
+    const container = isLive ? liveScreen : window;
+    const root = isLive ? liveBody : songContent;
+    if (!root) return;
+    const rendered = Array.from(root.querySelectorAll('.song-block'));
+    const block = (instanceId && rendered.find(item => item.dataset.blockInstanceId === instanceId)) || rendered.find(item => item.dataset.blockId === blockId);
+    if (!block) return;
+
+    if (directorBlockNavigationFrame) cancelAnimationFrame(directorBlockNavigationFrame);
+    const resumeAutoScroll = isScrolling;
+    const resumeSpeed = scrollSpeed;
+    if (resumeAutoScroll) stopAutoScroll(true);
+
+    isRemoteScroll = true;
+    const viewportHeight = container === window ? window.innerHeight : container.clientHeight;
+    const startScroll = container === window ? window.scrollY : container.scrollTop;
+    const viewportTop = container === window ? 0 : container.getBoundingClientRect().top;
+    const blockTop = block.getBoundingClientRect().top - viewportTop + startScroll;
+    const targetScroll = Math.max(0, blockTop - viewportHeight * SCROLL_SYNC_GUIDE_RATIO);
+    const startTime = performance.now();
+
+    const animate = now => {
+      const progress = Math.min(1, (now - startTime) / 400);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const nextScroll = startScroll + (targetScroll - startScroll) * eased;
+      if (container === window) window.scrollTo(0, nextScroll);
+      else container.scrollTop = nextScroll;
+
+      if (progress < 1) {
+        directorBlockNavigationFrame = requestAnimationFrame(animate);
+      } else {
+        directorBlockNavigationFrame = null;
+        isRemoteScroll = false;
+        block.classList.remove('remote-block-highlight');
+        void block.offsetWidth;
+        block.classList.add('remote-block-highlight');
+        setTimeout(() => block.classList.remove('remote-block-highlight'), 700);
+
+        if (resumeAutoScroll) {
+          startLocalScrollMotor(container, resumeSpeed, false);
+          const btn = document.getElementById('scroll-toggle-btn');
+          const liveBtn = document.getElementById('live-scroll-btn');
+          if (btn) btn.innerText = "⏸ Pausa";
+          if (liveBtn) liveBtn.innerText = "⏸ Pausa";
+        } else {
+          broadcastReadingPosition(container, true);
+        }
+      }
+    };
+    directorBlockNavigationFrame = requestAnimationFrame(animate);
+  }
 
   function goToRemoteBlock(blockId, instanceId = null) {
     if (currentRole !== 'musician' || (!blockId && !instanceId)) return;
