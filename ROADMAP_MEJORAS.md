@@ -99,5 +99,6 @@ No se descartan. Se mantienen registradas y se priorizarán después de asegurar
 ## 7. Registro de versiones y cambios
 
 - **v1.1.18:** Mi Set por tono y secuencia personalizada de bloques; funcionamiento offline y persistencia confirmados por el usuario en dos iPhone.
-- **Rama actual:** `feature/acordes-configurables`.
+- **v1.1.19:** Motor unificado de reconocimiento/transposición de acordes y roadmap maestro; validación técnica automatizada completada, pendiente prueba funcional del usuario.
+- **Rama de implementación del motor:** `feature/acordes-configurables`.
 - **Trabajo actual:** motor unificado de reconocimiento, normalización y transposición de acordes. Pruebas técnicas: sintaxis JavaScript válida; 25 variantes de acordes y 625 combinaciones de transposición verificadas en notación anglosajona y latina, sin errores de tono raíz/bajo ni pérdida de sufijos. Pendiente integración en `main` de pruebas y validación del usuario en la PWA.
