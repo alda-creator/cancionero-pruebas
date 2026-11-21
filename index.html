@@ -980,19 +980,32 @@
 
   function parseChordNote(note) {
     if (typeof note !== 'string') return null;
-    const match = note.trim().match(/^(SOL|DO|RE|MI|FA|LA|SI|[A-G])([#b]?)(.*)$/i);
+    const value = note.trim();
+    if (!value) return null;
+
+    // Primero prueba los nombres latinos completos; si el prefijo coincide
+    // pero deja un sufijo inválido (por ejemplo Fadd9 leído como FA + dd9),
+    // vuelve a intentar con la nota anglosajona de una sola letra.
+    const rootNames = ['SOL','DO','RE','MI','FA','LA','SI'];
+    for (const rootName of rootNames) {
+      if (!value.toUpperCase().startsWith(rootName)) continue;
+      const rest = value.slice(rootName.length);
+      const accidental = /^[#b]/i.test(rest) ? rest[0] : '';
+      const suffix = rest.slice(accidental ? 1 : 0);
+      if (!chordSuffixPattern.test(suffix)) continue;
+      const root = accidental
+        ? (chordSpanishToAnglo[rootName + accidental.toUpperCase()] || chordSpanishToAnglo[rootName] + accidental)
+        : chordSpanishToAnglo[rootName];
+      return { root, suffix };
+    }
+
+    const match = value.match(/^([A-G])([#b]?)(.*)$/i);
     if (!match) return null;
-    const rawRoot = match[1].toUpperCase();
-    const accidental = match[2];
+    const root = match[1].toUpperCase() + match[2];
     const suffix = match[3] || '';
-    let root;
-    if (chordSpanishToAnglo[rawRoot]) root = chordSpanishToAnglo[rawRoot] + accidental;
-    else if (chordSpanishToAnglo[rawRoot + accidental.toUpperCase()]) root = chordSpanishToAnglo[rawRoot + accidental.toUpperCase()];
-    else root = rawRoot + accidental;
-    if (!/^[A-G][#b]?$/.test(root)) return null;
+    if (!chordSuffixPattern.test(suffix)) return null;
     return { root, suffix };
   }
-
   function parseChordToken(token) {
     if (typeof token !== 'string') return null;
     const value = token.trim();
