@@ -372,7 +372,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.1.19 · Motor de acordes · Mi Set por tono y secuencia (PRUEBAS)</div>
+        <div class="app-version">v1.1.20 · Tonalidad original manual · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -497,7 +497,14 @@
     <h2 id="editor-heading" style="margin-top:0;">Agregar Nueva Canción</h2>  
 
     <input type="text" class="search-bar" id="edit-title" placeholder="Título de la canción">  
-    <input type="text" class="search-bar" id="edit-author" placeholder="Autor / Grupo (Opcional)">  
+    <input type="text" class="search-bar" id="edit-author" placeholder="Autor / Grupo (Opcional)">
+    <div style="background:var(--card);border:1px solid var(--card-border);border-radius:10px;padding:10px;margin-bottom:12px;">
+      <label for="edit-original-key" style="display:block;font-size:13px;font-weight:700;margin-bottom:6px;">Tonalidad original</label>
+      <select id="edit-original-key" class="search-bar" style="margin-bottom:6px;" aria-label="Seleccionar tonalidad original">
+        <option value="C">C</option><option value="C#">C#</option><option value="Db">Db</option><option value="D">D</option><option value="D#">D#</option><option value="Eb">Eb</option><option value="E">E</option><option value="F">F</option><option value="F#">F#</option><option value="Gb">Gb</option><option value="G">G</option><option value="G#">G#</option><option value="Ab">Ab</option><option value="A">A</option><option value="A#">A#</option><option value="Bb">Bb</option><option value="B">B</option>
+      </select>
+      <div style="font-size:12px;color:var(--text-muted);">El primer acorde ya no determina la tonalidad. Puedes ajustarla aquí.</div>
+    </div>  
 
     <div id="field-selector-container" style="display:none; background: var(--card); border: 1px solid var(--accent); padding: 10px; border-radius: 10px; margin-bottom: 12px;">
       <span style="font-size: 12px; font-weight: bold; color: var(--accent); display: block; margin-bottom: 6px;">
@@ -1450,6 +1457,7 @@
     document.getElementById('edit-title').value = '';  
     document.getElementById('edit-author').value = '';  
     document.getElementById('edit-raw').value = '';  
+    document.getElementById('edit-original-key').value = 'C';
     handleEditorInput();
   }  
 
@@ -1459,6 +1467,7 @@
     document.getElementById('editor-heading').innerText = "Editar Canción";  
     document.getElementById('edit-title').value = currentSong.title || '';  
     document.getElementById('edit-author').value = currentSong.author || '';  
+    document.getElementById('edit-original-key').value = currentSong.originalKey || parseRawSongWithBlocks(getSongRawText(currentSong)).key || 'C';
     
     const container = document.getElementById('field-selector-container');
     const buttonsDiv = document.getElementById('field-buttons');
@@ -1992,7 +2001,8 @@
     const parsed = parseRawSongWithBlocks(rawText);
     const newId = editingSongId || ('song_' + (typeof crypto !== 'undefined' && crypto.randomUUID
       ? crypto.randomUUID() : Date.now() + '_' + Math.random().toString(36).slice(2)));
-    const songData = { id: newId, title, author: author || "Iglesia de Dios 7d", originalKey: parsed.key, rawText };
+    const selectedOriginalKey = document.getElementById('edit-original-key').value || parsed.key || 'C';
+    const songData = { id: newId, title, author: author || "Iglesia de Dios 7d", originalKey: selectedOriginalKey, rawText };
     const index = songs.findIndex(song => song.id === newId);
     const existingSong = index >= 0 ? songs[index] : null;
     const firestoreId = existingSong?.firestoreId || newId;
