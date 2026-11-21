@@ -38,7 +38,8 @@ self.addEventListener('install', (event) => {
     await cache.addAll([
       './manifest.json',
       './js/peerjs.min.js',
-      './director-fix.js'
+      './director-fix.js',
+      './meeting-fix.js'
     ]);
 
     const indexResponse = await fetch('./index.html', { cache: 'no-store' });
