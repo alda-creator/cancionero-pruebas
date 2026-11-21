@@ -683,6 +683,20 @@
         const data = doc.data() || {};
         songs.push({ ...data, id: data.id || doc.id, firestoreId: doc.id });
       });
+
+      // Una operación local pendiente tiene prioridad visual sobre el snapshot
+      // remoto hasta que Firestore confirme su escritura o eliminación.
+      readPendingFirestoreSync().forEach(operation => {
+        songs = songs.filter(song => song.firestoreId !== operation.firestoreId);
+        if (operation.type === 'set') {
+          songs.push({
+            ...operation.data,
+            id: operation.data.id || operation.firestoreId,
+            firestoreId: operation.firestoreId
+          });
+        }
+      });
+
       localStorage.setItem('church_songs', JSON.stringify(songs));
       if (document.getElementById('list-view').style.display !== 'none') renderCurrentTab();
       updateSyncStatus();
