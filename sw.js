@@ -8,7 +8,7 @@ const ASSETS_TO_CACHE = [
   './meeting-fix.js'
 ];
 
-const DIRECTOR_FIX_TAG = '<script src="./director-fix.js"></script>\\n<script src="./meeting-fix.js"></script>';
+const DIRECTOR_FIX_TAG = '<script src="./director-fix.js"></script>\n<script src="./meeting-fix.js"></script>';
 
 async function injectDirectorFix(response) {
   if (!response || !response.ok) return response;
