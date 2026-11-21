@@ -522,6 +522,7 @@
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>  
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>  
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>  
 
 <script>  
@@ -536,15 +537,28 @@
 
   let db = null;  
   let songsCollection = null;  
+  let firebaseAuthReady = Promise.resolve(false);
 
   try {  
     if (typeof firebase !== 'undefined') {  
       firebase.initializeApp(firebaseConfig);  
+      const auth = firebase.auth();
       db = firebase.firestore();  
       db.enablePersistence().catch(() => {});  
-      songsCollection = db.collection('songs');  
+      songsCollection = db.collection('songs');
+
+      // Firestore ya no se consulta sin sesión. La cuenta anónima identifica
+      // cada instalación sin pedir al usuario correo ni contraseña.
+      firebaseAuthReady = auth.signInAnonymously()
+        .then(() => true)
+        .catch((error) => {
+          console.error('No fue posible iniciar sesión anónima en Firebase:', error);
+          return false;
+        });
     }  
-  } catch (e) {}  
+  } catch (e) {
+    console.error('No fue posible inicializar Firebase:', e);
+  }  
 
   const scaleA = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];  
   const angloToLatinoMap = { 'C':'Do', 'D':'Re', 'E':'Mi', 'F':'Fa', 'G':'Sol', 'A':'La', 'B':'Si', 'C#':'Do#', 'D#':'Re#', 'F#':'Fa#', 'G#':'Sol#', 'A#':'La#', 'Db':'Reb', 'Eb':'Mib', 'Gb':'Solb', 'Ab':'Lab', 'Bb':'Sib' };  
@@ -581,8 +595,14 @@
   // incluso antes de que se ejecute cualquier GO_TO_BLOCK.
   let remoteBlockNavigationLock = false;
 
-  function listenToSongs() {  
-    if (songsCollection) {  
+  async function listenToSongs() {  
+    if (songsCollection) {
+      const authenticated = await firebaseAuthReady;
+      if (!authenticated) {
+        loadLocalSongs();
+        updateSyncStatus();
+        return;
+      }
       songsCollection.orderBy('title').onSnapshot(snapshot => {  
         songs = [];  
         snapshot.forEach(doc => {
