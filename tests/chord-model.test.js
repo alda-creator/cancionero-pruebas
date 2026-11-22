@@ -171,7 +171,7 @@ test('ajusta la posición del acorde cuando se inserta texto antes de él', () =
 });
 
 test('mantiene el acorde unido a la palabra cuando se inserta texto en su posición', () => {
-  const original = ChordModel.convertLegacy('C\nHola mundo').structuredContent;
+  const original = ChordModel.convertLegacy('     C\nHola mundo').structuredContent;
   const result = ChordModel.reconcileLyrics(original, 'Hola querido mundo');
   assert.equal(result.ok, true);
   const chord = result.structuredContent.blocks[0].rows[0].chords[0];
