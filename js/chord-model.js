@@ -319,13 +319,18 @@
         matchedNewRows.add(newIndex);
         preservedRowIds.add(oldRow.id);
         newRow.id = oldRow.id;
-        newRow.chords = oldRow.chords.map(chord => ({
-          ...chord,
-          position: {
-            ...chord.position,
-            offset: adjustChordOffset(oldRow.lyric, newRow.lyric, chord.position.offset, chord.position.affinity)
-          }
-        }));
+        // Si el usuario escribió acordes en la línea instrumental del texto,
+        // la conversión nueva es la fuente de esos acordes. Si la línea sigue
+        // vacía en rawText, conservamos los acordes estructurados del editor.
+        if (!(oldRow.lyric === '' && newRow.lyric === '' && newRow.chords.length > 0)) {
+          newRow.chords = oldRow.chords.map(chord => ({
+            ...chord,
+            position: {
+              ...chord.position,
+              offset: adjustChordOffset(oldRow.lyric, newRow.lyric, chord.position.offset, chord.position.affinity)
+            }
+          }));
+        }
       });
       const usedRowIds = new Set(preservedRowIds);
       newRows.forEach((row, rowIndex) => {
