@@ -1,7 +1,8 @@
 # Diseño técnico: editor de acordes estructurados
 
-**Estado:** modelo, conversión conservadora, persistencia, render estructurado y primera edición visual integrados en la rama de pruebas; falta validación de interacción real en navegador y completar el flujo de edición.  
-**Rama:** `feature/editor-acordes-estructurados`  
+**Estado:** modelo, conversión conservadora, persistencia, render estructurado y editor integrado en la vista previa implementados en la rama de pruebas; pendiente validar Safari/iPhone, Firestore y offline.  
+**Rama inicial:** `feature/editor-acordes-estructurados`  
+**Iteración de UX móvil:** `feature/editor-integrado-alineacion-movil`  
 **Objetivo:** evolucionar el editor de canciones sin romper canciones existentes, transposición, Mi Set, modo Director/Músico ni uso offline.
 
 ## 1. Decisión de arquitectura
@@ -126,3 +127,14 @@ No se cambia Firebase ni sus reglas en esta iniciativa.
 - `sw.js` sigue en caché v19; no se añadió ningún recurso nuevo. No se modificó Firebase ni sus reglas.
 
 - La vista previa y los chips del editor respetan la preferencia de notación anglosajona o latina; la estructura interna sigue guardando raíces canónicas para transponer sin ambigüedad.
+
+
+## 9. Iteración UX móvil — v1.1.22
+
+- La vista previa de cada línea es también la superficie de edición: tocar la letra posiciona el cursor musical y tocar un acorde existente permite seleccionarlo.
+- Se elimina la duplicación de letra, vista previa y chips independientes; el editor presenta una sola representación de cada línea.
+- Los controles de acorde aparecen únicamente después de seleccionar una línea y se mantienen compactos.
+- En lectura y edición, las líneas estructuradas conservan una sola línea horizontal desplazable. Esto evita que el texto se envuelva debajo de acordes posicionados con coordenadas de carácter, que antes podían salirse de la tarjeta o quedar superpuestos.
+- La navegación horizontal es intencional en líneas largas; debe probarse con VoiceOver, Safari iOS y tamaños de pantalla reducidos.
+- Se conserva el formato heredado: las canciones antiguas se convierten de manera conservadora al abrir el editor; si la conversión no es segura, se mantiene el texto original sin modificarlo.
+- Caché PWA incrementada a v20 para forzar la actualización de los recursos.
