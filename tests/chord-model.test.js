@@ -137,4 +137,45 @@ test('no serializa una afinidad que el formato heredado no puede representar', (
   assert.equal(result.rawText, null);
 });
 
+test('reconcilia cambios de letra y conserva acordes en filas intactas y editadas', () => {
+  const original = ChordModel.convertLegacy('[CORO]\nC       G\nAbba Padre, Abba Padre\nD\nEstar contigo').structuredContent;
+  const result = ChordModel.reconcileLyrics(original, '[CORO]\nAbba Padre, Abba Padre por siempre\nEstar contigo\nNueva línea');
+  assert.equal(result.ok, true);
+  const rows = result.structuredContent.blocks[0].rows;
+  assert.equal(rows.length, 3);
+  assert.equal(rows[0].chords.length, 2);
+  assert.equal(rows[0].lyric, 'Abba Padre, Abba Padre por siempre');
+  assert.equal(rows[1].chords.length, 1);
+  assert.equal(rows[1].chords[0].root, 'D');
+  assert.equal(rows[2].chords.length, 0);
+  assert.equal(ChordModel.validateStructuredContent(result.structuredContent).valid, true);
+});
+
+test('inserta una línea antes de otras sin desplazar sus acordes', () => {
+  const original = ChordModel.convertLegacy('[CORO]\nG\nPrimera línea\nD\nSegunda línea').structuredContent;
+  const result = ChordModel.reconcileLyrics(original, '[CORO]\nNueva línea\nPrimera línea\nSegunda línea');
+  assert.equal(result.ok, true);
+  const rows = result.structuredContent.blocks[0].rows;
+  assert.equal(rows[0].lyric, 'Nueva línea');
+  assert.equal(rows[0].chords.length, 0);
+  assert.equal(rows[1].chords[0].root, 'G');
+  assert.equal(rows[2].chords[0].root, 'D');
+});
+
+test('ajusta la posición del acorde cuando se inserta texto antes de él', () => {
+  const original = ChordModel.convertLegacy('C        G\nHola mundo').structuredContent;
+  const result = ChordModel.reconcileLyrics(original, 'Hola querido mundo');
+  assert.equal(result.ok, true);
+  const chord = result.structuredContent.blocks[0].rows[0].chords[1];
+  assert.equal(chord.position.offset, 17);
+});
+
+test('mantiene el acorde unido a la palabra cuando se inserta texto en su posición', () => {
+  const original = ChordModel.convertLegacy('     C\nHola mundo').structuredContent;
+  const result = ChordModel.reconcileLyrics(original, 'Hola querido mundo');
+  assert.equal(result.ok, true);
+  const chord = result.structuredContent.blocks[0].rows[0].chords[0];
+  assert.equal(chord.position.offset, 13);
+});
+
 process.stdout.write('\nPruebas del modelo de acordes finalizadas.\n');

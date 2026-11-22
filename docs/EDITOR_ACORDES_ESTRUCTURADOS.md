@@ -138,3 +138,14 @@ No se cambia Firebase ni sus reglas en esta iniciativa.
 - La navegación horizontal es intencional en líneas largas; debe probarse con VoiceOver, Safari iOS y tamaños de pantalla reducidos.
 - Se conserva el formato heredado: las canciones antiguas se convierten de manera conservadora al abrir el editor; si la conversión no es segura, se mantiene el texto original sin modificarlo.
 - Caché PWA incrementada a v20 para forzar la actualización de los recursos.
+
+
+## 10. Corrección de integridad y lectura en vivo — v1.1.23
+
+- La edición del texto ya no invalida ni descarta el borrador estructurado.
+- `reconcileLyrics` convierte el texto editado a filas y las reconcilia con la estructura anterior: conserva IDs y acordes de filas coincidentes, actualiza las letras y ajusta offsets cuando se insertan/eliminan caracteres antes del acorde.
+- Las líneas nuevas nacen sin acordes; las líneas eliminadas dejan de existir. Las filas modificadas entre anclas intactas se emparejan por orden.
+- Si la conversión del texto editado es ambigua o inválida, se conserva el último borrador estructurado y se bloquea el guardado para evitar pérdida silenciosa.
+- El render de lectura divide visualmente cada fila en unidades de palabras con acordes anclados; el navegador puede envolverlas en varias líneas verticales sin scroll horizontal. La posición estructurada sigue almacenada como offset dentro de la letra original.
+- Las canciones heredadas se convierten solo para visualización cuando el parser puede hacerlo sin ambigüedad. No se migran ni escriben automáticamente.
+- Pendiente: pruebas reales en Safari/iPhone, Auto-Scroll, Director/Músico, Firestore y modo offline; comprobar líneas largas, acordes múltiples sobre una palabra y cambios complejos de varias estrofas.
