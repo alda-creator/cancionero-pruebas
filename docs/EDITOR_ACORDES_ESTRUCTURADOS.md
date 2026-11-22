@@ -140,7 +140,7 @@ No se cambia Firebase ni sus reglas en esta iniciativa.
 - Caché PWA incrementada a v20 para forzar la actualización de los recursos.
 
 
-## 10. Corrección de integridad y lectura en vivo — iteración siguiente
+## 10. Corrección de integridad y lectura en vivo — v1.1.23
 
 - La edición del texto ya no invalida ni descarta el borrador estructurado.
 - `reconcileLyrics` convierte el texto editado a filas y las reconcilia con la estructura anterior: conserva IDs y acordes de filas coincidentes, actualiza las letras y ajusta offsets cuando se insertan/eliminan caracteres antes del acorde.
