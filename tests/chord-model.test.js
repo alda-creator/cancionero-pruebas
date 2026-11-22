@@ -170,4 +170,12 @@ test('ajusta la posición del acorde cuando se inserta texto antes de él', () =
   assert.equal(chord.position.offset, 17);
 });
 
+test('mantiene el acorde unido a la palabra cuando se inserta texto en su posición', () => {
+  const original = ChordModel.convertLegacy('C\nHola mundo').structuredContent;
+  const result = ChordModel.reconcileLyrics(original, 'Hola querido mundo');
+  assert.equal(result.ok, true);
+  const chord = result.structuredContent.blocks[0].rows[0].chords[0];
+  assert.equal(chord.position.offset, 13);
+});
+
 process.stdout.write('\nPruebas del modelo de acordes finalizadas.\n');
