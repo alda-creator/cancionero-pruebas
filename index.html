@@ -1799,7 +1799,7 @@
         card.className = 'structured-editor-row' + (row.id === selectedDraftRowId ? ' selected' : '');
         const preview = document.createElement('div');
         preview.className = 'structured-editor-preview';
-        preview.setAttribute('aria-label', 'Toca la letra para posicionar un acorde');
+        preview.setAttribute('aria-label', row.lyric ? 'Toca la letra para posicionar un acorde' : 'Fila instrumental: toca para colocar un acorde');
         row.chords.forEach(chord => {
           const positionedChord = document.createElement('span');
           positionedChord.className = 'structured-editor-preview-chord' + (chord.id === selectedDraftChordId ? ' selected' : '');
@@ -1824,7 +1824,7 @@
         });
         const lyric = document.createElement('span');
         lyric.className = 'structured-editor-preview-lyric';
-        lyric.textContent = row.lyric || '(línea sin letra)';
+        lyric.textContent = row.lyric || '(fila instrumental · toca para colocar acordes)';
         lyric.addEventListener('click', event => {
           selectedDraftRowId = row.id;
           selectedDraftChordId = null;
@@ -1873,7 +1873,7 @@
     const chord = row.chords.find(item => item.id === selectedDraftChordId);
     if (!chord) return;
     const nextOffset = chord.position.offset + delta;
-    const max = Array.from(row.lyric).length;
+    const max = row.lyric.length ? Array.from(row.lyric).length : 10000;
     if (nextOffset < 0 || nextOffset > max) return;
     if (row.chords.some(item => item.id !== chord.id && item.position.offset === nextOffset)) {
       alert('Ya hay otro acorde en esa posición.');
@@ -1889,7 +1889,7 @@
   function saveStructuredDraftChord() {
     const row = draftRowById();
     if (!row) {
-      alert('Primero selecciona una línea de letra.');
+      alert('Primero selecciona una línea de letra o una fila instrumental.');
       return;
     }
     const symbol = document.getElementById('structured-chord-symbol').value.trim();
@@ -1899,9 +1899,9 @@
       return;
     }
     const offset = Number(document.getElementById('structured-chord-offset').value);
-    const max = Array.from(row.lyric).length;
+    const max = row.lyric.length ? Array.from(row.lyric).length : 10000;
     if (!Number.isInteger(offset) || offset < 0 || offset > max) {
-      alert('La posición debe estar entre 0 y ' + max + '.');
+      alert(row.lyric.length ? 'La posición debe estar entre 0 y ' + max + '.' : 'La posición instrumental debe ser un número entre 0 y 10000.');
       return;
     }
     const collision = row.chords.find(chord =>
