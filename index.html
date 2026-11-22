@@ -1290,7 +1290,8 @@
             const symbol = chordData.root + chordData.quality +
               (chordData.bass ? '/' + chordData.bass : '');
             chord.textContent = transposeChordToken(symbol, currentTransposeSteps);
-            chord.style.left = (chordData.position.offset * 1) + 'ch';
+            const visualOffset = chordData.position.offset + (chordData.position.affinity === 'after' ? 1 : 0);
+            chord.style.left = visualOffset + 'ch';
             chord.dataset.chordId = chordData.id;
             pair.appendChild(chord);
           });
