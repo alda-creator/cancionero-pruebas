@@ -243,15 +243,22 @@
     @keyframes remoteBlockHighlight { 0% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
 
     .line-pair {
+      box-sizing: border-box;
+      max-width: 100%;
       font-family: "Courier New", Courier, monospace;
       font-size: 16px;
       line-height: 1.5;
       margin-bottom: 8px;
-      white-space: pre-wrap;
+      white-space: pre;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      overscroll-behavior-x: contain;
     }
 
-    .chord-line { color: var(--chord); font-weight: 700; }
-    .text-line { color: var(--text); }
+    .chord-line { color: var(--chord); font-weight: 700; white-space: pre; }
+    .text-line { color: var(--text); white-space: pre; }
 
     /* Render estructurado: los acordes son etiquetas ancladas a posiciones
        de la letra; no se insertan espacios artificiales en el contenido. */
