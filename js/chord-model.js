@@ -226,7 +226,7 @@
     return String(value || '').normalize('NFC').replace(/\s+/g, ' ').trim();
   }
 
-  function adjustChordOffset(oldLyric, newLyric, offset) {
+  function adjustChordOffset(oldLyric, newLyric, offset, affinity) {
     const oldChars = Array.from(oldLyric || '');
     const newChars = Array.from(newLyric || '');
     let prefix = 0;
@@ -238,7 +238,7 @@
     const oldChangedEnd = oldChars.length - suffix;
     const newChangedEnd = newChars.length - suffix;
     let next = offset;
-    if (offset > prefix && offset >= oldChangedEnd) {
+    if ((offset > prefix || (offset === prefix && affinity === 'before' && oldChangedEnd === prefix)) && offset >= oldChangedEnd) {
       next += newChangedEnd - oldChangedEnd;
     } else if (offset > prefix && offset < oldChangedEnd) {
       next = newChangedEnd;
@@ -323,7 +323,7 @@
           ...chord,
           position: {
             ...chord.position,
-            offset: adjustChordOffset(oldRow.lyric, newRow.lyric, chord.position.offset)
+            offset: adjustChordOffset(oldRow.lyric, newRow.lyric, chord.position.offset, chord.position.affinity)
           }
         }));
       });
