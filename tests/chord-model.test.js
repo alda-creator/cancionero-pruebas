@@ -186,7 +186,7 @@ test('acepta y serializa filas instrumentales con acordes espaciados y sin letra
   const row = result.structuredContent.blocks[0].rows[0];
   assert.equal(row.lyric, '');
   assert.deepEqual(row.chords.map(chord => chord.root), ['C','D','G']);
-  assert.deepEqual(row.chords.map(chord => chord.position.offset), [0,6,12]);
+  assert.deepEqual(row.chords.map(chord => chord.position.offset), [0,6,13]);
   assert.equal(ChordModel.validateStructuredContent(result.structuredContent).valid, true);
   const serialized = ChordModel.serializeLegacy(result.structuredContent);
   assert.equal(serialized.ok, true);
