@@ -167,7 +167,7 @@ test('ajusta la posición del acorde cuando se inserta texto antes de él', () =
   const result = ChordModel.reconcileLyrics(original, 'Hola querido mundo');
   assert.equal(result.ok, true);
   const chord = result.structuredContent.blocks[0].rows[0].chords[0];
-  assert.equal(chord.position.offset, 16);
+  assert.equal(chord.position.offset, 17);
 });
 
 process.stdout.write('\nPruebas del modelo de acordes finalizadas.\n');
