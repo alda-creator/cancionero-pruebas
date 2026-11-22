@@ -21,15 +21,16 @@ test('reconoce acordes anglosajones, latinos, extensiones e inversiones', () => 
     halfDiminished: ['Cm7b5', 'C', 'm7b5'],
     altered: ['G7(b9)', 'G', '7(b9)'],
     sixNine: ['C6/9', 'C', '6/9'],
-    inversion: ['C/E', 'C', 'E'],
+    inversion: ['C/E', 'C', '', 'E'],
     latinFlat: ['Sib', 'Bb', ''],
     latinExtended: ['Sol#m7', 'G#', 'm7']
   };
-  for (const [key, [symbol, root, quality]] of Object.entries(cases)) {
+  for (const [key, [symbol, root, quality, bass = null]] of Object.entries(cases)) {
     const parsed = ChordModel.parseChordSymbol(symbol);
     assert.ok(parsed, key + ' debe reconocerse');
     assert.equal(parsed.root, root);
     assert.equal(parsed.quality, quality);
+    assert.equal(parsed.bass, bass);
   }
   assert.equal(ChordModel.parseChordSymbol('H7'), null);
   assert.equal(ChordModel.parseChordSymbol('C/E/G'), null);
