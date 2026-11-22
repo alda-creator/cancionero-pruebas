@@ -58,7 +58,7 @@ test('convierte letras sin acordes y bloques repetidos con IDs únicos', () => {
 });
 
 test('rechaza posiciones ambiguas y tabulaciones sin inventar ubicaciones', () => {
-  const beyond = ChordModel.convertLegacy('C       G\nSol');
+  const beyond = ChordModel.convertLegacy('C       G\nLetra');
   assert.equal(beyond.ok, false);
   assert.equal(beyond.reason, 'ambiguous');
   const tabs = ChordModel.convertLegacy('C\tG\nLetra');
