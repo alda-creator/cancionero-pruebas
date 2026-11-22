@@ -15,7 +15,7 @@ function test(name, fn) {
 
 test('reconoce acordes anglosajones, latinos, extensiones e inversiones', () => {
   const cases = {
-    C: ['C', '', null],
+    C: ['C', 'C', ''],
     Fsharp: ['F#m7', 'F#', 'm7'],
     Cmajor: ['Cmaj7', 'C', 'maj7'],
     halfDiminished: ['Cm7b5', 'C', 'm7b5'],
