@@ -311,9 +311,13 @@
         if (oldNext < n && newNext < m) rowPairs.push([oldNext, newNext]);
       }
 
+      const matchedNewRows = new Set();
+      const preservedRowIds = new Set();
       rowPairs.forEach(([oldIndex, newIndex]) => {
         const oldRow = oldRows[oldIndex];
         const newRow = newRows[newIndex];
+        matchedNewRows.add(newIndex);
+        preservedRowIds.add(oldRow.id);
         newRow.id = oldRow.id;
         newRow.chords = oldRow.chords.map(chord => ({
           ...chord,
@@ -322,6 +326,18 @@
             offset: adjustChordOffset(oldRow.lyric, newRow.lyric, chord.position.offset)
           }
         }));
+      });
+      const usedRowIds = new Set(preservedRowIds);
+      newRows.forEach((row, rowIndex) => {
+        if (matchedNewRows.has(rowIndex)) return;
+        if (usedRowIds.has(row.id)) {
+          const baseId = 'row-added-' + (nextBlockIndex + 1) + '-' + (rowIndex + 1);
+          let candidate = baseId;
+          let suffix = 2;
+          while (usedRowIds.has(candidate)) candidate = baseId + '-' + suffix++;
+          row.id = candidate;
+        }
+        usedRowIds.add(row.id);
       });
     });
 
