@@ -751,6 +751,7 @@
   let editingSongId = null;
   let structuredDraft = null;
   let structuredDraftDirty = false;
+  let structuredDraftSyncError = null;
   let selectedDraftRowId = null;
   let selectedDraftChordId = null;  
   let currentTransposeSteps = 0;
@@ -1601,6 +1602,7 @@
 
   function editCurrentSong() {
     structuredDraftDirty = false;
+    structuredDraftSyncError = null;
     structuredDraft = currentSong && currentSong.editorVersion === 2 &&
       currentSong.structuredContent && window.ChordModel &&
       window.ChordModel.validateStructuredContent(currentSong.structuredContent).valid
@@ -1800,13 +1802,8 @@
   }
 
   function confirmRawTextWillReplaceStructuredDraft() {
-    if (!structuredDraftDirty) return true;
-    const proceed = confirm('Has modificado acordes en el editor visual. Si cambias el texto original, esos cambios visuales se descartarán. ¿Continuar?');
-    if (!proceed) return false;
-    structuredDraftDirty = false;
-    structuredDraft = null;
-    selectedDraftRowId = null;
-    selectedDraftChordId = null;
+    // Los acordes estructurados se reconcilian con el texto nuevo; editar letra
+    // ya no debe descartar cambios musicales ni pedir confirmación destructiva.
     return true;
   }
 
@@ -1905,20 +1902,32 @@
     const raw = document.getElementById('edit-raw').value;
     const preview = document.getElementById('edit-preview');
     const lines = raw.split('\n');
-    
+
     let html = lines.map(line => {
-      if (isTagLine(line)) {
-        return `<span class="highlight-tag">${escapeHtml(line)}</span>`;
-      }
-      if (isChordLine(line)) {
-        return `<span class="highlight-chord">${escapeHtml(line)}</span>`;
-      }
+      if (isTagLine(line)) return `<span class="highlight-tag">${escapeHtml(line)}</span>`;
+      if (isChordLine(line)) return `<span class="highlight-chord">${escapeHtml(line)}</span>`;
       return escapeHtml(line);
     }).join('\n');
 
     preview.innerHTML = html + '\n\n\n';
     syncEditorScroll();
-    structuredDraft = null;
+
+    if (structuredDraft && window.ChordModel &&
+        window.ChordModel.validateStructuredContent(structuredDraft).valid) {
+      const reconciled = window.ChordModel.reconcileLyrics(structuredDraft, raw);
+      if (reconciled.ok) {
+        structuredDraft = reconciled.structuredContent;
+        structuredDraftSyncError = null;
+      } else {
+        // Nunca sustituimos un borrador con acordes por una conversión vacía.
+        // Se conserva la última estructura íntegra y se impide guardar hasta
+        // que la reconciliación pueda completarse.
+        structuredDraftSyncError = reconciled.warnings.join(' ');
+      }
+    } else {
+      structuredDraft = null;
+      structuredDraftSyncError = null;
+    }
     selectedDraftRowId = null;
     selectedDraftChordId = null;
     renderStructuredEditor();
@@ -1934,9 +1943,7 @@
     if (leftButton) leftButton.addEventListener('click', () => moveSelectedDraftChord(-1));
     if (rightButton) rightButton.addEventListener('click', () => moveSelectedDraftChord(1));
     const rawEditor = document.getElementById('edit-raw');
-    if (rawEditor) rawEditor.addEventListener('beforeinput', event => {
-      if (structuredDraftDirty && !confirmRawTextWillReplaceStructuredDraft()) event.preventDefault();
-    });
+    // La edición de letra se reconcilia con el borrador estructurado; no se descartan acordes.
   });
 
   function toggleAdminActions() {
@@ -2392,6 +2399,10 @@
     const author = document.getElementById('edit-author').value.trim();
     const rawText = document.getElementById('edit-raw').value;
     if (!title || !rawText.trim()) { alert("Ingresa un título y el contenido."); return; }
+    if (structuredDraftSyncError) {
+      alert('No se guardó para proteger tus acordes. Revisa la edición de la letra: ' + structuredDraftSyncError);
+      return;
+    }
     const parsed = parseRawSongWithBlocks(rawText);
     const newId = editingSongId || ('song_' + (typeof crypto !== 'undefined' && crypto.randomUUID
       ? crypto.randomUUID() : Date.now() + '_' + Math.random().toString(36).slice(2)));
