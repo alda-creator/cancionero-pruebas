@@ -1824,21 +1824,36 @@
         });
         const lyric = document.createElement('span');
         lyric.className = 'structured-editor-preview-lyric';
-        lyric.textContent = row.lyric || '(fila instrumental · toca para colocar acordes)';
+        lyric.textContent = row.lyric || ' ';
+        if (!row.lyric) {
+          lyric.style.minWidth = '80ch';
+          lyric.style.cursor = 'crosshair';
+          lyric.title = 'Toca una posición de esta fila instrumental para colocar un acorde';
+        }
         lyric.addEventListener('click', event => {
           selectedDraftRowId = row.id;
           selectedDraftChordId = null;
           let offset = 0;
-          let caret = null;
-          if (document.caretRangeFromPoint) caret = document.caretRangeFromPoint(event.clientX, event.clientY);
-          else if (document.caretPositionFromPoint) {
-            const position = document.caretPositionFromPoint(event.clientX, event.clientY);
-            if (position) caret = { startContainer: position.offsetNode, startOffset: position.offset };
+          if (!row.lyric) {
+            // Las filas instrumentales no tienen texto donde obtener el caret:
+            // usamos una regla monoespaciada de 80 posiciones como superficie musical.
+            const rect = lyric.getBoundingClientRect();
+            const fontSize = parseFloat(getComputedStyle(lyric).fontSize) || 15;
+            const characterWidth = Math.max(1, fontSize * 0.6);
+            offset = Math.max(0, Math.min(80, Math.round((event.clientX - rect.left) / characterWidth)));
+          } else {
+            let caret = null;
+            if (document.caretRangeFromPoint) caret = document.caretRangeFromPoint(event.clientX, event.clientY);
+            else if (document.caretPositionFromPoint) {
+              const position = document.caretPositionFromPoint(event.clientX, event.clientY);
+              if (position) caret = { startContainer: position.offsetNode, startOffset: position.offset };
+            }
+            if (caret && caret.startContainer && lyric.contains(caret.startContainer)) {
+              offset = Array.from(caret.startContainer.textContent.slice(0, caret.startOffset)).length;
+            }
+            offset = Math.min(offset, Array.from(row.lyric).length);
           }
-          if (caret && caret.startContainer && lyric.contains(caret.startContainer)) {
-            offset = Array.from(caret.startContainer.textContent.slice(0, caret.startOffset)).length;
-          }
-          document.getElementById('structured-chord-offset').value = String(Math.min(offset, Array.from(row.lyric).length));
+          document.getElementById('structured-chord-offset').value = String(offset);
           document.getElementById('structured-chord-symbol').value = '';
           renderStructuredEditor();
           document.getElementById('structured-chord-symbol').focus({ preventScroll: true });
