@@ -107,3 +107,13 @@ No se descartan. Se mantienen registradas y se priorizarán después de asegurar
 - **Rama de implementación del motor:** `feature/acordes-configurables`.
 - **Trabajo anterior:** biblioteca de acordes (v1.1.21), rama `feature/biblioteca-acordes`.  
 - **Trabajo actual:** UX móvil del editor estructurado (v1.1.22), rama `feature/editor-integrado-alineacion-movil`.
+
+
+## 8. Estrategia de transición al formato estructurado (prioridad de arquitectura)
+
+- **Dirección acordada:** el formato estructurado será el estándar; el texto heredado se reducirá gradualmente como ruta principal, pero seguirá como respaldo seguro.
+- **Política:** migración bajo demanda, reversible, validada, con original preservado; no se realizarán conversiones masivas automáticas.
+- **Fases:** inventario/diagnóstico sin alterar datos; filas instrumentales y bloques flexibles; editor único; conversor/adaptador robusto; render común; detección de tonalidad; menús compactos de bloques; herramientas de migración asistida; retiro gradual de rutas heredadas cuando haya evidencia de cobertura y seguridad.
+- **Casos críticos:** acordes sin letra (INTRO/interludios), formatos mixtos, tabulaciones, acordes desplazados, canciones recién agregadas que no convierten y muestras históricas. Ningún caso ambiguo debe provocar pérdida o sobrescritura silenciosa.
+- **Documento de política:** `docs/ESTRATEGIA_MIGRACION_FORMATO.md`.
+- **No se autoriza en esta fase:** cambios a producción, Firebase, reglas, ni migración masiva de biblioteca.
