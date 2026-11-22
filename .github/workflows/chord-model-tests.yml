@@ -8,6 +8,7 @@ on:
       - "js/song-diagnostics.js"
       - "tests/**"
       - "index.html"
+      - "sw.js"
       - ".github/workflows/chord-model-tests.yml"
   push:
     branches: [main]
@@ -15,6 +16,8 @@ on:
       - "js/chord-model.js"
       - "js/song-diagnostics.js"
       - "tests/**"
+      - "index.html"
+      - "sw.js"
       - ".github/workflows/chord-model-tests.yml"
 
 jobs:
