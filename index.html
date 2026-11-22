@@ -565,6 +565,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>  
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>  
 
+<!-- Modelo estructurado de acordes: debe cargarse antes del código principal. -->
+<script src="./js/chord-model.js"></script>
+
 <script>  
   const firebaseConfig = {  
     apiKey: "AIzaSyBQmONsN_TaOaPG7MKdm_sl62r_1DXvlcY",  
@@ -2013,6 +2016,17 @@
       ? crypto.randomUUID() : Date.now() + '_' + Math.random().toString(36).slice(2)));
     const selectedOriginalKey = document.getElementById('edit-original-key').value || parsed.key || 'C';
     const songData = { id: newId, title, author: author || "Iglesia de Dios 7d", originalKey: selectedOriginalKey, rawText };
+
+    // Guardamos una representación estructurada paralela solo cuando la
+    // conversión es inequívoca. rawText se conserva siempre como respaldo.
+    // Las canciones antiguas se convierten al guardarlas, nunca en bloque.
+    if (window.ChordModel && typeof window.ChordModel.convertLegacy === 'function') {
+      const conversion = window.ChordModel.convertLegacy(rawText);
+      if (conversion.ok && window.ChordModel.validateStructuredContent(conversion.structuredContent).valid) {
+        songData.editorVersion = 2;
+        songData.structuredContent = conversion.structuredContent;
+      }
+    }
     const index = songs.findIndex(song => song.id === newId);
     const existingSong = index >= 0 ? songs[index] : null;
     const firestoreId = existingSong?.firestoreId || newId;
