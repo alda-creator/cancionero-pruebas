@@ -96,7 +96,7 @@ No se cambia Firebase ni sus reglas en esta iniciativa.
 
 1. **Completada en rama:** esquema v2, validador, parser de símbolos, conversor heredado conservador y serializador protegido; sin cambios en la interfaz.
 2. **Completada en rama:** pruebas de acordes, nomenclaturas, inversiones, posiciones Unicode, ambigüedad, validación y serialización. 8 pruebas ejecutadas correctamente.
-3. Integrar render estructurado manteniendo fallback heredado.
+3. **En curso:** cargar el módulo en la PWA, generar `structuredContent` al guardar cuando la conversión sea inequívoca y conservar `rawText` como respaldo. El render actual todavía usa el parser heredado.
 4. Añadir inserción y edición visual de acordes.
 5. Integrar transposición sobre entidades estructuradas.
 6. Añadir catálogo de digitaciones y diagramas SVG locales.
@@ -106,8 +106,11 @@ No se cambia Firebase ni sus reglas en esta iniciativa.
 
 ## 8. Implementación actual en la rama
 
-- `js/chord-model.js`: módulo aislado UMD, disponible como `ChordModel` en navegador y exportable en Node para pruebas. No está cargado todavía por `index.html`.
-- `tests/chord-model.test.js`: suite de 8 pruebas; ejecución aislada sobre el contenido real de ambos archivos: 8/8 correctas.
+- `js/chord-model.js`: módulo UMD cargado por `index.html` antes del código principal; expone `window.ChordModel` y puede exportarse en Node para pruebas.
+- `saveSong()` genera `editorVersion: 2` y `structuredContent` solo cuando la conversión y validación terminan correctamente. `rawText` siempre se conserva; las canciones ambiguas siguen guardándose en formato heredado.
+- La conversión es bajo demanda al guardar; no se realiza migración masiva al abrir la aplicación.
+- `sw.js` usa caché v19 e incluye el módulo en la precarga para uso offline.
+- `tests/chord-model.test.js`: suite de 8 pruebas; 8/8 correctas. También se verificó sintácticamente el script principal y el service worker.
 - El conversor no intenta adivinar si hay tabulaciones o acordes más allá del final de la letra.
 - El serializador rechaza acordes superpuestos o afinidades que el formato heredado no representa.
-- No se ha modificado `index.html`, `sw.js`, Firebase ni el comportamiento de la aplicación.
+- `index.html` y `sw.js` se modificaron únicamente para cargar/guardar el modelo y precargarlo offline. No se modificó Firebase ni sus reglas. La interfaz y el renderizado continúan usando el comportamiento heredado.
