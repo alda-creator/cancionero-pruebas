@@ -242,6 +242,10 @@
         for (const chord of ordered) {
           const name = chord.root + chord.quality + (chord.bass ? '/' + chord.bass : '');
           const offset = chord.position.offset;
+          if (chord.position.affinity !== 'before') {
+            serializationError = 'La afinidad de posición no existe en el formato heredado.';
+            break;
+          }
           if (offset < lastEnd) {
             serializationError = 'Hay acordes superpuestos; no se puede serializar sin pérdida.';
             break;
