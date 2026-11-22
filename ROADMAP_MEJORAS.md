@@ -42,9 +42,9 @@ Orden de trabajo recomendado. El orden podrá ajustarse si las pruebas descubren
 | P0 | Motor unificado de reconocimiento y transposición de acordes | Implementado y probado por usuario | Reconoce y transpone acordes básicos, extendidos, alterados, inversiones y bajos; conserva sufijos y espaciado; funciona en ambas nomenclaturas. |
 | P0 | Selector manual de tonalidad original independiente del primer acorde | Implementado y probado por usuario | En alta/edición se selecciona y guarda la tonalidad original; el detector de primer acorde solo sugiere, y las canciones antiguas conservan su tonalidad. |
 | P0 | Biblioteca/diccionario de acordes | Implementación inicial v1.1.21 en rama; pendiente pruebas | Consulta fórmulas y notas por raíz de 25 familias de acordes, variantes, búsqueda y notación latina/anglo. Diagramas de guitarra quedan por completar/validar. | Variantes y equivalencias, nombres latinos, bajos alternativos y diagramas/posiciones de guitarra. |
-| P0 | Editor visual de acordes sobre la letra | Pendiente | Permite colocar cada acorde en cualquier posición horizontal: antes, encima, entre, sobre o después de palabras; sin depender de insertar espacios manualmente. |
+| P0 | Editor visual de acordes sobre la letra | En diseño técnico | Nuevo modelo de acordes como entidades posicionadas; conservar compatibilidad con canciones antiguas. Ver `docs/EDITOR_ACORDES_ESTRUCTURADOS.md`. |
 | P0 | Compatibilidad con pegado e importación de canciones antiguas | Pendiente | Reconoce formatos antiguos cuando sea posible; conserva siempre el texto original y ofrece alternativa manual si hay ambigüedad. |
-| P1 | Migración conservadora al modelo estructurado | Pendiente | No sobrescribe ni elimina `rawText`; genera posiciones estructuradas solo cuando la conversión es confiable; permite volver al formato original. |
+| P1 | Migración conservadora al modelo estructurado | En diseño técnico | `rawText` se conserva como respaldo reversible; conversión bajo demanda y fallback heredado cuando haya ambigüedad. Ver `docs/EDITOR_ACORDES_ESTRUCTURADOS.md`. |
 | P1 | Modo proyección/pantalla externa | Pendiente | Presenta letra y acordes o solo letra; el Director controla lo que se proyecta. |
 | P1 | Mejoras de estado del Director | Pendiente | Identifica músicos conectados y muestra su estado de conexión de forma útil. |
 | P1 | Indicador de conexión/offline | Pendiente de auditoría | El usuario distingue claramente conexión, desconexión y sincronización pendiente. |
@@ -102,6 +102,7 @@ No se descartan. Se mantienen registradas y se priorizarán después de asegurar
 - **v1.1.18:** Mi Set por tono y secuencia personalizada de bloques; funcionamiento offline y persistencia confirmados por el usuario en dos iPhone.
 - **v1.1.19:** Motor unificado de reconocimiento/transposición de acordes; pruebas funcionales del usuario confirmadas.
 - **v1.1.20:** selector manual de tonalidad original independiente del primer acorde; pruebas funcionales confirmadas por usuario.
-- **v1.1.21 (en desarrollo):** biblioteca consultiva de acordes, fórmulas y notas en 24 familias.
+- **v1.1.21:** biblioteca consultiva de acordes, fórmulas y notas; integrada en el entorno de pruebas.
+- **Siguiente iniciativa:** editor de acordes estructurados. Diseño técnico documentado en `docs/EDITOR_ACORDES_ESTRUCTURADOS.md`; implementación aún no iniciada.
 - **Rama de implementación del motor:** `feature/acordes-configurables`.
 - **Trabajo actual:** biblioteca de acordes (v1.1.21), rama `feature/biblioteca-acordes`.
