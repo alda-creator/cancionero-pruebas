@@ -16,3 +16,7 @@ scripts.forEach((match, index) => {
 });
 
 console.log('✓ sintaxis JavaScript: ' + scripts.length + ' bloque(s) inline');
+
+const serviceWorker = fs.readFileSync('sw.js', 'utf8');
+new vm.Script(serviceWorker, { filename: 'sw.js' });
+console.log('✓ sintaxis del Service Worker');
