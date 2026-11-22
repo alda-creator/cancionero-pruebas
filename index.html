@@ -1625,7 +1625,7 @@
     buttonsDiv.innerHTML = '';
     
     const availableKeys = Object.keys(currentSong).filter(k =>
-      k !== 'id' && k !== 'title' && k !== 'author' && k !== 'originalKey' && k !== 'firestoreId'
+      k !== 'id' && k !== 'title' && k !== 'author' && k !== 'originalKey' && k !== 'firestoreId' && k !== 'editorVersion' && k !== 'structuredContent'
     );
     
     if (availableKeys.length > 0) {
@@ -1735,10 +1735,24 @@
         lyric.type = 'button';
         lyric.className = 'structured-editor-row-lyric';
         lyric.textContent = row.lyric || '(línea sin letra)';
-        lyric.addEventListener('click', () => {
+        lyric.addEventListener('click', event => {
           selectedDraftRowId = row.id;
           selectedDraftChordId = null;
-          document.getElementById('structured-chord-offset').value = '0';
+          let offset = 0;
+          // En navegadores compatibles, el punto tocado sobre la letra determina
+          // el cursor musical; se convierte a puntos Unicode para el modelo.
+          let caret = null;
+          if (document.caretRangeFromPoint) {
+            caret = document.caretRangeFromPoint(event.clientX, event.clientY);
+          } else if (document.caretPositionFromPoint) {
+            const position = document.caretPositionFromPoint(event.clientX, event.clientY);
+            if (position) caret = { startContainer: position.offsetNode, startOffset: position.offset };
+          }
+          if (caret && caret.startContainer && lyric.contains(caret.startContainer)) {
+            const prefix = caret.startContainer.textContent.slice(0, caret.startOffset);
+            offset = Array.from(prefix).length;
+          }
+          document.getElementById('structured-chord-offset').value = String(Math.min(offset, Array.from(row.lyric).length));
           document.getElementById('structured-chord-symbol').value = '';
           renderStructuredEditor();
         });
@@ -1788,6 +1802,17 @@
       alert('La posición debe estar entre 0 y ' + max + '.');
       return;
     }
+    const collision = row.chords.find(chord =>
+      chord.position.offset === offset && chord.id !== selectedDraftChordId
+    );
+    if (collision) {
+      alert('Ya hay un acorde en esa posición. Selecciónalo para modificarlo o elige otra posición.');
+      return;
+    }
+
+    const previous = selectedDraftChordId
+      ? JSON.parse(JSON.stringify(row.chords.find(chord => chord.id === selectedDraftChordId)))
+      : null;
     if (selectedDraftChordId) {
       const existing = row.chords.find(chord => chord.id === selectedDraftChordId);
       if (!existing) return;
@@ -1805,12 +1830,18 @@
     }
     const validation = window.ChordModel.validateStructuredContent(structuredDraft);
     if (!validation.valid) {
-      row.chords = row.chords.filter(chord => chord.id !== selectedDraftChordId);
+      if (previous) {
+        const index = row.chords.findIndex(chord => chord.id === selectedDraftChordId);
+        if (index >= 0) row.chords[index] = previous;
+      } else {
+        row.chords = row.chords.filter(chord => chord.id !== selectedDraftChordId);
+      }
       selectedDraftChordId = null;
       alert('No se pudo aplicar el cambio: ' + validation.errors.join(' '));
       renderStructuredEditor();
       return;
     }
+    row.chords.sort((left, right) => left.position.offset - right.position.offset);
     renderStructuredEditor();
   }
 
