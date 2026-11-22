@@ -181,7 +181,7 @@ test('mantiene el acorde unido a la palabra cuando se inserta texto en su posici
 process.stdout.write('\nPruebas del modelo de acordes finalizadas.\n');
 
 test('acepta y serializa filas instrumentales con acordes espaciados y sin letra', () => {
-  const result = ChordModel.convertLegacy('[INTRO]\\n\n   Dm     G7');
+  const result = ChordModel.convertLegacy('[INTRO]\nC     Dm     G7');
   assert.equal(result.ok, true, JSON.stringify(result.warnings));
   const row = result.structuredContent.blocks[0].rows[0];
   assert.equal(row.lyric, '');
