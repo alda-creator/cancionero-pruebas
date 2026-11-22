@@ -315,6 +315,9 @@
     .structured-editor-row-label { display:block; font-size:11px; color:var(--text-muted); margin-bottom:5px; }
     .structured-editor-row-lyric { display:block; width:100%; padding:4px 0; border:0; background:transparent; color:var(--text); text-align:left; white-space:pre-wrap; font:inherit; }
     .structured-editor-chords { display:flex; flex-wrap:wrap; gap:6px; margin-top:7px; }
+    .structured-editor-preview { position:relative; padding-top:1.35em; margin:2px 0 4px; font:13px/1.5 "Courier New",Courier,monospace; overflow:hidden; }
+    .structured-editor-preview-chord { position:absolute; top:0; color:var(--chord); font-weight:700; white-space:nowrap; }
+    .structured-editor-preview-lyric { display:block; white-space:pre-wrap; overflow-wrap:anywhere; color:var(--text); }
     .structured-editor-chord { border:1px solid var(--accent); border-radius:7px; padding:4px 8px; background:var(--card); color:var(--chord); font-weight:700; }
     .structured-editor-chord.selected { background:var(--accent); color:white; }
     .structured-editor-controls { display:grid; grid-template-columns:1fr; gap:6px; }
@@ -1738,6 +1741,21 @@
         blockLabel.className = 'structured-editor-row-label';
         blockLabel.textContent = block.label;
         card.appendChild(blockLabel);
+        const preview = document.createElement('div');
+        preview.className = 'structured-editor-preview';
+        preview.setAttribute('aria-label', 'Vista previa de acordes sobre la letra');
+        row.chords.forEach(chord => {
+          const positionedChord = document.createElement('span');
+          positionedChord.className = 'structured-editor-preview-chord';
+          positionedChord.textContent = chord.root + chord.quality + (chord.bass ? '/' + chord.bass : '');
+          positionedChord.style.left = chord.position.offset + 'ch';
+          preview.appendChild(positionedChord);
+        });
+        const previewLyric = document.createElement('span');
+        previewLyric.className = 'structured-editor-preview-lyric';
+        previewLyric.textContent = row.lyric || '(línea sin letra)';
+        preview.appendChild(previewLyric);
+        card.appendChild(preview);
         const lyric = document.createElement('button');
         lyric.type = 'button';
         lyric.className = 'structured-editor-row-lyric';
