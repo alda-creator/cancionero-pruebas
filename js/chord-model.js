@@ -226,9 +226,12 @@
     const validation = validateStructuredContent(content);
     if (!validation.valid) return { ok: false, rawText: null, warnings: validation.errors };
     const output = [];
+    let serializationError = null;
     content.blocks.forEach((block, bi) => {
+      if (serializationError) return;
       if (bi > 0 || block.label !== 'ESTROFA 1') output.push('[' + block.label + ']');
       block.rows.forEach(row => {
+        if (serializationError) return;
         if (!row.chords.length) {
           output.push(row.lyric);
           return;
@@ -240,19 +243,20 @@
           const name = chord.root + chord.quality + (chord.bass ? '/' + chord.bass : '');
           const offset = chord.position.offset;
           if (offset < lastEnd) {
-            return;
+            serializationError = 'Hay acordes superpuestos; no se puede serializar sin pérdida.';
+            break;
           }
           while (chars.length < offset) chars.push(' ');
-          if (chars.length > offset && chars[offset] !== ' ') {
-            return;
-          }
           for (let i = 0; i < name.length; i++) chars[offset + i] = name[i];
           lastEnd = offset + name.length;
         }
-        output.push(chars.join('').replace(/\s+$/, ''));
-        if (row.lyric) output.push(row.lyric);
+        if (!serializationError) {
+          output.push(chars.join('').replace(/\s+$/, ''));
+          if (row.lyric) output.push(row.lyric);
+        }
       });
     });
+    if (serializationError) return { ok: false, rawText: null, warnings: [serializationError] };
     return { ok: true, rawText: output.join('\n'), warnings: [] };
   }
 
