@@ -259,13 +259,13 @@
       position: relative;
       display: block;
       margin: 0 0 8px;
-      padding-top: 1.35em;
       font-family: "Courier New", Courier, monospace;
       font-size: 16px;
       line-height: 1.5;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
     }
+    .structured-line-pair.has-chords { padding-top: 1.35em; }
     .structured-line-pair .structured-chord {
       position: absolute;
       top: 0;
@@ -1281,7 +1281,7 @@
       if (structured && Array.isArray(block.rows)) {
         block.rows.forEach(row => {
           const pair = document.createElement('div');
-          pair.className = 'line-pair structured-line-pair';
+          pair.className = 'line-pair structured-line-pair' + ((row.chords || []).length ? ' has-chords' : '');
           pair.dataset.rowId = row.id;
 
           (row.chords || []).forEach(chordData => {
