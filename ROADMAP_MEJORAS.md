@@ -103,7 +103,7 @@ No se descartan. Se mantienen registradas y se priorizarán después de asegurar
 - **v1.1.19:** Motor unificado de reconocimiento/transposición de acordes; pruebas funcionales del usuario confirmadas.
 - **v1.1.20:** selector manual de tonalidad original independiente del primer acorde; pruebas funcionales confirmadas por usuario.
 - **v1.1.21:** biblioteca consultiva de acordes, fórmulas y notas; integrada en el entorno de pruebas.
-- **Iniciativa en curso:** editor de acordes estructurados. PR #38 y UX v1.1.22 integrados en laboratorio. Nueva corrección en rama `fix/editor-preservar-acordes-reflow`: reconciliar letra sin descartar acordes, bloquear guardado si la reconciliación falla y reflujo vertical automático para lectura en vivo. Pendiente validar Safari/iPhone, Auto-Scroll, Director/Músico, Firestore y offline.
+- **Iniciativa en curso:** editor de acordes estructurados. PR #38 y UX v1.1.22 integrados en laboratorio. Nueva corrección v1.1.23 en rama `fix/editor-preservar-acordes-reflow`: reconciliar letra sin descartar acordes, bloquear guardado si la reconciliación falla y reflujo vertical automático para lectura en vivo. Pendiente validar Safari/iPhone, Auto-Scroll, Director/Músico, Firestore y offline.
 - **Rama de implementación del motor:** `feature/acordes-configurables`.
 - **Trabajo anterior:** biblioteca de acordes (v1.1.21), rama `feature/biblioteca-acordes`.  
 - **Trabajo actual:** UX móvil del editor estructurado (v1.1.22), rama `feature/editor-integrado-alineacion-movil`.
