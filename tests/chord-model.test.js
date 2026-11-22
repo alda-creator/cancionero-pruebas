@@ -118,4 +118,23 @@ test('no serializa acordes superpuestos', () => {
   assert.equal(result.rawText, null);
 });
 
+test('no serializa una afinidad que el formato heredado no puede representar', () => {
+  const content = {
+    version: 2,
+    blocks: [{
+      id: 'b', label: 'Verso',
+      rows: [{
+        id: 'r', lyric: 'Letra',
+        chords: [{
+          id: 'c', root: 'C', quality: '', bass: null,
+          position: { offset: 0, affinity: 'after' }
+        }]
+      }]
+    }]
+  };
+  const result = ChordModel.serializeLegacy(content);
+  assert.equal(result.ok, false);
+  assert.equal(result.rawText, null);
+});
+
 process.stdout.write('\nPruebas del modelo de acordes finalizadas.\n');
