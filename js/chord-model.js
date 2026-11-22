@@ -119,7 +119,7 @@
           }
           if (chord && chord.bass !== null && !ROOTS.has(chord.bass)) errors.push(cp + ': bajo inválido.');
           if (!chord || !chord.position || !Number.isInteger(chord.position.offset) ||
-              chord.position.offset < 0 || chord.position.offset > length ||
+              chord.position.offset < 0 || (length === 0 ? chord.position.offset > 10000 : chord.position.offset > length) ||
               !['before','after'].includes(chord.position.affinity)) {
             errors.push(cp + ': posición inválida o fuera de la letra.');
           }
@@ -160,7 +160,7 @@
         const parsed = parseChordSymbol(match[0]);
         if (!parsed) return { error: 'La línea contiene un token que no se puede interpretar como acorde.' };
         const offset = Array.from(chordLine.slice(0, match.index)).length;
-        if (offset > Array.from(lyric).length) {
+        if (lyric && offset > Array.from(lyric).length) {
           return { error: 'Un acorde queda más allá del final de la letra; su posición es ambigua.' };
         }
         entries.push({

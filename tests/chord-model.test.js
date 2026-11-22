@@ -58,7 +58,7 @@ test('convierte letras sin acordes y bloques repetidos con IDs únicos', () => {
 });
 
 test('rechaza posiciones ambiguas y tabulaciones sin inventar ubicaciones', () => {
-  const beyond = ChordModel.convertLegacy('C       G\nSol');
+  const beyond = ChordModel.convertLegacy('C       G\nLetra');
   assert.equal(beyond.ok, false);
   assert.equal(beyond.reason, 'ambiguous');
   const tabs = ChordModel.convertLegacy('C\tG\nLetra');
@@ -179,3 +179,27 @@ test('mantiene el acorde unido a la palabra cuando se inserta texto en su posici
 });
 
 process.stdout.write('\nPruebas del modelo de acordes finalizadas.\n');
+
+test('acepta y serializa filas instrumentales con acordes espaciados y sin letra', () => {
+  const result = ChordModel.convertLegacy('[INTRO]\nC     Dm     G7');
+  assert.equal(result.ok, true, JSON.stringify(result.warnings));
+  const row = result.structuredContent.blocks[0].rows[0];
+  assert.equal(row.lyric, '');
+  assert.deepEqual(row.chords.map(chord => chord.root), ['C','D','G']);
+  assert.deepEqual(row.chords.map(chord => chord.position.offset), [0,6,13]);
+  assert.equal(ChordModel.validateStructuredContent(result.structuredContent).valid, true);
+  const serialized = ChordModel.serializeLegacy(result.structuredContent);
+  assert.equal(serialized.ok, true);
+  const restored = ChordModel.convertLegacy(serialized.rawText);
+  assert.equal(restored.ok, true);
+  assert.equal(restored.structuredContent.blocks[0].rows[0].lyric, '');
+  assert.deepEqual(restored.structuredContent.blocks[0].rows[0].chords.map(chord => chord.root), ['C','D','G']);
+});
+
+test('instrumental row accepts offsets but lyric rows retain position bounds', () => {
+  const instrumental = {version:2,blocks:[{id:'b',label:'Intro',rows:[{id:'r',lyric:'',chords:[{id:'c',root:'C',quality:'',bass:null,position:{offset:10,affinity:'before'}}]}]}]};
+  assert.equal(ChordModel.validateStructuredContent(instrumental).valid,true);
+  const lyricRow = JSON.parse(JSON.stringify(instrumental));
+  lyricRow.blocks[0].rows[0].lyric='Hi';
+  assert.equal(ChordModel.validateStructuredContent(lyricRow).valid,false);
+});
