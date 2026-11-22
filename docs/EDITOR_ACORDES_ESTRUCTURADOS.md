@@ -1,6 +1,6 @@
 # Diseño técnico: editor de acordes estructurados
 
-**Estado:** fase 1 implementada en rama de pruebas; módulo de dominio y conversión conservadora con pruebas automatizadas. Integración con la PWA todavía pendiente.  
+**Estado:** modelo, conversión conservadora, persistencia y primer render estructurado integrados en la rama de pruebas; edición visual e integración final pendientes.  
 **Rama:** `feature/editor-acordes-estructurados`  
 **Objetivo:** evolucionar el editor de canciones sin romper canciones existentes, transposición, Mi Set, modo Director/Músico ni uso offline.
 
@@ -96,11 +96,11 @@ No se cambia Firebase ni sus reglas en esta iniciativa.
 
 1. **Completada en rama:** esquema v2, validador, parser de símbolos, conversor heredado conservador y serializador protegido; sin cambios en la interfaz.
 2. **Completada en rama:** pruebas de acordes, nomenclaturas, inversiones, posiciones Unicode, ambigüedad, validación y serialización. 8 pruebas ejecutadas correctamente.
-3. **En curso:** cargar el módulo en la PWA, generar `structuredContent` al guardar cuando la conversión sea inequívoca y conservar `rawText` como respaldo. El render actual todavía usa el parser heredado.
-4. Añadir inserción y edición visual de acordes.
-5. Integrar transposición sobre entidades estructuradas.
+3. **Completada en rama:** cargar el módulo en la PWA y generar `structuredContent` al guardar cuando la conversión sea inequívoca; `rawText` se conserva como respaldo.
+4. **Implementada inicialmente en rama:** el render consume la estructura validada y coloca cada acorde en su posición con una capa independiente; transposición y notación se aplican al símbolo presentado. El render heredado permanece como fallback. La secuencia de Mi Set conserva los IDs del parser antiguo.
+5. **En curso:** inserción y edición visual de acordes (cursor, mover, cambiar y eliminar sin tocar la letra).
 6. Añadir catálogo de digitaciones y diagramas SVG locales.
-7. Validar persistencia, sincronización y funcionamiento offline antes de habilitar pruebas de usuario.
+7. Validar persistencia, sincronización, responsive y funcionamiento offline en navegador antes de habilitar pruebas de usuario.
 
 **Criterio de salida:** ninguna canción antigua pierde información; una canción nueva puede editarse sin alinear acordes con espacios; todas las vistas usan la misma identidad de acorde.
 
@@ -113,4 +113,7 @@ No se cambia Firebase ni sus reglas en esta iniciativa.
 - `tests/chord-model.test.js`: suite de 8 pruebas; 8/8 correctas. También se verificó sintácticamente el script principal y el service worker.
 - El conversor no intenta adivinar si hay tabulaciones o acordes más allá del final de la letra.
 - El serializador rechaza acordes superpuestos o afinidades que el formato heredado no representa.
-- `index.html` y `sw.js` se modificaron únicamente para cargar/guardar el modelo y precargarlo offline. No se modificó Firebase ni sus reglas. La interfaz y el renderizado continúan usando el comportamiento heredado.
+- `index.html` integra el modelo y el primer render estructurado: valida `structuredContent`, conserva el fallback heredado, ancla acordes con posiciones CSS basadas en la tipografía monoespaciada y transpone/convierte notación al mostrar. No añade espacios a la letra.
+- El render estructurado mantiene los IDs de bloque que espera Mi Set y el control de secuencia. La misma función de render se utiliza en la vista de canción y en la pantalla en vivo.
+- Verificación estática posterior al render: el bloque principal de JavaScript compila sin errores; se confirmó presencia del camino estructurado, fallback y secuencia heredada. Aún no equivale a una prueba visual en navegador ni a validación real de Firestore/offline.
+- `sw.js` sigue en caché v19; no se añadió ningún recurso nuevo. No se modificó Firebase ni sus reglas.
