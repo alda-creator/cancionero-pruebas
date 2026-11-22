@@ -1705,6 +1705,12 @@
     return structuredDraft;
   }
 
+  function structuredChordSymbol(chord) {
+    const root = formatChordNote(chord.root);
+    const bass = chord.bass ? '/' + formatChordNote(chord.bass) : '';
+    return root + chord.quality + bass;
+  }
+
   function draftRowById() {
     if (!structuredDraft) return null;
     for (const block of structuredDraft.blocks) {
@@ -1749,7 +1755,7 @@
         row.chords.forEach(chord => {
           const positionedChord = document.createElement('span');
           positionedChord.className = 'structured-editor-preview-chord';
-          positionedChord.textContent = chord.root + chord.quality + (chord.bass ? '/' + chord.bass : '');
+          positionedChord.textContent = structuredChordSymbol(chord);
           const visualOffset = chord.position.offset + (chord.position.affinity === 'after' ? 1 : 0);
           positionedChord.style.left = visualOffset + 'ch';
           preview.appendChild(positionedChord);
@@ -1791,11 +1797,11 @@
           const chip = document.createElement('button');
           chip.type = 'button';
           chip.className = 'structured-editor-chord' + (chord.id === selectedDraftChordId ? ' selected' : '');
-          chip.textContent = chord.root + chord.quality + (chord.bass ? '/' + chord.bass : '') + ' · ' + chord.position.offset;
+          chip.textContent = structuredChordSymbol(chord) + ' · ' + chord.position.offset;
           chip.addEventListener('click', () => {
             selectedDraftRowId = row.id;
             selectedDraftChordId = chord.id;
-            document.getElementById('structured-chord-symbol').value = chord.root + chord.quality + (chord.bass ? '/' + chord.bass : '');
+            document.getElementById('structured-chord-symbol').value = structuredChordSymbol(chord);
             document.getElementById('structured-chord-offset').value = String(chord.position.offset);
             renderStructuredEditor();
           });
