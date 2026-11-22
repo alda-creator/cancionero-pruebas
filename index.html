@@ -263,20 +263,24 @@
     /* Render estructurado: los acordes son etiquetas ancladas a posiciones
        de la letra; no se insertan espacios artificiales en el contenido. */
     .structured-line-pair {
-      position: relative; display:block; box-sizing:border-box; max-width:100%;
-      margin:0 0 8px; padding:0 0 2px;
+      position:relative; display:block; box-sizing:border-box; width:100%; max-width:100%;
+      margin:0 0 10px; padding:0 0 2px;
       font-family:"Courier New",Courier,monospace; font-size:16px; line-height:1.5;
-      white-space:nowrap; overflow-x:auto; overflow-y:hidden;
-      -webkit-overflow-scrolling:touch; scrollbar-width:thin; overscroll-behavior-x:contain;
+      white-space:pre-wrap; overflow:visible; overflow-wrap:break-word;
     }
-    .structured-line-pair.has-chords { padding-top:1.35em; }
-    .structured-line-pair .structured-chord {
+    .structured-line-pair.has-chords { padding-top:0; }
+    .structured-line-pair .structured-lyric {
+      display:block; width:100%; color:var(--text); min-height:1em;
+      white-space:pre-wrap; overflow-wrap:break-word;
+    }
+    .structured-word-unit {
+      position:relative; display:inline-block; max-width:100%;
+      padding-top:1.35em; margin:0; vertical-align:bottom;
+      white-space:pre; overflow-wrap:anywhere;
+    }
+    .structured-word-unit .structured-chord {
       position:absolute; top:0; color:var(--chord); font-weight:700;
       white-space:nowrap; line-height:1.25; pointer-events:auto;
-    }
-    .structured-line-pair .structured-lyric {
-      display:block; width:max-content; min-width:100%; color:var(--text);
-      min-height:1em; white-space:pre;
     }
 
     .admin-menu {
@@ -1262,20 +1266,93 @@
     return chordLine.replace(/\S+/g, token => transposeChordToken(token, steps));
   }  
 
+  function appendWrappedStructuredRow(pair, row, transposeSteps) {
+    const lyric = String(row.lyric || '');
+    const chars = Array.from(lyric);
+    const chords = (row.chords || []).slice().sort((a, b) => a.position.offset - b.position.offset);
+    pair.classList.toggle('has-chords', chords.length > 0);
+    const lyricHost = document.createElement('div');
+    lyricHost.className = 'structured-lyric';
+    if (!chords.length) {
+      lyricHost.textContent = lyric;
+      pair.appendChild(lyricHost);
+      return;
+    }
+
+    const words = [];
+    let index = 0;
+    while (index < chars.length) {
+      if (/\s/u.test(chars[index])) {
+        const start = index;
+        while (index < chars.length && /\s/u.test(chars[index])) index++;
+        lyricHost.appendChild(document.createTextNode(chars.slice(start, index).join('')));
+      } else {
+        const start = index;
+        while (index < chars.length && !/\s/u.test(chars[index])) index++;
+        words.push({ start, end: index, text: chars.slice(start, index).join('') });
+      }
+    }
+
+    if (!words.length) {
+      const unit = document.createElement('span');
+      unit.className = 'structured-word-unit';
+      lyricHost.appendChild(unit);
+      words.push({ start: 0, end: 0, element: unit });
+    } else {
+      words.forEach(word => {
+        const unit = document.createElement('span');
+        unit.className = 'structured-word-unit';
+        unit.textContent = word.text;
+        word.element = unit;
+        lyricHost.appendChild(unit);
+      });
+    }
+
+    chords.forEach(chordData => {
+      const offset = Math.max(0, Math.min(chars.length, chordData.position.offset));
+      const word = words.find(item => offset <= item.end) || words[words.length - 1];
+      const localOffset = offset - word.start;
+      const chord = document.createElement('span');
+      chord.className = 'structured-chord';
+      const symbol = chordData.root + chordData.quality + (chordData.bass ? '/' + chordData.bass : '');
+      const displaySymbol = transposeChordToken(symbol, transposeSteps);
+      chord.textContent = displaySymbol;
+      chord.style.left = localOffset + 'ch';
+      chord.dataset.chordId = chordData.id;
+      chord.setAttribute('aria-label', displaySymbol);
+      word.element.appendChild(chord);
+      const wordRemaining = Math.max(0, word.end - offset);
+      const reserve = Math.max(0, Array.from(displaySymbol).length - wordRemaining);
+      if (reserve) {
+        const current = parseFloat(word.element.dataset.chordReserve || '0');
+        word.element.dataset.chordReserve = String(Math.max(current, reserve));
+        word.element.style.paddingRight = word.element.dataset.chordReserve + 'ch';
+      }
+    });
+    pair.appendChild(lyricHost);
+  }
+
   function buildBlocksHTML(targetContainer) {
     if (!currentSong || !targetContainer) return;
     targetContainer.innerHTML = '';
 
     // Las canciones estructuradas usan las entidades y sus posiciones.
     // Si faltan datos o la validación falla, se conserva el render heredado.
-    const structured = currentSong.editorVersion === 2 &&
+    let structured = currentSong.editorVersion === 2 &&
       currentSong.structuredContent &&
       window.ChordModel &&
       window.ChordModel.validateStructuredContent(currentSong.structuredContent).valid
         ? currentSong.structuredContent
         : null;
 
-    const legacy = parseRawSongWithBlocks(getSongRawText(currentSong));
+    const songRawText = getSongRawText(currentSong);
+    // Las canciones antiguas se convierten solo para visualizar si la
+    // conversión es inequívoca; no se escribe nada en la canción almacenada.
+    if (!structured && window.ChordModel && typeof window.ChordModel.convertLegacy === 'function') {
+      const displayConversion = window.ChordModel.convertLegacy(songRawText);
+      if (displayConversion.ok) structured = displayConversion.structuredContent;
+    }
+    const legacy = parseRawSongWithBlocks(songRawText);
     const blocks = structured
       ? structured.blocks.map((block, index) => ({
           id: (legacy.blocks[index] && legacy.blocks[index].id) || block.id,
@@ -1323,23 +1400,7 @@
           const pair = document.createElement('div');
           pair.className = 'line-pair structured-line-pair' + ((row.chords || []).length ? ' has-chords' : '');
           pair.dataset.rowId = row.id;
-
-          (row.chords || []).forEach(chordData => {
-            const chord = document.createElement('span');
-            chord.className = 'structured-chord';
-            const symbol = chordData.root + chordData.quality +
-              (chordData.bass ? '/' + chordData.bass : '');
-            chord.textContent = transposeChordToken(symbol, currentTransposeSteps);
-            const visualOffset = chordData.position.offset + (chordData.position.affinity === 'after' ? 1 : 0);
-            chord.style.left = visualOffset + 'ch';
-            chord.dataset.chordId = chordData.id;
-            pair.appendChild(chord);
-          });
-
-          const lyric = document.createElement('div');
-          lyric.className = 'structured-lyric';
-          lyric.textContent = row.lyric;
-          pair.appendChild(lyric);
+          appendWrappedStructuredRow(pair, row, currentTransposeSteps);
           blockDiv.appendChild(pair);
         });
       } else {
