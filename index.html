@@ -1648,6 +1648,15 @@
     document.getElementById('song-viewer').style.display = 'none';  
     document.getElementById('song-editor').style.display = 'block';  
     handleEditorInput();
+    // handleEditorInput reconstruye el borrador desde rawText; después
+    // restauramos la estructura existente para no perder posiciones precisas.
+    if (currentSong.editorVersion === 2 && currentSong.structuredContent &&
+        window.ChordModel.validateStructuredContent(currentSong.structuredContent).valid) {
+      structuredDraft = JSON.parse(JSON.stringify(currentSong.structuredContent));
+      selectedDraftRowId = null;
+      selectedDraftChordId = null;
+      renderStructuredEditor();
+    }
   }
 
   function insertTag(tag) {
