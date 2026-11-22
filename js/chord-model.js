@@ -1,0 +1,275 @@
+(function (root, factory) {
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  if (root) root.ChordModel = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  const ROOTS = new Set(['C','C#','Db','D','D#','Eb','E','F','F#','Gb','G','G#','Ab','A','A#','Bb','B']);
+  const LATIN_ROOTS = {
+    DO:'C', RE:'D', MI:'E', FA:'F', SOL:'G', LA:'A', SI:'B',
+    'DO#':'C#', 'RE#':'D#', 'FA#':'F#', 'SOL#':'G#', 'LA#':'A#',
+    REB:'Db', MIB:'Eb', SOLB:'Gb', LAB:'Ab', SIB:'Bb'
+  };
+  const SUFFIX_RE = /^(?:(?:maj|min|m|-|dim|°|ø|aug|\+|sus(?:2|4)?|add|M)?(?:2|4|5|6|7|9|11|13)?(?:sus(?:2|4)?)?(?:add(?:2|4|9|11|13))?(?:b5|#5|b9|#9|#11|b13)?(?:\((?:b|#)?(?:5|9|11|13)(?:,(?:b|#)?(?:5|9|11|13))*\))?)$/i;
+
+  function parseNote(value) {
+    if (typeof value !== 'string' || !value.trim()) return null;
+    const token = value.trim();
+    const names = ['SOL','DO','RE','MI','FA','LA','SI'];
+    for (const name of names) {
+      if (!token.toUpperCase().startsWith(name)) continue;
+      const rest = token.slice(name.length);
+      const accidental = /^[#b]/i.test(rest) ? rest[0] : '';
+      const suffix = rest.slice(accidental ? 1 : 0);
+      if (!SUFFIX_RE.test(suffix)) continue;
+      const root = accidental
+        ? (LATIN_ROOTS[name + accidental.toUpperCase()] || LATIN_ROOTS[name] + accidental)
+        : LATIN_ROOTS[name];
+      return { root, suffix };
+    }
+    const match = token.match(/^([A-G])([#b]?)(.*)$/i);
+    if (!match) return null;
+    const root = match[1].toUpperCase() + match[2];
+    const suffix = match[3] || '';
+    if (!ROOTS.has(root) || !SUFFIX_RE.test(suffix)) return null;
+    return { root, suffix };
+  }
+
+  function parseChordSymbol(symbol) {
+    if (typeof symbol !== 'string') return null;
+    const value = symbol.trim();
+    if (!value) return null;
+    const parts = value.split('/');
+    if (parts.length > 2) return null;
+    const main = parseNote(parts[0]);
+    if (!main) return null;
+    let quality = main.suffix;
+    let bass = null;
+    if (parts.length === 2 && /^(?:6|7|9)$/.test(quality) && parts[1] === '9') {
+      quality += '/9';
+    } else if (parts.length === 2) {
+      const parsedBass = parseNote(parts[1]);
+      if (!parsedBass || parsedBass.suffix || !ROOTS.has(parsedBass.root)) return null;
+      bass = parsedBass.root;
+    }
+    if (!SUFFIX_RE.test(quality) && !/^(?:6|7|9)\/9$/i.test(quality)) return null;
+    return { root: main.root, quality, bass };
+  }
+
+  function isChordLine(line) {
+    const tokens = String(line || '').trim().split(/\s+/);
+    if (!tokens.length || tokens[0] === '') return false;
+    let count = 0;
+    for (const token of tokens) if (parseChordSymbol(token)) count++;
+    return count / tokens.length >= 0.5;
+  }
+
+  function normalizeIdPart(value) {
+    return String(value || 'bloque').normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '').toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'bloque';
+  }
+
+  function makeChordId(blockIndex, rowIndex, chordIndex) {
+    return 'chord-' + (blockIndex + 1) + '-' + (rowIndex + 1) + '-' + (chordIndex + 1);
+  }
+
+  function makeRowId(blockIndex, rowIndex) {
+    return 'row-' + (blockIndex + 1) + '-' + (rowIndex + 1);
+  }
+
+  function makeBlockId(label, occurrence) {
+    const part = normalizeIdPart(label);
+    return /-\d+$/.test(part) && occurrence === 1 ? part : part + '-' + occurrence;
+  }
+
+  function validateStructuredContent(content) {
+    const errors = [];
+    if (!content || typeof content !== 'object' || content.version !== 2 || !Array.isArray(content.blocks)) {
+      return { valid: false, errors: ['La estructura debe tener version 2 y un arreglo blocks.'] };
+    }
+    const ids = new Set();
+    function checkId(id, path) {
+      if (typeof id !== 'string' || !id.trim()) errors.push(path + ': falta un id.');
+      else if (ids.has(id)) errors.push(path + ': id duplicado "' + id + '".');
+      else ids.add(id);
+    }
+    content.blocks.forEach((block, bi) => {
+      checkId(block && block.id, 'blocks[' + bi + ']');
+      if (!block || typeof block.label !== 'string' || !Array.isArray(block.rows)) {
+        errors.push('blocks[' + bi + ']: label o rows inválidos.');
+        return;
+      }
+      block.rows.forEach((row, ri) => {
+        const path = 'blocks[' + bi + '].rows[' + ri + ']';
+        checkId(row && row.id, path);
+        if (!row || typeof row.lyric !== 'string' || !Array.isArray(row.chords)) {
+          errors.push(path + ': lyric o chords inválidos.');
+          return;
+        }
+        const length = Array.from(row.lyric).length;
+        row.chords.forEach((chord, ci) => {
+          const cp = path + '.chords[' + ci + ']';
+          checkId(chord && chord.id, cp);
+          if (!chord || !ROOTS.has(chord.root)) errors.push(cp + ': raíz no canónica.');
+          if (!chord || typeof chord.quality !== 'string' ||
+              (!SUFFIX_RE.test(chord.quality) && !/^(?:6|7|9)\/9$/i.test(chord.quality))) {
+            errors.push(cp + ': calidad/extensión inválida.');
+          }
+          if (chord && chord.bass !== null && !ROOTS.has(chord.bass)) errors.push(cp + ': bajo inválido.');
+          if (!chord || !chord.position || !Number.isInteger(chord.position.offset) ||
+              chord.position.offset < 0 || chord.position.offset > length ||
+              !['before','after'].includes(chord.position.affinity)) {
+            errors.push(cp + ': posición inválida o fuera de la letra.');
+          }
+        });
+      });
+    });
+    return { valid: errors.length === 0, errors };
+  }
+
+  function convertLegacy(rawText) {
+    const warnings = [];
+    if (typeof rawText !== 'string' || !rawText.trim()) {
+      return { ok: false, structuredContent: null, warnings: ['No hay contenido heredado para convertir.'], reason: 'empty' };
+    }
+    const lines = rawText.split('\n').map(line => line.endsWith('\r') ? line.slice(0, -1) : line);
+    const blocks = [];
+    let current = { label: 'ESTROFA 1', rows: [] };
+    const occurrences = new Map();
+    let firstChord = null;
+
+    function pushBlock() {
+      if (!current.rows.length) return;
+      const key = normalizeIdPart(current.label);
+      const occurrence = (occurrences.get(key) || 0) + 1;
+      occurrences.set(key, occurrence);
+      current.id = makeBlockId(current.label, occurrence);
+      blocks.push(current);
+    }
+
+    function chordEntries(chordLine, lyric, blockIndex, rowIndex) {
+      if (/\t/.test(chordLine) || /\t/.test(lyric)) {
+        return { error: 'Se encontró una tabulación; no es posible deducir con seguridad la posición horizontal.' };
+      }
+      const entries = [];
+      const re = /\S+/g;
+      let match;
+      while ((match = re.exec(chordLine)) !== null) {
+        const parsed = parseChordSymbol(match[0]);
+        if (!parsed) return { error: 'La línea contiene un token que no se puede interpretar como acorde.' };
+        const offset = Array.from(chordLine.slice(0, match.index)).length;
+        if (offset > Array.from(lyric).length) {
+          return { error: 'Un acorde queda más allá del final de la letra; su posición es ambigua.' };
+        }
+        entries.push({
+          id: makeChordId(blockIndex, rowIndex, entries.length),
+          root: parsed.root,
+          quality: parsed.quality,
+          bass: parsed.bass,
+          position: { offset, affinity: 'before' }
+        });
+      }
+      return { entries };
+    }
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^\s*\[.*\]\s*$/.test(line)) {
+        pushBlock();
+        current = { label: line.trim().slice(1, -1), rows: [] };
+        continue;
+      }
+      if (!line.trim()) continue;
+
+      if (isChordLine(line)) {
+        const next = lines[i + 1];
+        const hasLyric = typeof next === 'string' && next.trim() !== '' &&
+          !isChordLine(next) && !/^\s*\[.*\]\s*$/.test(next);
+        const lyric = hasLyric ? next : '';
+        const blockIndex = blocks.length;
+        const rowIndex = current.rows.length;
+        const parsed = chordEntries(line, lyric, blockIndex, rowIndex);
+        if (parsed.error) {
+          warnings.push('Línea ' + (i + 1) + ': ' + parsed.error);
+          return { ok: false, structuredContent: null, warnings, reason: 'ambiguous' };
+        }
+        if (!firstChord && parsed.entries.length) firstChord = parsed.entries[0].root;
+        current.rows.push({
+          id: makeRowId(blockIndex, rowIndex),
+          lyric,
+          chords: parsed.entries
+        });
+        if (hasLyric) i++;
+      } else {
+        const blockIndex = blocks.length;
+        const rowIndex = current.rows.length;
+        current.rows.push({ id: makeRowId(blockIndex, rowIndex), lyric: line, chords: [] });
+      }
+    }
+    pushBlock();
+    const content = { version: 2, blocks };
+    const validation = validateStructuredContent(content);
+    if (!validation.valid) {
+      return { ok: false, structuredContent: null, warnings: validation.errors, reason: 'invalid' };
+    }
+    return {
+      ok: true,
+      structuredContent: content,
+      detectedKey: firstChord || 'C',
+      warnings
+    };
+  }
+
+  function serializeLegacy(content) {
+    const validation = validateStructuredContent(content);
+    if (!validation.valid) return { ok: false, rawText: null, warnings: validation.errors };
+    const output = [];
+    let serializationError = null;
+    content.blocks.forEach((block, bi) => {
+      if (serializationError) return;
+      if (bi > 0 || block.label !== 'ESTROFA 1') output.push('[' + block.label + ']');
+      block.rows.forEach(row => {
+        if (serializationError) return;
+        if (!row.chords.length) {
+          output.push(row.lyric);
+          return;
+        }
+        const chars = [];
+        let lastEnd = -1;
+        const ordered = row.chords.slice().sort((a, b) => a.position.offset - b.position.offset);
+        for (const chord of ordered) {
+          const name = chord.root + chord.quality + (chord.bass ? '/' + chord.bass : '');
+          const offset = chord.position.offset;
+          if (chord.position.affinity !== 'before') {
+            serializationError = 'La afinidad de posición no existe en el formato heredado.';
+            break;
+          }
+          if (offset < lastEnd) {
+            serializationError = 'Hay acordes superpuestos; no se puede serializar sin pérdida.';
+            break;
+          }
+          while (chars.length < offset) chars.push(' ');
+          for (let i = 0; i < name.length; i++) chars[offset + i] = name[i];
+          lastEnd = offset + name.length;
+        }
+        if (!serializationError) {
+          output.push(chars.join('').replace(/\s+$/, ''));
+          if (row.lyric) output.push(row.lyric);
+        }
+      });
+    });
+    if (serializationError) return { ok: false, rawText: null, warnings: [serializationError] };
+    return { ok: true, rawText: output.join('\n'), warnings: [] };
+  }
+
+  return {
+    version: 2,
+    parseChordSymbol,
+    validateStructuredContent,
+    convertLegacy,
+    serializeLegacy,
+    isChordLine
+  };
+});

@@ -1,9 +1,10 @@
-const CACHE_NAME = 'cancionero-cache-v18';
+const CACHE_NAME = 'cancionero-cache-v19';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
   './js/peerjs.min.js',
+  './js/chord-model.js',
   './director-fix.js'
 ];
 
@@ -37,6 +38,7 @@ self.addEventListener('install', (event) => {
     await cache.addAll([
       './manifest.json',
       './js/peerjs.min.js',
+      './js/chord-model.js',
       './director-fix.js'
     ]);
 
