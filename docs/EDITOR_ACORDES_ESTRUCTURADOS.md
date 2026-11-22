@@ -1,6 +1,6 @@
 # Diseño técnico: editor de acordes estructurados
 
-**Estado:** modelo, conversión conservadora, persistencia y primer render estructurado integrados en la rama de pruebas; edición visual e integración final pendientes.  
+**Estado:** modelo, conversión conservadora, persistencia, render estructurado y primera edición visual integrados en la rama de pruebas; falta validación de interacción real en navegador y completar el flujo de edición.  
 **Rama:** `feature/editor-acordes-estructurados`  
 **Objetivo:** evolucionar el editor de canciones sin romper canciones existentes, transposición, Mi Set, modo Director/Músico ni uso offline.
 
@@ -98,9 +98,10 @@ No se cambia Firebase ni sus reglas en esta iniciativa.
 2. **Completada en rama:** pruebas de acordes, nomenclaturas, inversiones, posiciones Unicode, ambigüedad, validación y serialización. 8 pruebas ejecutadas correctamente.
 3. **Completada en rama:** cargar el módulo en la PWA y generar `structuredContent` al guardar cuando la conversión sea inequívoca; `rawText` se conserva como respaldo.
 4. **Implementada inicialmente en rama:** el render consume la estructura validada y coloca cada acorde en su posición con una capa independiente; transposición y notación se aplican al símbolo presentado. El render heredado permanece como fallback. La secuencia de Mi Set conserva los IDs del parser antiguo.
-5. **En curso:** inserción y edición visual de acordes (cursor, mover, cambiar y eliminar sin tocar la letra).
-6. Añadir catálogo de digitaciones y diagramas SVG locales.
-7. Validar persistencia, sincronización, responsive y funcionamiento offline en navegador antes de habilitar pruebas de usuario.
+5. **Implementada inicialmente en rama:** panel visual con lista de líneas, selección de línea, selección por toque sobre la letra para calcular posición, alta/modificación/eliminación de acordes y validación para evitar dos acordes en el mismo punto. Los cambios se guardan en `structuredContent`; `rawText` se mantiene intacto como respaldo. La edición del texto heredado vuelve a generar el borrador estructurado.
+6. **Pendiente:** edición más directa de arrastrar/mover acordes, ajustes de UX y pruebas reales en Safari/iPhone y otros tamaños de pantalla.
+7. Añadir catálogo de digitaciones y diagramas SVG locales.
+8. Validar persistencia, sincronización, responsive y funcionamiento offline en navegador antes de habilitar pruebas de usuario.
 
 **Criterio de salida:** ninguna canción antigua pierde información; una canción nueva puede editarse sin alinear acordes con espacios; todas las vistas usan la misma identidad de acorde.
 
@@ -115,5 +116,7 @@ No se cambia Firebase ni sus reglas en esta iniciativa.
 - El serializador rechaza acordes superpuestos o afinidades que el formato heredado no representa.
 - `index.html` integra el modelo y el primer render estructurado: valida `structuredContent`, conserva el fallback heredado, ancla acordes con posiciones CSS basadas en la tipografía monoespaciada y transpone/convierte notación al mostrar. No añade espacios a la letra.
 - El render estructurado mantiene los IDs de bloque que espera Mi Set y el control de secuencia. La misma función de render se utiliza en la vista de canción y en la pantalla en vivo.
-- Verificación estática posterior al render: el bloque principal de JavaScript compila sin errores; se confirmó presencia del camino estructurado, fallback y secuencia heredada. Aún no equivale a una prueba visual en navegador ni a validación real de Firestore/offline.
+- El panel visual se agregó al editor: lista líneas por bloque, permite seleccionar una línea y tocar la letra para obtener una posición Unicode; el formulario acepta símbolos de acorde, agrega o modifica una entidad y elimina la seleccionada. Se impide colocar dos acordes en el mismo offset. Guardar prioriza el borrador estructurado y conserva `rawText` sin alterarlo.
+- La edición de texto heredado reinicia el borrador visual desde la conversión; al abrir una canción estructurada, se restaura su estructura exacta después de refrescar la previsualización. Se excluyen `editorVersion` y `structuredContent` de los botones de campos heredados.
+- Verificación estática posterior: el bloque principal de JavaScript compila sin errores; las 8 pruebas del modelo pasan; se confirmó presencia del panel, acciones, guardado estructurado y fallback. Aún no equivale a prueba visual en navegador ni a validación real de Firestore/offline.
 - `sw.js` sigue en caché v19; no se añadió ningún recurso nuevo. No se modificó Firebase ni sus reglas.
