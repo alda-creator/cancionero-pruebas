@@ -256,31 +256,20 @@
     /* Render estructurado: los acordes son etiquetas ancladas a posiciones
        de la letra; no se insertan espacios artificiales en el contenido. */
     .structured-line-pair {
-      position: relative;
-      display: block;
-      margin: 0 0 8px;
-      font-family: "Courier New", Courier, monospace;
-      font-size: 16px;
-      line-height: 1.5;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
+      position: relative; display:block; box-sizing:border-box; max-width:100%;
+      margin:0 0 8px; padding:0 0 2px;
+      font-family:"Courier New",Courier,monospace; font-size:16px; line-height:1.5;
+      white-space:nowrap; overflow-x:auto; overflow-y:hidden;
+      -webkit-overflow-scrolling:touch; scrollbar-width:thin; overscroll-behavior-x:contain;
     }
-    .structured-line-pair.has-chords { padding-top: 1.35em; }
+    .structured-line-pair.has-chords { padding-top:1.35em; }
     .structured-line-pair .structured-chord {
-      position: absolute;
-      top: 0;
-      color: var(--chord);
-      font-weight: 700;
-      white-space: nowrap;
-      line-height: 1.25;
-      pointer-events: auto;
+      position:absolute; top:0; color:var(--chord); font-weight:700;
+      white-space:nowrap; line-height:1.25; pointer-events:auto;
     }
     .structured-line-pair .structured-lyric {
-      display: block;
-      color: var(--text);
-      min-height: 1em;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
+      display:block; width:max-content; min-width:100%; color:var(--text);
+      min-height:1em; white-space:pre;
     }
 
     .admin-menu {
@@ -299,32 +288,26 @@
       margin-top: 10px;
     }
 
-    .structured-editor-panel {
-      display: none;
-      margin: 0 0 14px;
-      padding: 12px;
-      border: 1px solid var(--accent);
-      border-radius: 12px;
-      background: var(--card);
-    }
-    .structured-editor-heading { display:flex; flex-direction:column; gap:4px; margin-bottom:10px; }
-    .structured-editor-heading span, .structured-editor-help { color:var(--text-muted); font-size:12px; }
-    .structured-editor-rows { display:flex; flex-direction:column; gap:8px; max-height:260px; overflow:auto; margin-bottom:12px; }
-    .structured-editor-row { padding:9px; border:1px solid var(--card-border); border-radius:8px; background:var(--bg); }
-    .structured-editor-row.selected { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
-    .structured-editor-row-label { display:block; font-size:11px; color:var(--text-muted); margin-bottom:5px; }
-    .structured-editor-row-lyric { display:block; width:100%; padding:4px 0; border:0; background:transparent; color:var(--text); text-align:left; white-space:pre-wrap; font:inherit; }
-    .structured-editor-chords { display:flex; flex-wrap:wrap; gap:6px; margin-top:7px; }
-    .structured-editor-preview { position:relative; padding-top:1.35em; margin:2px 0 4px; font:13px/1.5 "Courier New",Courier,monospace; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; }
-    .structured-editor-preview-chord { position:absolute; top:0; color:var(--chord); font-weight:700; white-space:nowrap; }
-    .structured-editor-preview-lyric { display:block; width:max-content; min-width:100%; white-space:pre; color:var(--text); }
-    .structured-editor-chord { border:1px solid var(--accent); border-radius:7px; padding:4px 8px; background:var(--card); color:var(--chord); font-weight:700; }
-    .structured-editor-chord.selected { background:var(--accent); color:white; }
-    .structured-editor-controls { display:grid; grid-template-columns:1fr; gap:6px; }
-    .structured-editor-controls label { font-size:12px; font-weight:700; margin-top:4px; }
-    .structured-editor-controls input { width:100%; box-sizing:border-box; padding:10px; border:1px solid var(--card-border); border-radius:8px; background:var(--bg); color:var(--text); font:inherit; }
-    .structured-editor-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
-    .structured-editor-help { line-height:1.4; margin:10px 0 0; }
+    .structured-editor-panel { display:none; margin:0 0 14px; padding:8px 0; border:0; background:transparent; }
+    .structured-editor-heading { display:flex; flex-direction:row; align-items:center; gap:8px; margin:0 0 6px; }
+    .structured-editor-heading strong { font-size:13px; }
+    .structured-editor-heading span, .structured-editor-help { color:var(--text-muted); font-size:11px; }
+    .structured-editor-rows { display:flex; flex-direction:column; gap:5px; margin-bottom:8px; }
+    .structured-editor-row { padding:5px 7px; border:1px solid transparent; border-radius:8px; background:transparent; }
+    .structured-editor-row.selected { border-color:var(--accent); background:var(--card); }
+    .structured-editor-row-label { display:block; font-size:10px; color:var(--text-muted); margin-bottom:2px; }
+    .structured-editor-preview { position:relative; box-sizing:border-box; width:100%; max-width:100%; padding:1.35em 0 3px; margin:0; font:14px/1.5 "Courier New",Courier,monospace; white-space:nowrap; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:thin; overscroll-behavior-x:contain; }
+    .structured-editor-preview-chord { position:absolute; top:0; color:var(--chord); font-weight:700; white-space:nowrap; cursor:pointer; }
+    .structured-editor-preview-chord.selected { background:var(--accent); color:#fff; border-radius:4px; padding:0 2px; }
+    .structured-editor-preview-lyric { display:block; width:max-content; min-width:100%; white-space:pre; color:var(--text); cursor:text; }
+    .structured-editor-controls { display:none; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:7px; padding:8px; border:1px solid var(--card-border); border-radius:10px; background:var(--card); }
+    .structured-editor-panel.has-selection .structured-editor-controls { display:grid; }
+    .structured-editor-controls label { display:none; }
+    .structured-editor-controls input { min-width:0; width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid var(--card-border); border-radius:8px; background:var(--bg); color:var(--text); font:inherit; }
+    #structured-chord-offset { display:none; }
+    .structured-editor-actions { display:flex; gap:4px; flex-wrap:nowrap; margin:0; }
+    .structured-editor-actions .btn-action { min-width:34px; padding:7px 9px; }
+    .structured-editor-help { line-height:1.4; margin:5px 0 0; }
     .editor-container {
       position: relative;
       width: 100%;
@@ -428,7 +411,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.1.21 · Biblioteca de acordes · (PRUEBAS)</div>
+        <div class="app-version">v1.1.22 · Editor integrado · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -589,23 +572,21 @@
 
     <section id="structured-editor-panel" class="structured-editor-panel" aria-label="Editor visual de acordes">
       <div class="structured-editor-heading">
-        <strong>Editor visual de acordes</strong>
-        <span id="structured-editor-status" role="status" aria-live="polite">Selecciona una línea para comenzar.</span>
+        <strong>Edición de acordes</strong>
+        <span id="structured-editor-status" role="status" aria-live="polite">Toca una línea para editarla.</span>
       </div>
       <div id="structured-editor-rows" class="structured-editor-rows"></div>
       <div class="structured-editor-controls">
-        <label for="structured-chord-symbol">Acorde</label>
-        <input id="structured-chord-symbol" type="text" placeholder="Ej. G, Lam7, F#m" autocomplete="off">
-        <label for="structured-chord-offset">Posición en la letra</label>
-        <input id="structured-chord-offset" type="number" min="0" step="1" value="0" inputmode="numeric">
+        <input id="structured-chord-symbol" type="text" placeholder="Acorde (ej. G, Am7)" autocomplete="off" aria-label="Símbolo del acorde">
+        <input id="structured-chord-offset" type="number" min="0" step="1" value="0" inputmode="numeric" aria-label="Posición del acorde">
         <div class="structured-editor-actions">
-          <button type="button" class="btn-action" id="structured-chord-left" disabled>← Mover 1</button>
-          <button type="button" class="btn-action" id="structured-chord-right" disabled>Mover 1 →</button>
-          <button type="button" class="btn-action primary" id="structured-chord-save">＋ Agregar acorde</button>
-          <button type="button" class="btn-action" id="structured-chord-delete" disabled>Eliminar</button>
+          <button type="button" class="btn-action" id="structured-chord-left" disabled aria-label="Mover acorde a la izquierda">←</button>
+          <button type="button" class="btn-action primary" id="structured-chord-save">＋</button>
+          <button type="button" class="btn-action" id="structured-chord-right" disabled aria-label="Mover acorde a la derecha">→</button>
+          <button type="button" class="btn-action" id="structured-chord-delete" disabled aria-label="Eliminar acorde">×</button>
         </div>
       </div>
-      <p class="structured-editor-help">Toca una línea y después elige la posición. Si tocas un acorde existente podrás modificarlo o eliminarlo. La letra original no se altera.</p>
+      <p class="structured-editor-help">Toca la letra para colocar un acorde; toca un acorde para editarlo.</p>
     </section>
 
     <div class="editor-container">  
@@ -1731,93 +1712,84 @@
     panel.style.display = 'block';
     rowsHost.innerHTML = '';
     if (!draft) {
-      status.textContent = 'No se pudo convertir este formato con seguridad. Puedes seguir usando el editor de texto sin perder el contenido.';
+      panel.classList.remove('has-selection');
+      status.textContent = 'Este formato antiguo no se pudo convertir automáticamente. El texto original permanece intacto.';
       saveButton.disabled = true;
       deleteButton.disabled = true;
       document.getElementById('structured-chord-left').disabled = true;
       document.getElementById('structured-chord-right').disabled = true;
       return;
     }
-    saveButton.disabled = false;
     let rowCount = 0;
     draft.blocks.forEach(block => {
+      const blockHeading = document.createElement('div');
+      blockHeading.className = 'structured-editor-row-label';
+      blockHeading.textContent = block.label;
+      rowsHost.appendChild(blockHeading);
       block.rows.forEach(row => {
         rowCount++;
         const card = document.createElement('div');
         card.className = 'structured-editor-row' + (row.id === selectedDraftRowId ? ' selected' : '');
-        const blockLabel = document.createElement('span');
-        blockLabel.className = 'structured-editor-row-label';
-        blockLabel.textContent = block.label;
-        card.appendChild(blockLabel);
         const preview = document.createElement('div');
         preview.className = 'structured-editor-preview';
-        preview.setAttribute('aria-label', 'Vista previa de acordes sobre la letra');
+        preview.setAttribute('aria-label', 'Toca la letra para posicionar un acorde');
         row.chords.forEach(chord => {
           const positionedChord = document.createElement('span');
-          positionedChord.className = 'structured-editor-preview-chord';
+          positionedChord.className = 'structured-editor-preview-chord' + (chord.id === selectedDraftChordId ? ' selected' : '');
           positionedChord.textContent = structuredChordSymbol(chord);
-          const visualOffset = chord.position.offset + (chord.position.affinity === 'after' ? 1 : 0);
-          positionedChord.style.left = visualOffset + 'ch';
-          preview.appendChild(positionedChord);
-        });
-        const previewLyric = document.createElement('span');
-        previewLyric.className = 'structured-editor-preview-lyric';
-        previewLyric.textContent = row.lyric || '(línea sin letra)';
-        preview.appendChild(previewLyric);
-        card.appendChild(preview);
-        const lyric = document.createElement('button');
-        lyric.type = 'button';
-        lyric.className = 'structured-editor-row-lyric';
-        lyric.textContent = row.lyric || '(línea sin letra)';
-        lyric.addEventListener('click', event => {
-          selectedDraftRowId = row.id;
-          selectedDraftChordId = null;
-          let offset = 0;
-          // En navegadores compatibles, el punto tocado sobre la letra determina
-          // el cursor musical; se convierte a puntos Unicode para el modelo.
-          let caret = null;
-          if (document.caretRangeFromPoint) {
-            caret = document.caretRangeFromPoint(event.clientX, event.clientY);
-          } else if (document.caretPositionFromPoint) {
-            const position = document.caretPositionFromPoint(event.clientX, event.clientY);
-            if (position) caret = { startContainer: position.offsetNode, startOffset: position.offset };
-          }
-          if (caret && caret.startContainer && lyric.contains(caret.startContainer)) {
-            const prefix = caret.startContainer.textContent.slice(0, caret.startOffset);
-            offset = Array.from(prefix).length;
-          }
-          document.getElementById('structured-chord-offset').value = String(Math.min(offset, Array.from(row.lyric).length));
-          document.getElementById('structured-chord-symbol').value = '';
-          renderStructuredEditor();
-        });
-        card.appendChild(lyric);
-        const chords = document.createElement('div');
-        chords.className = 'structured-editor-chords';
-        row.chords.forEach(chord => {
-          const chip = document.createElement('button');
-          chip.type = 'button';
-          chip.className = 'structured-editor-chord' + (chord.id === selectedDraftChordId ? ' selected' : '');
-          chip.textContent = structuredChordSymbol(chord) + ' · ' + chord.position.offset;
-          chip.addEventListener('click', () => {
+          positionedChord.style.left = (chord.position.offset + (chord.position.affinity === 'after' ? 1 : 0)) + 'ch';
+          positionedChord.tabIndex = 0;
+          positionedChord.setAttribute('role', 'button');
+          positionedChord.setAttribute('aria-label', 'Editar acorde ' + structuredChordSymbol(chord));
+          const selectChord = event => {
+            event.stopPropagation();
             selectedDraftRowId = row.id;
             selectedDraftChordId = chord.id;
             document.getElementById('structured-chord-symbol').value = structuredChordSymbol(chord);
             document.getElementById('structured-chord-offset').value = String(chord.position.offset);
             renderStructuredEditor();
+          };
+          positionedChord.addEventListener('click', selectChord);
+          positionedChord.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectChord(event); }
           });
-          chords.appendChild(chip);
+          preview.appendChild(positionedChord);
         });
-        card.appendChild(chords);
+        const lyric = document.createElement('span');
+        lyric.className = 'structured-editor-preview-lyric';
+        lyric.textContent = row.lyric || '(línea sin letra)';
+        lyric.addEventListener('click', event => {
+          selectedDraftRowId = row.id;
+          selectedDraftChordId = null;
+          let offset = 0;
+          let caret = null;
+          if (document.caretRangeFromPoint) caret = document.caretRangeFromPoint(event.clientX, event.clientY);
+          else if (document.caretPositionFromPoint) {
+            const position = document.caretPositionFromPoint(event.clientX, event.clientY);
+            if (position) caret = { startContainer: position.offsetNode, startOffset: position.offset };
+          }
+          if (caret && caret.startContainer && lyric.contains(caret.startContainer)) {
+            offset = Array.from(caret.startContainer.textContent.slice(0, caret.startOffset)).length;
+          }
+          document.getElementById('structured-chord-offset').value = String(Math.min(offset, Array.from(row.lyric).length));
+          document.getElementById('structured-chord-symbol').value = '';
+          renderStructuredEditor();
+          document.getElementById('structured-chord-symbol').focus({ preventScroll: true });
+        });
+        preview.appendChild(lyric);
+        card.appendChild(preview);
         rowsHost.appendChild(card);
       });
     });
+    panel.classList.toggle('has-selection', !!selectedDraftRowId);
     status.textContent = rowCount
-      ? (selectedDraftRowId ? 'Línea seleccionada. El número indica la posición desde el inicio (0 = antes del primer carácter).' : 'Selecciona una línea para agregar o editar acordes.')
+      ? (selectedDraftRowId ? 'Línea seleccionada · posición ' + document.getElementById('structured-chord-offset').value : 'Toca una línea para colocar un acorde.')
       : 'No hay líneas editables en esta canción.';
+    saveButton.disabled = !selectedDraftRowId;
     deleteButton.disabled = !selectedDraftChordId;
     document.getElementById('structured-chord-left').disabled = !selectedDraftChordId;
     document.getElementById('structured-chord-right').disabled = !selectedDraftChordId;
-    saveButton.textContent = selectedDraftChordId ? 'Guardar cambios' : '＋ Agregar acorde';
+    saveButton.textContent = selectedDraftChordId ? '✓' : '＋';
   }
 
   function confirmRawTextWillReplaceStructuredDraft() {
