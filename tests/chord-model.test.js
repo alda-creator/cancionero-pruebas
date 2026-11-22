@@ -166,7 +166,7 @@ test('ajusta la posición del acorde cuando se inserta texto antes de él', () =
   const original = ChordModel.convertLegacy('C        G\nHola mundo').structuredContent;
   const result = ChordModel.reconcileLyrics(original, 'Hola querido mundo');
   assert.equal(result.ok, true);
-  const chord = result.structuredContent.blocks[0].rows[0].chords[0];
+  const chord = result.structuredContent.blocks[0].rows[0].chords[1];
   assert.equal(chord.position.offset, 17);
 });
 
