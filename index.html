@@ -253,6 +253,36 @@
     .chord-line { color: var(--chord); font-weight: 700; }
     .text-line { color: var(--text); }
 
+    /* Render estructurado: los acordes son etiquetas ancladas a posiciones
+       de la letra; no se insertan espacios artificiales en el contenido. */
+    .structured-line-pair {
+      position: relative;
+      display: block;
+      margin: 0 0 8px;
+      padding-top: 1.35em;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 16px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .structured-line-pair .structured-chord {
+      position: absolute;
+      top: 0;
+      color: var(--chord);
+      font-weight: 700;
+      white-space: nowrap;
+      line-height: 1.25;
+      pointer-events: auto;
+    }
+    .structured-line-pair .structured-lyric {
+      display: block;
+      color: var(--text);
+      min-height: 1em;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
     .admin-menu {
       margin-top: 30px;
       padding: 12px;
@@ -1195,19 +1225,43 @@
   function buildBlocksHTML(targetContainer) {
     if (!currentSong || !targetContainer) return;
     targetContainer.innerHTML = '';
-    const parsed = parseRawSongWithBlocks(getSongRawText(currentSong));
-    if (!parsed.blocks.length) {
+
+    // Las canciones estructuradas usan las entidades y sus posiciones.
+    // Si faltan datos o la validación falla, se conserva el render heredado.
+    const structured = currentSong.editorVersion === 2 &&
+      currentSong.structuredContent &&
+      window.ChordModel &&
+      window.ChordModel.validateStructuredContent(currentSong.structuredContent).valid
+        ? currentSong.structuredContent
+        : null;
+
+    const legacy = parseRawSongWithBlocks(getSongRawText(currentSong));
+    const blocks = structured
+      ? structured.blocks.map((block, index) => ({
+          id: (legacy.blocks[index] && legacy.blocks[index].id) || block.id,
+          label: block.label,
+          rows: block.rows
+        }))
+      : legacy.blocks.map(block => ({
+          id: block.id,
+          label: block.label,
+          legacyLines: block.lines
+        }));
+
+    if (!blocks.length) {
       targetContainer.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-muted);">Esta canción no contiene texto registrado o el formato no es compatible. Pulsa Editar para corregirla.</div>`;
       return;
     }
-    const byId = new Map(parsed.blocks.map(block => [block.id, block]));
-    getEffectiveBlockSequence(parsed.blocks).forEach(entry => {
+
+    const byId = new Map(blocks.map(block => [block.id, block]));
+    getEffectiveBlockSequence(legacy.blocks).forEach(entry => {
       const block = byId.get(entry.blockId);
       if (!block) return;
       const blockDiv = document.createElement('div');
       blockDiv.className = 'song-block';
       blockDiv.dataset.blockId = block.id;
       blockDiv.dataset.blockInstanceId = entry.instanceId;
+
       const label = document.createElement('div');
       label.className = 'block-label';
       label.innerText = block.label;
@@ -1223,23 +1277,49 @@
         label.addEventListener('keydown', event => { if(event.key==='Enter'||event.key===' '){event.preventDefault();send();} });
       }
       blockDiv.appendChild(label);
-      block.lines.forEach(line => {
-        const pair = document.createElement('div');
-        pair.className = 'line-pair';
-        if (line.chords) {
-          const chord = document.createElement('div');
-          chord.className = 'chord-line';
-          chord.innerText = transposeChordLine(line.chords,currentTransposeSteps);
-          pair.appendChild(chord);
-        }
-        if (line.text) {
+
+      if (structured && Array.isArray(block.rows)) {
+        block.rows.forEach(row => {
+          const pair = document.createElement('div');
+          pair.className = 'line-pair structured-line-pair';
+          pair.dataset.rowId = row.id;
+
+          (row.chords || []).forEach(chordData => {
+            const chord = document.createElement('span');
+            chord.className = 'structured-chord';
+            const symbol = chordData.root + chordData.quality +
+              (chordData.bass ? '/' + chordData.bass : '');
+            chord.textContent = transposeChordToken(symbol, currentTransposeSteps);
+            chord.style.left = (chordData.position.offset * 1) + 'ch';
+            chord.dataset.chordId = chordData.id;
+            pair.appendChild(chord);
+          });
+
           const lyric = document.createElement('div');
-          lyric.className = 'text-line';
-          lyric.innerText = line.text;
+          lyric.className = 'structured-lyric';
+          lyric.textContent = row.lyric;
           pair.appendChild(lyric);
-        }
-        blockDiv.appendChild(pair);
-      });
+          blockDiv.appendChild(pair);
+        });
+      } else {
+        (block.legacyLines || []).forEach(line => {
+          const pair = document.createElement('div');
+          pair.className = 'line-pair';
+          if (line.chords) {
+            const chord = document.createElement('div');
+            chord.className = 'chord-line';
+            chord.innerText = transposeChordLine(line.chords,currentTransposeSteps);
+            pair.appendChild(chord);
+          }
+          if (line.text) {
+            const lyric = document.createElement('div');
+            lyric.className = 'text-line';
+            lyric.innerText = line.text;
+            pair.appendChild(lyric);
+          }
+          blockDiv.appendChild(pair);
+        });
+      }
       targetContainer.appendChild(blockDiv);
     });
   }
