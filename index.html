@@ -1289,7 +1289,11 @@
       } else {
         const start = index;
         while (index < chars.length && !/\s/u.test(chars[index])) index++;
-        words.push({ start, end: index, text: chars.slice(start, index).join('') });
+        const unit = document.createElement('span');
+        unit.className = 'structured-word-unit';
+        unit.textContent = chars.slice(start, index).join('');
+        lyricHost.appendChild(unit);
+        words.push({ start, end: index, element: unit });
       }
     }
 
@@ -1298,18 +1302,11 @@
       unit.className = 'structured-word-unit';
       lyricHost.appendChild(unit);
       words.push({ start: 0, end: 0, element: unit });
-    } else {
-      words.forEach(word => {
-        const unit = document.createElement('span');
-        unit.className = 'structured-word-unit';
-        unit.textContent = word.text;
-        word.element = unit;
-        lyricHost.appendChild(unit);
-      });
     }
 
     chords.forEach(chordData => {
-      const offset = Math.max(0, Math.min(chars.length, chordData.position.offset));
+      const visualOffset = chordData.position.offset + (chordData.position.affinity === 'after' ? 1 : 0);
+      const offset = Math.max(0, Math.min(chars.length, visualOffset));
       const word = words.find(item => offset <= item.end) || words[words.length - 1];
       const localOffset = offset - word.start;
       const chord = document.createElement('span');
