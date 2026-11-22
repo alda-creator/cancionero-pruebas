@@ -596,6 +596,8 @@
         <label for="structured-chord-offset">Posición en la letra</label>
         <input id="structured-chord-offset" type="number" min="0" step="1" value="0" inputmode="numeric">
         <div class="structured-editor-actions">
+          <button type="button" class="btn-action" id="structured-chord-left" disabled>← Mover 1</button>
+          <button type="button" class="btn-action" id="structured-chord-right" disabled>Mover 1 →</button>
           <button type="button" class="btn-action primary" id="structured-chord-save">＋ Agregar acorde</button>
           <button type="button" class="btn-action" id="structured-chord-delete" disabled>Eliminar</button>
         </div>
@@ -757,6 +759,7 @@
   let songViewOrigin = 'list';  
   let editingSongId = null;
   let structuredDraft = null;
+  let structuredDraftDirty = false;
   let selectedDraftRowId = null;
   let selectedDraftChordId = null;  
   let currentTransposeSteps = 0;
@@ -1587,6 +1590,7 @@
 
   function openEditor() {
     structuredDraft = null;
+    structuredDraftDirty = false;
     selectedDraftRowId = null;
     selectedDraftChordId = null;
   
@@ -1605,6 +1609,7 @@
   }  
 
   function editCurrentSong() {
+    structuredDraftDirty = false;
     structuredDraft = currentSong && currentSong.editorVersion === 2 &&
       currentSong.structuredContent && window.ChordModel &&
       window.ChordModel.validateStructuredContent(currentSong.structuredContent).valid
@@ -1635,6 +1640,7 @@
         btn.className = 'tag-btn';
         btn.innerText = `Cargar "${key}"`;
         btn.onclick = () => {
+          if (!confirmRawTextWillReplaceStructuredDraft()) return;
           document.getElementById('edit-raw').value = formatValueToString(currentSong[key]);
           handleEditorInput();
         };
@@ -1660,6 +1666,7 @@
   }
 
   function insertTag(tag) {
+    if (!confirmRawTextWillReplaceStructuredDraft()) return;
     const area = document.getElementById('edit-raw');
     const start = area.selectionStart;
     const end = area.selectionEnd;
@@ -1781,7 +1788,39 @@
       ? (selectedDraftRowId ? 'Línea seleccionada. El número indica la posición desde el inicio (0 = antes del primer carácter).' : 'Selecciona una línea para agregar o editar acordes.')
       : 'No hay líneas editables en esta canción.';
     deleteButton.disabled = !selectedDraftChordId;
+    document.getElementById('structured-chord-left').disabled = !selectedDraftChordId;
+    document.getElementById('structured-chord-right').disabled = !selectedDraftChordId;
     saveButton.textContent = selectedDraftChordId ? 'Guardar cambios' : '＋ Agregar acorde';
+  }
+
+  function confirmRawTextWillReplaceStructuredDraft() {
+    if (!structuredDraftDirty) return true;
+    const proceed = confirm('Has modificado acordes en el editor visual. Si cambias el texto original, esos cambios visuales se descartarán. ¿Continuar?');
+    if (!proceed) return false;
+    structuredDraftDirty = false;
+    structuredDraft = null;
+    selectedDraftRowId = null;
+    selectedDraftChordId = null;
+    return true;
+  }
+
+  function moveSelectedDraftChord(delta) {
+    const row = draftRowById();
+    if (!row || !selectedDraftChordId) return;
+    const chord = row.chords.find(item => item.id === selectedDraftChordId);
+    if (!chord) return;
+    const nextOffset = chord.position.offset + delta;
+    const max = Array.from(row.lyric).length;
+    if (nextOffset < 0 || nextOffset > max) return;
+    if (row.chords.some(item => item.id !== chord.id && item.position.offset === nextOffset)) {
+      alert('Ya hay otro acorde en esa posición.');
+      return;
+    }
+    chord.position.offset = nextOffset;
+    row.chords.sort((a, b) => a.position.offset - b.position.offset);
+    structuredDraftDirty = true;
+    document.getElementById('structured-chord-offset').value = String(nextOffset);
+    renderStructuredEditor();
   }
 
   function saveStructuredDraftChord() {
@@ -1842,6 +1881,7 @@
       return;
     }
     row.chords.sort((left, right) => left.position.offset - right.position.offset);
+    structuredDraftDirty = true;
     renderStructuredEditor();
   }
 
@@ -1850,6 +1890,7 @@
     if (!row || !selectedDraftChordId) return;
     row.chords = row.chords.filter(chord => chord.id !== selectedDraftChordId);
     selectedDraftChordId = null;
+    structuredDraftDirty = true;
     document.getElementById('structured-chord-symbol').value = '';
     renderStructuredEditor();
   }
@@ -1882,6 +1923,14 @@
     const deleteButton = document.getElementById('structured-chord-delete');
     if (addButton) addButton.addEventListener('click', saveStructuredDraftChord);
     if (deleteButton) deleteButton.addEventListener('click', deleteStructuredDraftChord);
+    const leftButton = document.getElementById('structured-chord-left');
+    const rightButton = document.getElementById('structured-chord-right');
+    if (leftButton) leftButton.addEventListener('click', () => moveSelectedDraftChord(-1));
+    if (rightButton) rightButton.addEventListener('click', () => moveSelectedDraftChord(1));
+    const rawEditor = document.getElementById('edit-raw');
+    if (rawEditor) rawEditor.addEventListener('beforeinput', event => {
+      if (structuredDraftDirty && !confirmRawTextWillReplaceStructuredDraft()) event.preventDefault();
+    });
   });
 
   function toggleAdminActions() {
