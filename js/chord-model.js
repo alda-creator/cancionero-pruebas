@@ -222,6 +222,116 @@
     };
   }
 
+  function normalizeLyricForMatch(value) {
+    return String(value || '').normalize('NFC').replace(/\s+/g, ' ').trim();
+  }
+
+  function adjustChordOffset(oldLyric, newLyric, offset) {
+    const oldChars = Array.from(oldLyric || '');
+    const newChars = Array.from(newLyric || '');
+    let prefix = 0;
+    while (prefix < oldChars.length && prefix < newChars.length &&
+           oldChars[prefix] === newChars[prefix]) prefix++;
+    let suffix = 0;
+    while (suffix < oldChars.length - prefix && suffix < newChars.length - prefix &&
+           oldChars[oldChars.length - 1 - suffix] === newChars[newChars.length - 1 - suffix]) suffix++;
+    const oldChangedEnd = oldChars.length - suffix;
+    const newChangedEnd = newChars.length - suffix;
+    let next = offset;
+    if (offset > prefix && offset >= oldChangedEnd) {
+      next += newChangedEnd - oldChangedEnd;
+    } else if (offset > prefix && offset < oldChangedEnd) {
+      next = newChangedEnd;
+    }
+    return Math.max(0, Math.min(newChars.length, next));
+  }
+
+  // Reconcilia el texto editado con la estructura anterior sin volver a
+  // interpretar ni descartar los acordes que ya fueron colocados visualmente.
+  // LCS identifica líneas intactas; los tramos modificados de igual longitud
+  // se emparejan por orden para conservar acordes al corregir una letra.
+  function reconcileLyrics(existingContent, rawText) {
+    const existingValidation = validateStructuredContent(existingContent);
+    if (!existingValidation.valid) {
+      return { ok: false, structuredContent: null, warnings: existingValidation.errors };
+    }
+    const converted = convertLegacy(rawText);
+    if (!converted.ok) {
+      return { ok: false, structuredContent: null, warnings: converted.warnings };
+    }
+    const nextContent = converted.structuredContent;
+    const usedOldBlocks = new Set();
+
+    nextContent.blocks.forEach((nextBlock, nextBlockIndex) => {
+      let oldBlockIndex = existingContent.blocks.findIndex((block, index) =>
+        !usedOldBlocks.has(index) && normalizeLyricForMatch(block.label) === normalizeLyricForMatch(nextBlock.label)
+      );
+      if (oldBlockIndex < 0 && existingContent.blocks[nextBlockIndex] && !usedOldBlocks.has(nextBlockIndex)) {
+        oldBlockIndex = nextBlockIndex;
+      }
+      if (oldBlockIndex < 0) return;
+      usedOldBlocks.add(oldBlockIndex);
+      const oldBlock = existingContent.blocks[oldBlockIndex];
+      nextBlock.id = oldBlock.id;
+
+      const oldRows = oldBlock.rows;
+      const newRows = nextBlock.rows;
+      const n = oldRows.length, m = newRows.length;
+      const dp = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+      for (let i = n - 1; i >= 0; i--) {
+        for (let j = m - 1; j >= 0; j--) {
+          dp[i][j] = normalizeLyricForMatch(oldRows[i].lyric) === normalizeLyricForMatch(newRows[j].lyric)
+            ? 1 + dp[i + 1][j + 1]
+            : Math.max(dp[i + 1][j], dp[i][j + 1]);
+        }
+      }
+
+      const matches = [];
+      let i = 0, j = 0;
+      while (i < n && j < m) {
+        if (normalizeLyricForMatch(oldRows[i].lyric) === normalizeLyricForMatch(newRows[j].lyric)) {
+          matches.push([i++, j++]);
+        } else if (dp[i + 1][j] >= dp[i][j + 1]) i++;
+        else j++;
+      }
+
+      // Empareja las líneas cambiadas entre anclas intactas. Las líneas nuevas
+      // no reciben acordes; las eliminadas dejan de existir con su contenido.
+      const anchors = [[-1, -1], ...matches, [n, m]];
+      const rowPairs = [];
+      for (let a = 0; a < anchors.length - 1; a++) {
+        const [oldAnchor, newAnchor] = anchors[a];
+        const [oldNext, newNext] = anchors[a + 1];
+        const oldGap = [];
+        const newGap = [];
+        for (let oi = oldAnchor + 1; oi < oldNext; oi++) oldGap.push(oi);
+        for (let nj = newAnchor + 1; nj < newNext; nj++) newGap.push(nj);
+        const count = Math.min(oldGap.length, newGap.length);
+        for (let k = 0; k < count; k++) rowPairs.push([oldGap[k], newGap[k]]);
+        if (oldNext < n && newNext < m) rowPairs.push([oldNext, newNext]);
+      }
+
+      rowPairs.forEach(([oldIndex, newIndex]) => {
+        const oldRow = oldRows[oldIndex];
+        const newRow = newRows[newIndex];
+        newRow.id = oldRow.id;
+        newRow.chords = oldRow.chords.map(chord => ({
+          ...chord,
+          position: {
+            ...chord.position,
+            offset: adjustChordOffset(oldRow.lyric, newRow.lyric, chord.position.offset)
+          }
+        }));
+      });
+    });
+
+    const validation = validateStructuredContent(nextContent);
+    if (!validation.valid) {
+      return { ok: false, structuredContent: null, warnings: validation.errors };
+    }
+    return { ok: true, structuredContent: nextContent, warnings: [] };
+  }
+
   function serializeLegacy(content) {
     const validation = validateStructuredContent(content);
     if (!validation.valid) return { ok: false, rawText: null, warnings: validation.errors };
@@ -269,6 +379,7 @@
     parseChordSymbol,
     validateStructuredContent,
     convertLegacy,
+    reconcileLyrics,
     serializeLegacy,
     isChordLine
   };
