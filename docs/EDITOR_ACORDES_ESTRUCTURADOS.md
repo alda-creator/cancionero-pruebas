@@ -1,6 +1,6 @@
 # Diseño técnico: editor de acordes estructurados
 
-**Estado:** propuesta técnica aprobada para implementación en entorno de pruebas.  
+**Estado:** fase 1 implementada en rama de pruebas; módulo de dominio y conversión conservadora con pruebas automatizadas. Integración con la PWA todavía pendiente.  
 **Rama:** `feature/editor-acordes-estructurados`  
 **Objetivo:** evolucionar el editor de canciones sin romper canciones existentes, transposición, Mi Set, modo Director/Músico ni uso offline.
 
@@ -94,8 +94,8 @@ No se cambia Firebase ni sus reglas en esta iniciativa.
 
 ## 7. Fases de implementación
 
-1. Añadir esquema, validadores y funciones puras de conversión sin cambiar la interfaz.
-2. Crear pruebas de conversión y compatibilidad para casos inequívocos y ambiguos.
+1. **Completada en rama:** esquema v2, validador, parser de símbolos, conversor heredado conservador y serializador protegido; sin cambios en la interfaz.
+2. **Completada en rama:** pruebas de acordes, nomenclaturas, inversiones, posiciones Unicode, ambigüedad, validación y serialización. 8 pruebas ejecutadas correctamente.
 3. Integrar render estructurado manteniendo fallback heredado.
 4. Añadir inserción y edición visual de acordes.
 5. Integrar transposición sobre entidades estructuradas.
@@ -103,3 +103,11 @@ No se cambia Firebase ni sus reglas en esta iniciativa.
 7. Validar persistencia, sincronización y funcionamiento offline antes de habilitar pruebas de usuario.
 
 **Criterio de salida:** ninguna canción antigua pierde información; una canción nueva puede editarse sin alinear acordes con espacios; todas las vistas usan la misma identidad de acorde.
+
+## 8. Implementación actual en la rama
+
+- `js/chord-model.js`: módulo aislado UMD, disponible como `ChordModel` en navegador y exportable en Node para pruebas. No está cargado todavía por `index.html`.
+- `tests/chord-model.test.js`: suite de 8 pruebas; ejecución aislada sobre el contenido real de ambos archivos: 8/8 correctas.
+- El conversor no intenta adivinar si hay tabulaciones o acordes más allá del final de la letra.
+- El serializador rechaza acordes superpuestos o afinidades que el formato heredado no representa.
+- No se ha modificado `index.html`, `sw.js`, Firebase ni el comportamiento de la aplicación.
