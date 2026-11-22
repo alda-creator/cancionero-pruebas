@@ -124,3 +124,5 @@ No se cambia Firebase ni sus reglas en esta iniciativa.
 - La edición de texto heredado reinicia el borrador visual desde la conversión; al abrir una canción estructurada, se restaura su estructura exacta después de refrescar la previsualización. Se excluyen `editorVersion` y `structuredContent` de los botones de campos heredados.
 - Verificación estática posterior: el bloque principal de JavaScript compila sin errores; las 8 pruebas del modelo pasan; se confirmó presencia del panel, acciones, guardado estructurado y fallback. Aún no equivale a prueba visual en navegador ni a validación real de Firestore/offline.
 - `sw.js` sigue en caché v19; no se añadió ningún recurso nuevo. No se modificó Firebase ni sus reglas.
+
+- La vista previa y los chips del editor respetan la preferencia de notación anglosajona o latina; la estructura interna sigue guardando raíces canónicas para transponer sin ambigüedad.
