@@ -103,7 +103,7 @@ No se descartan. Se mantienen registradas y se priorizarán después de asegurar
 - **v1.1.19:** Motor unificado de reconocimiento/transposición de acordes; pruebas funcionales del usuario confirmadas.
 - **v1.1.20:** selector manual de tonalidad original independiente del primer acorde; pruebas funcionales confirmadas por usuario.
 - **v1.1.21:** biblioteca consultiva de acordes, fórmulas y notas; integrada en el entorno de pruebas.
-- **Iniciativa en curso:** editor de acordes estructurados. Integrado en `main` del entorno de pruebas mediante PR #38; el usuario confirmó que Pages ya publica esa versión y validó el primer flujo. La iteración UX móvil v1.1.22 está en rama: editor dentro de la vista previa, controles contextuales y líneas horizontales desplazables para evitar desalineación. Pendiente integrar y validar Safari/iPhone, Firestore y modo offline.
+- **Iniciativa en curso:** editor de acordes estructurados. PR #38 y UX v1.1.22 integrados en laboratorio. Nueva corrección en rama `fix/editor-preservar-acordes-reflow`: reconciliar letra sin descartar acordes, bloquear guardado si la reconciliación falla y reflujo vertical automático para lectura en vivo. Pendiente validar Safari/iPhone, Auto-Scroll, Director/Músico, Firestore y offline.
 - **Rama de implementación del motor:** `feature/acordes-configurables`.
 - **Trabajo anterior:** biblioteca de acordes (v1.1.21), rama `feature/biblioteca-acordes`.  
 - **Trabajo actual:** UX móvil del editor estructurado (v1.1.22), rama `feature/editor-integrado-alineacion-movil`.
