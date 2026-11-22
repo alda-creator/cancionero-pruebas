@@ -1849,9 +1849,11 @@
       });
     });
     panel.classList.toggle('has-selection', !!selectedDraftRowId);
-    status.textContent = rowCount
-      ? (selectedDraftRowId ? 'Línea seleccionada · posición ' + document.getElementById('structured-chord-offset').value : 'Toca una línea para colocar un acorde.')
-      : 'No hay líneas editables en esta canción.';
+    status.textContent = structuredDraftSyncError
+      ? 'No se pudo reconciliar la letra; tus acordes siguen protegidos. ' + structuredDraftSyncError
+      : (rowCount
+          ? (selectedDraftRowId ? 'Línea seleccionada · posición ' + document.getElementById('structured-chord-offset').value : 'Toca una línea para colocar un acorde.')
+          : 'No hay líneas editables en esta canción.');
     saveButton.disabled = !selectedDraftRowId;
     deleteButton.disabled = !selectedDraftChordId;
     document.getElementById('structured-chord-left').disabled = !selectedDraftChordId;
