@@ -9,3 +9,20 @@ test('no intenta reparar silenciosamente estructura inválida',()=>{const result
 test('devuelve estado ambiguo y conserva fuente',()=>{const raw='C\tG\nLetra';const result=Adapter.adapt({rawText:raw},Model);assert.equal(result.ok,false);assert.equal(result.status,'legacy-ambiguous');assert.equal(result.rawText,raw);});
 test('clasifica canción vacía y entrada inválida',()=>{assert.equal(Adapter.adapt({rawText:''},Model).status,'empty');assert.equal(Adapter.adapt(null,Model).status,'invalid-input');});
 test('no funciona si el modelo falta',()=>{const result=Adapter.adapt({rawText:'C'},null);assert.equal(result.status,'model-unavailable');});
+
+test('prepara una canción heredada con acorde final para el editor sin perder rawText',()=>{
+ const raw='[CORO]\n      G              A         F#m    Bm\nLevantemos nuestras manos y adoremos,';
+ const song={title:'Prueba',rawText:raw};
+ const adapted=Adapter.adapt(song,Model);
+ assert.equal(adapted.ok,true);
+ assert.equal(adapted.status,'legacy-converted');
+ const Document=require('../js/song-document.js');
+ const projected=Document.project(adapted);
+ assert.equal(projected.ok,true);
+ assert.equal(projected.document.blocks[0].rows[0].lyric,'Levantemos nuestras manos y adoremos,');
+ assert.deepEqual(adapted.structuredContent.blocks[0].rows[0].chords.map(chord=>chord.root+chord.quality),['G','A','F#m','Bm']);
+ assert.equal(song.rawText,raw);
+ const reconciled=Model.reconcileLyrics(adapted.structuredContent,raw);
+ assert.equal(reconciled.ok,true);
+ assert.equal(reconciled.structuredContent.blocks[0].rows[0].chords.length,4);
+});

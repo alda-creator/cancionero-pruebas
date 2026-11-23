@@ -430,7 +430,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.1.28 · Ajuste móvil y detección de acordes · (PRUEBAS)</div>
+        <div class="app-version">v1.2.0 · Editor compatible con canciones antiguas · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -764,6 +764,7 @@
   let songViewOrigin = 'list';  
   let editingSongId = null;
   let structuredDraft = null;
+  let structuredDraftSource = null;
   let structuredDraftDirty = false;
   let structuredDraftSyncError = null;
   let selectedDraftRowId = null;
@@ -1688,11 +1689,19 @@
   function editCurrentSong() {
     structuredDraftDirty = false;
     structuredDraftSyncError = null;
-    structuredDraft = currentSong && currentSong.editorVersion === 2 &&
-      currentSong.structuredContent && window.ChordModel &&
-      window.ChordModel.validateStructuredContent(currentSong.structuredContent).valid
-        ? JSON.parse(JSON.stringify(currentSong.structuredContent))
-        : null;
+    const editorAdapted = currentSong && window.SongAdapter && window.ChordModel
+      ? window.SongAdapter.adapt(currentSong, window.ChordModel)
+      : null;
+    const editorProjection = editorAdapted && window.SongDocument
+      ? window.SongDocument.project(editorAdapted)
+      : null;
+    // El editor acepta canciones antiguas solo si el mismo adaptador y la
+    // proyección normalizada que usa el lector confirman una conversión segura.
+    // La conversión vive en memoria; rawText no se sustituye al abrir.
+    structuredDraft = editorProjection && editorProjection.ok
+      ? JSON.parse(JSON.stringify(editorAdapted.structuredContent))
+      : null;
+    structuredDraftSource = editorAdapted && editorAdapted.ok ? editorAdapted.source : null;
     selectedDraftRowId = null;
     selectedDraftChordId = null;
   
@@ -1775,8 +1784,14 @@
     if (structuredDraft && window.ChordModel &&
         window.ChordModel.validateStructuredContent(structuredDraft).valid) return structuredDraft;
     const raw = document.getElementById('edit-raw').value;
-    const converted = window.ChordModel ? window.ChordModel.convertLegacy(raw) : null;
-    structuredDraft = converted && converted.ok ? converted.structuredContent : null;
+    const adapted = window.SongAdapter && window.ChordModel
+      ? window.SongAdapter.adapt({ rawText: raw }, window.ChordModel)
+      : null;
+    const projected = adapted && window.SongDocument
+      ? window.SongDocument.project(adapted)
+      : null;
+    structuredDraft = projected && projected.ok ? adapted.structuredContent : null;
+    structuredDraftSource = adapted && adapted.ok ? adapted.source : null;
     return structuredDraft;
   }
 
@@ -1894,7 +1909,11 @@
     status.textContent = structuredDraftSyncError
       ? 'No se pudo reconciliar la letra; tus acordes siguen protegidos. ' + structuredDraftSyncError
       : (rowCount
-          ? (selectedDraftRowId ? 'Línea seleccionada · posición ' + document.getElementById('structured-chord-offset').value : 'Toca una línea para colocar un acorde.')
+          ? (selectedDraftRowId
+              ? 'Línea seleccionada · posición ' + document.getElementById('structured-chord-offset').value
+              : (structuredDraftSource === 'legacy'
+                  ? 'Formato antiguo compatible: conversión temporal en memoria. El original se conserva hasta guardar.'
+                  : 'Toca una línea para colocar un acorde.'))
           : 'No hay líneas editables en esta canción.');
     saveButton.disabled = !selectedDraftRowId;
     deleteButton.disabled = !selectedDraftChordId;
@@ -2028,6 +2047,7 @@
       }
     } else {
       structuredDraft = null;
+      structuredDraftSource = null;
       structuredDraftSyncError = null;
     }
     selectedDraftRowId = null;
