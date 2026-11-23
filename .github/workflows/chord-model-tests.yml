@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - "js/chord-model.js"
-      - "js/song-diagnostics.js"
+      - "js/song-diagnostics.js"\n      - "js/song-adapter.js"
       - "tests/**"
       - "index.html"
       - "sw.js"
