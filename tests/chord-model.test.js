@@ -188,8 +188,24 @@ test('acepta el último acorde una columna después del final de la frase y lo a
   assert.equal(ChordModel.validateStructuredContent(result.structuredContent).valid, true);
 });
 
-test('sigue rechazando acordes claramente fuera de la frase', () => {
-  const result = ChordModel.convertLegacy('[CORO]\n      G              A         F#m        Bm\nLevantemos nuestras manos y adoremos,');
+test('acepta el último acorde hasta 10 columnas después del final y lo ancla al cierre', () => {
+  const lyric = 'Levantemos nuestras manos y adoremos,';
+  for (const distance of [4, 5, 8, 10]) {
+    const chordLine = 'C     G' + ' '.repeat(Math.max(0, lyric.length + distance - 6)) + 'Bm';
+    const result = ChordModel.convertLegacy('[CORO]\n' + chordLine + '\n' + lyric);
+    assert.equal(result.ok, true, 'distancia ' + distance + ': ' + JSON.stringify(result.warnings));
+    const row = result.structuredContent.blocks[0].rows[0];
+    assert.deepEqual(row.chords.map(chord => chord.root), ['C', 'G', 'B']);
+    assert.deepEqual(row.chords.slice(0, 2).map(chord => chord.position.offset), [0, 6]);
+    assert.equal(row.chords[2].position.offset, Array.from(lyric).length);
+    assert.equal(ChordModel.validateStructuredContent(result.structuredContent).valid, true);
+  }
+});
+
+test('mantiene la protección cuando el último acorde supera 10 columnas', () => {
+  const lyric = 'Levantemos nuestras manos y adoremos,';
+  const chordLine = 'C     G' + ' '.repeat(Math.max(0, lyric.length + 11 - 6)) + 'Bm';
+  const result = ChordModel.convertLegacy('[CORO]\n' + chordLine + '\n' + lyric);
   assert.equal(result.ok, false);
   assert.equal(result.reason, 'ambiguous');
   assert.ok(result.warnings.some(warning => warning.includes('demasiado lejos')));
