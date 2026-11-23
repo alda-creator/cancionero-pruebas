@@ -1279,7 +1279,7 @@
   function appendWrappedStructuredRow(pair, row, transposeSteps) {
     const lyric = String(row.lyric || '');
     const chars = Array.from(lyric);
-    const chords = (row.chords || []).slice().sort((a, b) => a.position.offset - b.position.offset);
+    const chords = (row.chords || []).slice().sort((a, b) => (a.position ? a.position.offset : a.offset) - (b.position ? b.position.offset : b.offset));
     pair.classList.toggle('has-chords', chords.length > 0);
     const lyricHost = document.createElement('div');
     lyricHost.className = 'structured-lyric';
