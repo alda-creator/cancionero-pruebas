@@ -136,7 +136,9 @@
     const source = Array.from(String(lyric || ''));
     const ordered = (Array.isArray(chords) ? chords : []).map((chord, index) => ({
       chord, index,
-      sourceOffset: Math.max(0, Number(chord && chord.position ? chord.position.offset : chord && chord.offset) || 0)
+      sourceOffset: Math.max(0,
+        (Number(chord && chord.position ? chord.position.offset : chord && chord.offset) || 0) +
+        ((chord && (chord.position ? chord.position.affinity : chord.affinity)) === 'after' ? 1 : 0))
     })).sort((a, b) => a.sourceOffset - b.sourceOffset || a.index - b.index);
     const insertions = new Map();
     const placements = [];
