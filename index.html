@@ -1322,9 +1322,13 @@
       chord.setAttribute('aria-label', placement.displaySymbol);
       lyricHost.appendChild(chord);
     });
-    if (!lyric) {
-      lyricHost.style.minWidth = Math.max(80, ...layout.placements.map(item => item.offset + item.displaySymbol.length + 2)) + 'ch';
-    }
+    const visualTrackLength = Math.max(
+      layout.lyric.length,
+      ...layout.placements.map(item => item.offset + Array.from(item.displaySymbol).length + 2),
+      lyric ? 1 : 80
+    );
+    lyricHost.style.width = visualTrackLength + 'ch';
+    if (!lyric) lyricHost.style.minWidth = visualTrackLength + 'ch';
     pair.appendChild(lyricHost);
   }
 
@@ -1844,6 +1848,11 @@
         const lyric = document.createElement('span');
         lyric.className = 'structured-editor-preview-lyric';
         lyric.textContent = editorLayout.lyric || ' ';
+        lyric.style.width = Math.max(
+          editorLayout.lyric.length,
+          ...editorLayout.placements.map(item => item.offset + Array.from(item.displaySymbol).length + 2),
+          row.lyric ? 1 : 80
+        ) + 'ch';
         if (!row.lyric) {
           lyric.style.minWidth = Math.max(80, editorLayout.lyric.length) + 'ch';
           lyric.style.cursor = 'crosshair';
