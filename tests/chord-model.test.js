@@ -191,7 +191,7 @@ test('acepta el último acorde una columna después del final de la frase y lo a
 test('acepta el último acorde hasta 10 columnas después del final y lo ancla al cierre', () => {
   const lyric = 'Levantemos nuestras manos y adoremos,';
   for (const distance of [4, 5, 8, 10]) {
-    const chordLine = 'C     G' + ' '.repeat(Math.max(0, lyric.length + distance - 6)) + 'Bm';
+    const chordLine = 'C     G' + ' '.repeat(Math.max(0, lyric.length + distance - 7)) + 'Bm';
     const result = ChordModel.convertLegacy('[CORO]\n' + chordLine + '\n' + lyric);
     assert.equal(result.ok, true, 'distancia ' + distance + ': ' + JSON.stringify(result.warnings));
     const row = result.structuredContent.blocks[0].rows[0];
@@ -204,7 +204,7 @@ test('acepta el último acorde hasta 10 columnas después del final y lo ancla a
 
 test('mantiene la protección cuando el último acorde supera 10 columnas', () => {
   const lyric = 'Levantemos nuestras manos y adoremos,';
-  const chordLine = 'C     G' + ' '.repeat(Math.max(0, lyric.length + 11 - 6)) + 'Bm';
+  const chordLine = 'C     G' + ' '.repeat(Math.max(0, lyric.length + 11 - 7)) + 'Bm';
   const result = ChordModel.convertLegacy('[CORO]\n' + chordLine + '\n' + lyric);
   assert.equal(result.ok, false);
   assert.equal(result.reason, 'ambiguous');
