@@ -178,6 +178,23 @@ test('mantiene el acorde unido a la palabra cuando se inserta texto en su posici
   assert.equal(chord.position.offset, 13);
 });
 
+test('acepta el último acorde una columna después del final de la frase y lo ancla al cierre', () => {
+  const result = ChordModel.convertLegacy('[CORO]\n      G              A         F#m    Bm\nLevantemos nuestras manos y adoremos,');
+  assert.equal(result.ok, true, JSON.stringify(result.warnings));
+  const row = result.structuredContent.blocks[0].rows[0];
+  assert.equal(row.lyric, 'Levantemos nuestras manos y adoremos,');
+  assert.deepEqual(row.chords.map(chord => chord.root + chord.quality), ['G','A','F#m','Bm']);
+  assert.equal(row.chords[3].position.offset, Array.from(row.lyric).length);
+  assert.equal(ChordModel.validateStructuredContent(result.structuredContent).valid, true);
+});
+
+test('sigue rechazando acordes claramente fuera de la frase', () => {
+  const result = ChordModel.convertLegacy('[CORO]\n      G              A         F#m      Bm\nLevantemos nuestras manos y adoremos,');
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'ambiguous');
+  assert.ok(result.warnings.some(warning => warning.includes('más allá del final')));
+});
+
 process.stdout.write('\nPruebas del modelo de acordes finalizadas.\n');
 
 test('no interpreta una frase que comienza con A como una línea de acordes', () => {
