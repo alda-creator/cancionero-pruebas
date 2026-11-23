@@ -96,6 +96,20 @@
     return tokens.every(token => !!parseChordSymbol(token.symbol));
   }
 
+  // Reconocimiento conservador de encabezados de seccion escritos sin corchetes.
+  function detectSectionHeader(line) {
+    const value = String(line || '').trim();
+    if (!value || value.length > 40) return null;
+    const patterns = [
+      /^(?:intro|introducci[oó]n|preludio|interludio|instrumental|outro|coda|final|tag)$/i,
+      /^(?:verso|verse|estrofa)\s*\d*$/i,
+      /^(?:coro|chorus|estribillo)\s*\d*$/i,
+      /^(?:puente|bridge)\s*\d*$/i,
+      /^(?:pre[- ]?coro|pre[- ]?chorus)\s*\d*$/i
+    ];
+    return patterns.some(pattern => pattern.test(value)) ? value : null;
+  }
+
   function normalizeIdPart(value) {
     return String(value || 'bloque').normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '').toLowerCase()
@@ -220,6 +234,12 @@
       if (/^\s*\[.*\]\s*$/.test(line)) {
         pushBlock();
         current = { label: line.trim().slice(1, -1), rows: [] };
+        continue;
+      }
+      const detectedHeader = detectSectionHeader(line);
+      if (detectedHeader) {
+        pushBlock();
+        current = { label: detectedHeader, rows: [] };
         continue;
       }
       if (!line.trim()) continue;
