@@ -164,7 +164,7 @@
           }
           if (chord && chord.bass !== null && !ROOTS.has(chord.bass)) errors.push(cp + ': bajo inválido.');
           if (!chord || !chord.position || !Number.isInteger(chord.position.offset) ||
-              chord.position.offset < 0 || (length === 0 ? chord.position.offset > 10000 : chord.position.offset > length) ||
+              chord.position.offset < 0 || (length === 0 ? chord.position.offset > 10000 : chord.position.offset > length + 10) ||
               !['before','after'].includes(chord.position.affinity)) {
             errors.push(cp + ': posición inválida o fuera de la letra.');
           }
@@ -214,24 +214,14 @@
           position: { offset, affinity: 'before' }
         });
       }
-      // Evaluar la línea completa como un grupo: si todos los acordes están
-      // desplazados a la derecha por un margen pequeño, mover el grupo entero
-      // conserva sus distancias relativas. Nunca comprimir acordes individuales.
+      // Conservar los offsets originales incluso cuando el último acorde
+      // queda después de la última palabra. El renderizador reserva ese espacio;
+      // nunca comprimir el sufijo, porque empalma acordes consecutivos.
       const lyricLength = Array.from(lyric).length;
       if (lyric && entries.length) {
         const overflow = Math.max(...entries.map(entry => entry.position.offset)) - lyricLength;
         if (overflow > 10) {
           return { error: 'Un acorde queda demasiado lejos del final de la letra; su posición es ambigua.' };
-        }
-        if (overflow > 0) {
-          const firstOverflow = entries.findIndex(entry => entry.position.offset > lyricLength);
-          const overflowingSuffix = entries.slice(firstOverflow);
-          // Ajustar como unidad el sufijo contiguo de acordes que rebasa la letra.
-          // Los acordes anteriores, ya dentro del rango, conservan su anclaje.
-          if (overflowingSuffix.some(entry => entry.position.offset - overflow < 0)) {
-            return { error: 'El grupo de acordes queda fuera del rango de la letra; su alineación es ambigua.' };
-          }
-          overflowingSuffix.forEach(entry => { entry.position.offset -= overflow; });
         }
       }
       return { entries };
