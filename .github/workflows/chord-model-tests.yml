@@ -18,6 +18,7 @@ on:
       - "js/chord-model.js"
       - "js/song-diagnostics.js"
       - "js/song-adapter.js"
+      - "js/song-document.js"
       - "tests/**"
       - "index.html"
       - "sw.js"
