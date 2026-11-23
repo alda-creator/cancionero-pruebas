@@ -276,3 +276,23 @@ test('convierte una canción con inversiones separadas, interludio y líneas ins
   assert.ok(rows.some(row => row.chords.map(chord => chord.root).join(',') === 'Ab,Db,Ab'));
   assert.ok(rows.some(row => row.chords.map(chord => chord.root).join(',') === 'C,D,G'));
 });
+
+
+test('mantiene el acorde al inicio cuando se escribe la primera letra debajo', () => {
+  const original = ChordModel.convertLegacy('G').structuredContent;
+  const result = ChordModel.reconcileLyrics(original, 'G\nUna letra nueva');
+  assert.equal(result.ok, true, JSON.stringify(result.warnings));
+  const row = result.structuredContent.blocks[0].rows[0];
+  assert.equal(row.lyric, 'Una letra nueva');
+  assert.equal(row.chords.length, 1);
+  assert.equal(row.chords[0].root, 'G');
+  assert.equal(row.chords[0].position.offset, 0);
+});
+
+test('conserva la posición explícita de un acorde instrumental al agregar letra', () => {
+  const original = ChordModel.convertLegacy('              G').structuredContent;
+  const result = ChordModel.reconcileLyrics(original, '              G\nUna letra nueva');
+  assert.equal(result.ok, true, JSON.stringify(result.warnings));
+  const row = result.structuredContent.blocks[0].rows[0];
+  assert.equal(row.chords[0].position.offset, 14);
+});
