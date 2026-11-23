@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cancionero-cache-v31';
+const CACHE_NAME = 'cancionero-cache-v32';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

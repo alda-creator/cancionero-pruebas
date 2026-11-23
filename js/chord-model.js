@@ -471,6 +471,7 @@
   return {
     version: 2,
     parseChordSymbol,
+    detectSectionHeader,
     validateStructuredContent,
     convertLegacy,
     reconcileLyrics,
