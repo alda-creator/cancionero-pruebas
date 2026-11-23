@@ -1843,9 +1843,9 @@
         });
         const lyric = document.createElement('span');
         lyric.className = 'structured-editor-preview-lyric';
-        lyric.textContent = row.lyric ? editorLayout.lyric : ' ';
+        lyric.textContent = editorLayout.lyric || ' ';
         if (!row.lyric) {
-          lyric.style.minWidth = '80ch';
+          lyric.style.minWidth = Math.max(80, editorLayout.lyric.length) + 'ch';
           lyric.style.cursor = 'crosshair';
           lyric.title = 'Toca una posición de esta fila instrumental para colocar un acorde';
         }
@@ -1859,7 +1859,7 @@
             const rect = lyric.getBoundingClientRect();
             const fontSize = parseFloat(getComputedStyle(lyric).fontSize) || 15;
             const characterWidth = Math.max(1, fontSize * 0.6);
-            offset = Math.max(0, Math.min(80, Math.round((event.clientX - rect.left) / characterWidth)));
+            offset = Math.max(0, Math.min(Math.max(80, editorLayout.lyric.length), Math.round((event.clientX - rect.left) / characterWidth)));
           } else {
             let caret = null;
             if (document.caretRangeFromPoint) caret = document.caretRangeFromPoint(event.clientX, event.clientY);
