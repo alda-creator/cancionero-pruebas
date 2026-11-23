@@ -439,7 +439,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.2.8 · Distribución inteligente de acordes · Editor compatible con canciones antiguas · (PRUEBAS)</div>
+        <div class="app-version">v1.2.9 · Recuperación de visualización · Editor compatible con canciones antiguas · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -1294,6 +1294,7 @@
 
   function appendWrappedStructuredRow(pair, row, transposeSteps) {
     const lyric = String(row.lyric || '');
+    const chars = Array.from(lyric);
     const chords = (row.chords || []).slice().sort((a, b) =>
       (a.position ? a.position.offset : a.offset) - (b.position ? b.position.offset : b.offset));
     pair.classList.toggle('has-chords', chords.length > 0);
@@ -1304,32 +1305,69 @@
       pair.appendChild(lyricHost);
       return;
     }
-    const symbolFor = chordData => {
-      const symbol = chordData.root + chordData.quality + (chordData.bass ? '/' + chordData.bass : '');
-      return transposeChordToken(symbol, transposeSteps);
-    };
-    const layout = window.ChordModel.layoutChordRow(lyric, chords, symbolFor);
-    if (!lyric) lyricHost.classList.add('structured-instrumental-track');
-    else {
-      lyricHost.classList.add('structured-distributed-track');
-      lyricHost.textContent = layout.lyric;
+    if (!lyric) {
+      lyricHost.classList.add('structured-instrumental-track');
+      chords.forEach(chordData => {
+        const chord = document.createElement('span');
+        chord.className = 'structured-chord';
+        const symbol = chordData.root + chordData.quality + (chordData.bass ? '/' + chordData.bass : '');
+        const displaySymbol = transposeChordToken(symbol, transposeSteps);
+        chord.textContent = displaySymbol;
+        const chordOffset = chordData.position ? chordData.position.offset : chordData.offset;
+        const chordAffinity = chordData.position ? chordData.position.affinity : chordData.affinity;
+        chord.style.left = (chordOffset + (chordAffinity === 'after' ? 1 : 0)) + 'ch';
+        chord.dataset.chordId = chordData.id;
+        chord.setAttribute('aria-label', displaySymbol);
+        lyricHost.appendChild(chord);
+      });
+      pair.appendChild(lyricHost);
+      return;
     }
-    layout.placements.forEach(placement => {
+    const words = [];
+    let index = 0;
+    while (index < chars.length) {
+      if (/\\s/u.test(chars[index])) {
+        const begin = index;
+        while (index < chars.length && /\\s/u.test(chars[index])) index++;
+        lyricHost.appendChild(document.createTextNode(chars.slice(begin, index).join('')));
+      } else {
+        const begin = index;
+        while (index < chars.length && !/\\s/u.test(chars[index])) index++;
+        const unit = document.createElement('span');
+        unit.className = 'structured-word-unit';
+        unit.textContent = chars.slice(begin, index).join('');
+        lyricHost.appendChild(unit);
+        words.push({ start: begin, end: index, element: unit });
+      }
+    }
+    if (!words.length) {
+      const unit = document.createElement('span');
+      unit.className = 'structured-word-unit';
+      lyricHost.appendChild(unit);
+      words.push({ start: 0, end: 0, element: unit });
+    }
+    chords.forEach(chordData => {
+      const chordOffset = chordData.position ? chordData.position.offset : chordData.offset;
+      const chordAffinity = chordData.position ? chordData.position.affinity : chordData.affinity;
+      const offset = Math.max(0, chordOffset + (chordAffinity === 'after' ? 1 : 0));
+      const word = words.find(item => offset <= item.end) || words[words.length - 1];
+      const localOffset = offset - word.start;
       const chord = document.createElement('span');
       chord.className = 'structured-chord';
-      chord.textContent = placement.displaySymbol;
-      chord.style.left = placement.offset + 'ch';
-      chord.dataset.chordId = placement.id || '';
-      chord.setAttribute('aria-label', placement.displaySymbol);
-      lyricHost.appendChild(chord);
+      const symbol = chordData.root + chordData.quality + (chordData.bass ? '/' + chordData.bass : '');
+      const displaySymbol = transposeChordToken(symbol, transposeSteps);
+      chord.textContent = displaySymbol;
+      chord.style.left = localOffset + 'ch';
+      chord.dataset.chordId = chordData.id;
+      chord.setAttribute('aria-label', displaySymbol);
+      word.element.appendChild(chord);
+      const reserve = Math.max(0, offset + Array.from(displaySymbol).length - word.end);
+      if (reserve) {
+        const current = parseFloat(word.element.dataset.chordReserve || '0');
+        word.element.dataset.chordReserve = String(Math.max(current, reserve));
+        word.element.style.paddingRight = word.element.dataset.chordReserve + 'ch';
+      }
     });
-    const visualTrackLength = Math.max(
-      layout.lyric.length,
-      ...layout.placements.map(item => item.offset + Array.from(item.displaySymbol).length + 2),
-      lyric ? 1 : 80
-    );
-    lyricHost.style.width = visualTrackLength + 'ch';
-    if (!lyric) lyricHost.style.minWidth = visualTrackLength + 'ch';
     pair.appendChild(lyricHost);
   }
 
