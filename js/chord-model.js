@@ -224,20 +224,14 @@
           return { error: 'Un acorde queda demasiado lejos del final de la letra; su posición es ambigua.' };
         }
         if (overflow > 0) {
-          const earlierChordOverflows = entries.slice(0, -1)
-            .some(entry => entry.position.offset > lyricLength);
-          if (earlierChordOverflows) {
-            // Si el grupo completo rebasó el límite, desplazarlo como unidad.
-            // Si el ajuste exigiría offsets negativos, la posición no es segura.
-            if (entries.some(entry => entry.position.offset - overflow < 0)) {
-              return { error: 'El grupo de acordes queda fuera del rango de la letra; su alineación es ambigua.' };
-            }
-            entries.forEach(entry => { entry.position.offset -= overflow; });
-          } else {
-            // Compatibilidad: cuando únicamente el último acorde rebasa la letra,
-            // conservar los anclajes anteriores y fijar ese acorde al cierre.
-            entries[entries.length - 1].position.offset = lyricLength;
+          const firstOverflow = entries.findIndex(entry => entry.position.offset > lyricLength);
+          const overflowingSuffix = entries.slice(firstOverflow);
+          // Ajustar como unidad el sufijo contiguo de acordes que rebasa la letra.
+          // Los acordes anteriores, ya dentro del rango, conservan su anclaje.
+          if (overflowingSuffix.some(entry => entry.position.offset - overflow < 0)) {
+            return { error: 'El grupo de acordes queda fuera del rango de la letra; su alineación es ambigua.' };
           }
+          overflowingSuffix.forEach(entry => { entry.position.offset -= overflow; });
         }
       }
       return { entries };
