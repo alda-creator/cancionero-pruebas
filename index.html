@@ -430,7 +430,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.1.25 · Corrección de acordes instrumentales · (PRUEBAS)</div>
+        <div class="app-version">v1.1.26 · Lector con documento normalizado · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -642,8 +642,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>  
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>  
 
-<!-- Modelo estructurado de acordes: debe cargarse antes del código principal. -->
+<!-- Modelo y proyección normalizada: deben cargarse antes del código principal. -->
 <script src="./js/chord-model.js"></script>
+<script src="./js/song-adapter.js"></script>
+<script src="./js/song-document.js"></script>
 
 <script>  
   const firebaseConfig = {  
@@ -1277,7 +1279,7 @@
   function appendWrappedStructuredRow(pair, row, transposeSteps) {
     const lyric = String(row.lyric || '');
     const chars = Array.from(lyric);
-    const chords = (row.chords || []).slice().sort((a, b) => a.position.offset - b.position.offset);
+    const chords = (row.chords || []).slice().sort((a, b) => (a.position ? a.position.offset : a.offset) - (b.position ? b.position.offset : b.offset));
     pair.classList.toggle('has-chords', chords.length > 0);
     const lyricHost = document.createElement('div');
     lyricHost.className = 'structured-lyric';
@@ -1297,7 +1299,9 @@
         const symbol = chordData.root + chordData.quality + (chordData.bass ? '/' + chordData.bass : '');
         const displaySymbol = transposeChordToken(symbol, transposeSteps);
         chord.textContent = displaySymbol;
-        chord.style.left = (chordData.position.offset + (chordData.position.affinity === 'after' ? 1 : 0)) + 'ch';
+        const chordOffset = chordData.position ? chordData.position.offset : chordData.offset;
+        const chordAffinity = chordData.position ? chordData.position.affinity : chordData.affinity;
+        chord.style.left = (chordOffset + (chordAffinity === 'after' ? 1 : 0)) + 'ch';
         chord.dataset.chordId = chordData.id;
         chord.setAttribute('aria-label', displaySymbol);
         lyricHost.appendChild(chord);
@@ -1332,7 +1336,9 @@
     }
 
     chords.forEach(chordData => {
-      const visualOffset = chordData.position.offset + (chordData.position.affinity === 'after' ? 1 : 0);
+      const chordOffset = chordData.position ? chordData.position.offset : chordData.offset;
+      const chordAffinity = chordData.position ? chordData.position.affinity : chordData.affinity;
+      const visualOffset = chordOffset + (chordAffinity === 'after' ? 1 : 0);
       const offset = Math.max(0, Math.min(chars.length, visualOffset));
       const word = words.find(item => offset <= item.end) || words[words.length - 1];
       const localOffset = offset - word.start;
@@ -1360,25 +1366,19 @@
     if (!currentSong || !targetContainer) return;
     targetContainer.innerHTML = '';
 
-    // Las canciones estructuradas usan las entidades y sus posiciones.
-    // Si faltan datos o la validación falla, se conserva el render heredado.
-    let structured = currentSong.editorVersion === 2 &&
-      currentSong.structuredContent &&
-      window.ChordModel &&
-      window.ChordModel.validateStructuredContent(currentSong.structuredContent).valid
-        ? currentSong.structuredContent
-        : null;
-
+    // El lector consume la proyección normalizada. La adaptación es de solo
+    // lectura: no modifica ni migra el documento almacenado.
     const songRawText = getSongRawText(currentSong);
-    // Las canciones antiguas se convierten solo para visualizar si la
-    // conversión es inequívoca; no se escribe nada en la canción almacenada.
-    if (!structured && window.ChordModel && typeof window.ChordModel.convertLegacy === 'function') {
-      const displayConversion = window.ChordModel.convertLegacy(songRawText);
-      if (displayConversion.ok) structured = displayConversion.structuredContent;
-    }
     const legacy = parseRawSongWithBlocks(songRawText);
-    const blocks = structured
-      ? structured.blocks.map((block, index) => ({
+    let documentBlocks = null;
+    if (window.SongAdapter && window.SongDocument && window.ChordModel) {
+      const adapted = window.SongAdapter.adapt(currentSong, window.ChordModel);
+      const projected = window.SongDocument.project(adapted);
+      if (projected.ok) documentBlocks = projected.document.blocks;
+    }
+
+    const blocks = documentBlocks
+      ? documentBlocks.map((block, index) => ({
           id: (legacy.blocks[index] && legacy.blocks[index].id) || block.id,
           label: block.label,
           rows: block.rows
@@ -1388,7 +1388,7 @@
           label: block.label,
           legacyLines: block.lines
         }));
-
+    const usesNormalizedDocument = !!documentBlocks;
     if (!blocks.length) {
       targetContainer.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-muted);">Esta canción no contiene texto registrado o el formato no es compatible. Pulsa Editar para corregirla.</div>`;
       return;
@@ -1419,7 +1419,7 @@
       }
       blockDiv.appendChild(label);
 
-      if (structured && Array.isArray(block.rows)) {
+      if (usesNormalizedDocument && Array.isArray(block.rows)) {
         block.rows.forEach(row => {
           const pair = document.createElement('div');
           pair.className = 'line-pair structured-line-pair' + ((row.chords || []).length ? ' has-chords' : '');
