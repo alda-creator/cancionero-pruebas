@@ -276,7 +276,7 @@
     .structured-word-unit {
       position:relative; display:inline-block; max-width:100%;
       padding-top:1.35em; margin:0; vertical-align:bottom;
-      white-space:pre; overflow-wrap:anywhere;
+      white-space:pre-wrap; overflow-wrap:anywhere;
     }
     .structured-word-unit .structured-chord {
       position:absolute; top:0; color:var(--chord); font-weight:700;
@@ -1136,9 +1136,9 @@
   function isChordLine(line) {
     const tokens = line.trim().split(/\s+/);
     if (!tokens.length || tokens[0] === '') return false;
-    let chordCount = 0;
-    tokens.forEach(token => { if (isChordToken(token)) chordCount++; });
-    return (chordCount / tokens.length) >= 0.5;
+    // Una línea mixta como "A Jesús." es letra, no una línea de acordes.
+    // Todos los tokens deben ser símbolos válidos para evitar falsos positivos.
+    return tokens.every(token => isChordToken(token));
   }
 
   function isTagLine(line) { return /^\[.*\]$/.test(line.trim()); }
