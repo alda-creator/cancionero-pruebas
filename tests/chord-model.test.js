@@ -203,3 +203,14 @@ test('instrumental row accepts offsets but lyric rows retain position bounds', (
   lyricRow.blocks[0].rows[0].lyric='Hi';
   assert.equal(ChordModel.validateStructuredContent(lyricRow).valid,false);
 });
+
+
+test('reconcilia acordes escritos en rawText para una fila instrumental', () => {
+  const original = ChordModel.convertLegacy('[PUENTE]\nC     G').structuredContent;
+  const result = ChordModel.reconcileLyrics(original, '[PUENTE]\nC     Dm     G7');
+  assert.equal(result.ok, true, JSON.stringify(result.warnings));
+  const row = result.structuredContent.blocks[0].rows[0];
+  assert.equal(row.lyric, '');
+  assert.deepEqual(row.chords.map(chord => chord.root + chord.quality), ['C','Dm','G7']);
+  assert.deepEqual(row.chords.map(chord => chord.position.offset), [0,6,13]);
+});

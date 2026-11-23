@@ -282,6 +282,14 @@
       position:absolute; top:0; color:var(--chord); font-weight:700;
       white-space:nowrap; line-height:1.25; pointer-events:auto;
     }
+    .structured-lyric.structured-instrumental-track {
+      position:relative; width:max-content; min-width:80ch; min-height:1.35em;
+      padding-top:1.35em; white-space:pre;
+    }
+    .structured-instrumental-track .structured-chord {
+      position:absolute; top:0; color:var(--chord); font-weight:700;
+      white-space:nowrap; line-height:1.25; pointer-events:auto;
+    }
 
     .admin-menu {
       margin-top: 30px;
@@ -422,7 +430,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.1.24 · Edición de filas instrumentales · (PRUEBAS)</div>
+        <div class="app-version">v1.1.25 · Corrección de acordes instrumentales · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -1275,6 +1283,25 @@
     lyricHost.className = 'structured-lyric';
     if (!chords.length) {
       lyricHost.textContent = lyric;
+      pair.appendChild(lyricHost);
+      return;
+    }
+
+    // Una fila instrumental no tiene palabras que sirvan como ancla.
+    // Usa una pista monoespaciada propia y conserva el offset real de cada acorde.
+    if (!lyric) {
+      lyricHost.classList.add('structured-instrumental-track');
+      chords.forEach(chordData => {
+        const chord = document.createElement('span');
+        chord.className = 'structured-chord';
+        const symbol = chordData.root + chordData.quality + (chordData.bass ? '/' + chordData.bass : '');
+        const displaySymbol = transposeChordToken(symbol, transposeSteps);
+        chord.textContent = displaySymbol;
+        chord.style.left = (chordData.position.offset + (chordData.position.affinity === 'after' ? 1 : 0)) + 'ch';
+        chord.dataset.chordId = chordData.id;
+        chord.setAttribute('aria-label', displaySymbol);
+        lyricHost.appendChild(chord);
+      });
       pair.appendChild(lyricHost);
       return;
     }
