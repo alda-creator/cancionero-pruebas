@@ -451,3 +451,50 @@ Yo cantaré de la bondad de Dios`;
   assert.ok(rows.some(row => row.lyric.includes('REPITEN CORO 1')));
   assert.ok(rows.some(row => row.lyric.includes('REPITEN PUENTE')));
 });
+
+test('distribuye acordes traducidos sin modificar offsets musicales', () => {
+  const lyric = 'Con mi ser, con cada aliento';
+  const chords = [
+    { id: 'a', root: 'Db', quality: '', position: { offset: 0, affinity: 'before' } },
+    { id: 'b', root: 'Ab', quality: '', position: { offset: 20, affinity: 'before' } },
+    { id: 'c', root: 'Eb', quality: '', bass: 'G', position: { offset: 28, affinity: 'before' } },
+    { id: 'd', root: 'F', quality: 'm', position: { offset: 33, affinity: 'before' } }
+  ];
+  const layout = ChordModel.layoutChordRow(lyric, chords, chord =>
+    chord.id === 'c' ? 'Mib/Sol' : chord.id === 'd' ? 'Fam' : chord.root
+  );
+  assert.deepEqual(layout.placements.map(item => item.offset), [0, 20, 28, 35]);
+  assert.ok(layout.lyric.length > lyric.length);
+  assert.ok(layout.lyric.length >= layout.placements[3].offset + layout.placements[3].displaySymbol.length);
+  assert.equal(layout.sourceOffsetAtVisual(layout.lyric.length), lyric.length);
+  assert.deepEqual(chords.map(chord => chord.position.offset), [0, 20, 28, 33]);
+});
+
+test('distribuye grupos densos y acordes largos de forma acumulativa', () => {
+  const chords = Array.from({ length: 12 }, (_, index) => ({
+    id: String(index), root: 'C', quality: '', position: { offset: index * 2, affinity: 'before' }
+  }));
+  const layout = ChordModel.layoutChordRow('Una frase larga para probar muchos acordes juntos', chords,
+    chord => chord.id === '0' ? 'Mib/Sol' : 'Rebmaj7');
+  for (let i = 1; i < layout.placements.length; i++) {
+    const previous = layout.placements[i - 1];
+    assert.ok(layout.placements[i].offset >= previous.offset + previous.displaySymbol.length);
+  }
+  assert.equal(layout.placements.length, 12);
+});
+
+
+test('conserva afinidad after y reserva espacio cuando el acorde rebasa la letra', () => {
+  const chords = [
+    { id: 'before', root: 'C', quality: '', position: { offset: 2, affinity: 'before' } },
+    { id: 'after', root: 'F', quality: 'maj7', position: { offset: 2, affinity: 'after' } }
+  ];
+  const layout = ChordModel.layoutChordRow('Sol', chords, chord => chord.id === 'before' ? 'Do' : 'Famaj7');
+  assert.equal(layout.placements[0].offset, 2);
+  assert.ok(layout.placements[1].offset >= layout.placements[0].offset + layout.placements[0].displaySymbol.length);
+  assert.ok(layout.lyric.length >= layout.placements[1].offset + layout.placements[1].displaySymbol.length);
+  assert.deepEqual(chords.map(chord => chord.position), [
+    { offset: 2, affinity: 'before' },
+    { offset: 2, affinity: 'after' }
+  ]);
+});

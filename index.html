@@ -282,11 +282,20 @@
       position:absolute; top:0; color:var(--chord); font-weight:700;
       white-space:nowrap; line-height:1.25; pointer-events:auto;
     }
+    .structured-lyric.structured-distributed-track {
+      position:relative; width:max-content; min-width:100%; min-height:1.35em;
+      box-sizing:border-box; padding-top:1.35em; white-space:pre;
+    }
+    .structured-line-pair:has(.structured-distributed-track) {
+      overflow-x:auto; overflow-y:hidden; white-space:nowrap;
+      -webkit-overflow-scrolling:touch; scrollbar-width:thin;
+    }
     .structured-lyric.structured-instrumental-track {
       position:relative; width:max-content; min-width:80ch; min-height:1.35em;
       padding-top:1.35em; white-space:pre;
     }
-    .structured-instrumental-track .structured-chord {
+    .structured-instrumental-track .structured-chord,
+    .structured-distributed-track .structured-chord {
       position:absolute; top:0; color:var(--chord); font-weight:700;
       white-space:nowrap; line-height:1.25; pointer-events:auto;
     }
@@ -430,7 +439,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.2.7 · Editor compatible con canciones antiguas · (PRUEBAS)</div>
+        <div class="app-version">v1.2.8 · Distribución inteligente de acordes · Editor compatible con canciones antiguas · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -1285,8 +1294,8 @@
 
   function appendWrappedStructuredRow(pair, row, transposeSteps) {
     const lyric = String(row.lyric || '');
-    const chars = Array.from(lyric);
-    const chords = (row.chords || []).slice().sort((a, b) => (a.position ? a.position.offset : a.offset) - (b.position ? b.position.offset : b.offset));
+    const chords = (row.chords || []).slice().sort((a, b) =>
+      (a.position ? a.position.offset : a.offset) - (b.position ? b.position.offset : b.offset));
     pair.classList.toggle('has-chords', chords.length > 0);
     const lyricHost = document.createElement('div');
     lyricHost.className = 'structured-lyric';
@@ -1295,78 +1304,32 @@
       pair.appendChild(lyricHost);
       return;
     }
-
-    // Una fila instrumental no tiene palabras que sirvan como ancla.
-    // Usa una pista monoespaciada propia y conserva el offset real de cada acorde.
-    if (!lyric) {
-      lyricHost.classList.add('structured-instrumental-track');
-      chords.forEach(chordData => {
-        const chord = document.createElement('span');
-        chord.className = 'structured-chord';
-        const symbol = chordData.root + chordData.quality + (chordData.bass ? '/' + chordData.bass : '');
-        const displaySymbol = transposeChordToken(symbol, transposeSteps);
-        chord.textContent = displaySymbol;
-        const chordOffset = chordData.position ? chordData.position.offset : chordData.offset;
-        const chordAffinity = chordData.position ? chordData.position.affinity : chordData.affinity;
-        chord.style.left = (chordOffset + (chordAffinity === 'after' ? 1 : 0)) + 'ch';
-        chord.dataset.chordId = chordData.id;
-        chord.setAttribute('aria-label', displaySymbol);
-        lyricHost.appendChild(chord);
-      });
-      pair.appendChild(lyricHost);
-      return;
+    const symbolFor = chordData => {
+      const symbol = chordData.root + chordData.quality + (chordData.bass ? '/' + chordData.bass : '');
+      return transposeChordToken(symbol, transposeSteps);
+    };
+    const layout = window.ChordModel.layoutChordRow(lyric, chords, symbolFor);
+    if (!lyric) lyricHost.classList.add('structured-instrumental-track');
+    else {
+      lyricHost.classList.add('structured-distributed-track');
+      lyricHost.textContent = layout.lyric;
     }
-
-    const words = [];
-    let index = 0;
-    while (index < chars.length) {
-      if (/\s/u.test(chars[index])) {
-        const start = index;
-        while (index < chars.length && /\s/u.test(chars[index])) index++;
-        lyricHost.appendChild(document.createTextNode(chars.slice(start, index).join('')));
-      } else {
-        const start = index;
-        while (index < chars.length && !/\s/u.test(chars[index])) index++;
-        const unit = document.createElement('span');
-        unit.className = 'structured-word-unit';
-        unit.textContent = chars.slice(start, index).join('');
-        lyricHost.appendChild(unit);
-        words.push({ start, end: index, element: unit });
-      }
-    }
-
-    if (!words.length) {
-      const unit = document.createElement('span');
-      unit.className = 'structured-word-unit';
-      lyricHost.appendChild(unit);
-      words.push({ start: 0, end: 0, element: unit });
-    }
-
-    chords.forEach(chordData => {
-      const chordOffset = chordData.position ? chordData.position.offset : chordData.offset;
-      const chordAffinity = chordData.position ? chordData.position.affinity : chordData.affinity;
-      const visualOffset = chordOffset + (chordAffinity === 'after' ? 1 : 0);
-      // Los acordes pueden quedar después de la última palabra. No limitar
-      // su offset al largo de la letra: eso los empalma al final del renglón.
-      const offset = Math.max(0, visualOffset);
-      const word = words.find(item => offset <= item.end) || words[words.length - 1];
-      const localOffset = offset - word.start;
+    layout.placements.forEach(placement => {
       const chord = document.createElement('span');
       chord.className = 'structured-chord';
-      const symbol = chordData.root + chordData.quality + (chordData.bass ? '/' + chordData.bass : '');
-      const displaySymbol = transposeChordToken(symbol, transposeSteps);
-      chord.textContent = displaySymbol;
-      chord.style.left = localOffset + 'ch';
-      chord.dataset.chordId = chordData.id;
-      chord.setAttribute('aria-label', displaySymbol);
-      word.element.appendChild(chord);
-      const reserve = Math.max(0, offset + Array.from(displaySymbol).length - word.end);
-      if (reserve) {
-        const current = parseFloat(word.element.dataset.chordReserve || '0');
-        word.element.dataset.chordReserve = String(Math.max(current, reserve));
-        word.element.style.paddingRight = word.element.dataset.chordReserve + 'ch';
-      }
+      chord.textContent = placement.displaySymbol;
+      chord.style.left = placement.offset + 'ch';
+      chord.dataset.chordId = placement.id || '';
+      chord.setAttribute('aria-label', placement.displaySymbol);
+      lyricHost.appendChild(chord);
     });
+    const visualTrackLength = Math.max(
+      layout.lyric.length,
+      ...layout.placements.map(item => item.offset + Array.from(item.displaySymbol).length + 2),
+      lyric ? 1 : 80
+    );
+    lyricHost.style.width = visualTrackLength + 'ch';
+    if (!lyric) lyricHost.style.minWidth = visualTrackLength + 'ch';
     pair.appendChild(lyricHost);
   }
 
@@ -1858,11 +1821,14 @@
         const preview = document.createElement('div');
         preview.className = 'structured-editor-preview';
         preview.setAttribute('aria-label', row.lyric ? 'Toca la letra para posicionar un acorde' : 'Fila instrumental: toca para colocar un acorde');
+        const editorLayout = window.ChordModel.layoutChordRow(row.lyric, row.chords, structuredChordSymbol);
+        const editorPlacements = new Map(editorLayout.placements.map(item => [item.id, item]));
         row.chords.forEach(chord => {
           const positionedChord = document.createElement('span');
           positionedChord.className = 'structured-editor-preview-chord' + (chord.id === selectedDraftChordId ? ' selected' : '');
           positionedChord.textContent = structuredChordSymbol(chord);
-          positionedChord.style.left = (chord.position.offset + (chord.position.affinity === 'after' ? 1 : 0)) + 'ch';
+          const placement = editorPlacements.get(chord.id);
+          positionedChord.style.left = (placement ? placement.offset : chord.position.offset) + 'ch';
           positionedChord.tabIndex = 0;
           positionedChord.setAttribute('role', 'button');
           positionedChord.setAttribute('aria-label', 'Editar acorde ' + structuredChordSymbol(chord));
@@ -1882,9 +1848,14 @@
         });
         const lyric = document.createElement('span');
         lyric.className = 'structured-editor-preview-lyric';
-        lyric.textContent = row.lyric || ' ';
+        lyric.textContent = editorLayout.lyric || ' ';
+        lyric.style.width = Math.max(
+          editorLayout.lyric.length,
+          ...editorLayout.placements.map(item => item.offset + Array.from(item.displaySymbol).length + 2),
+          row.lyric ? 1 : 80
+        ) + 'ch';
         if (!row.lyric) {
-          lyric.style.minWidth = '80ch';
+          lyric.style.minWidth = Math.max(80, editorLayout.lyric.length) + 'ch';
           lyric.style.cursor = 'crosshair';
           lyric.title = 'Toca una posición de esta fila instrumental para colocar un acorde';
         }
@@ -1898,7 +1869,7 @@
             const rect = lyric.getBoundingClientRect();
             const fontSize = parseFloat(getComputedStyle(lyric).fontSize) || 15;
             const characterWidth = Math.max(1, fontSize * 0.6);
-            offset = Math.max(0, Math.min(80, Math.round((event.clientX - rect.left) / characterWidth)));
+            offset = Math.max(0, Math.min(Math.max(80, editorLayout.lyric.length), Math.round((event.clientX - rect.left) / characterWidth)));
           } else {
             let caret = null;
             if (document.caretRangeFromPoint) caret = document.caretRangeFromPoint(event.clientX, event.clientY);
@@ -1907,7 +1878,7 @@
               if (position) caret = { startContainer: position.offsetNode, startOffset: position.offset };
             }
             if (caret && caret.startContainer && lyric.contains(caret.startContainer)) {
-              offset = Array.from(caret.startContainer.textContent.slice(0, caret.startOffset)).length;
+              offset = editorLayout.sourceOffsetAtVisual(Array.from(caret.startContainer.textContent.slice(0, caret.startOffset)).length);
             }
             offset = Math.min(offset, Array.from(row.lyric).length);
           }
