@@ -430,7 +430,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.2.5 · Editor compatible con canciones antiguas · (PRUEBAS)</div>
+        <div class="app-version">v1.2.6 · Editor compatible con canciones antiguas · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -1369,40 +1369,49 @@
     pair.appendChild(lyricHost);
   }
 
+  function getSongDisplayModel(song) {
+    const legacy = parseRawSongWithBlocks(getSongRawText(song));
+    if (window.SongAdapter && window.SongDocument && window.ChordModel) {
+      const adapted = window.SongAdapter.adapt(song, window.ChordModel);
+      const projected = window.SongDocument.project(adapted);
+      if (projected.ok) {
+        // La estructura normalizada es la fuente de bloques y de su secuencia.
+        // El parser heredado puede reconocer menos encabezados que el editor;
+        // no debe limitar por ello el contenido que el lector puede mostrar.
+        return {
+          usesNormalizedDocument: true,
+          blocks: projected.document.blocks.map(block => ({
+            id: block.id,
+            label: block.label,
+            rows: block.rows
+          }))
+        };
+      }
+    }
+    return {
+      usesNormalizedDocument: false,
+      blocks: legacy.blocks.map(block => ({
+        id: block.id,
+        label: block.label,
+        legacyLines: block.lines
+      }))
+    };
+  }
+
   function buildBlocksHTML(targetContainer) {
     if (!currentSong || !targetContainer) return;
     targetContainer.innerHTML = '';
 
-    // El lector consume la proyección normalizada. La adaptación es de solo
-    // lectura: no modifica ni migra el documento almacenado.
-    const songRawText = getSongRawText(currentSong);
-    const legacy = parseRawSongWithBlocks(songRawText);
-    let documentBlocks = null;
-    if (window.SongAdapter && window.SongDocument && window.ChordModel) {
-      const adapted = window.SongAdapter.adapt(currentSong, window.ChordModel);
-      const projected = window.SongDocument.project(adapted);
-      if (projected.ok) documentBlocks = projected.document.blocks;
-    }
-
-    const blocks = documentBlocks
-      ? documentBlocks.map((block, index) => ({
-          id: (legacy.blocks[index] && legacy.blocks[index].id) || block.id,
-          label: block.label,
-          rows: block.rows
-        }))
-      : legacy.blocks.map(block => ({
-          id: block.id,
-          label: block.label,
-          legacyLines: block.lines
-        }));
-    const usesNormalizedDocument = !!documentBlocks;
+    const displayModel = getSongDisplayModel(currentSong);
+    const blocks = displayModel.blocks;
+    const usesNormalizedDocument = displayModel.usesNormalizedDocument;
     if (!blocks.length) {
       targetContainer.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-muted);">Esta canción no contiene texto registrado o el formato no es compatible. Pulsa Editar para corregirla.</div>`;
       return;
     }
 
     const byId = new Map(blocks.map(block => [block.id, block]));
-    getEffectiveBlockSequence(legacy.blocks).forEach(entry => {
+    getEffectiveBlockSequence(blocks).forEach(entry => {
       const block = byId.get(entry.blockId);
       if (!block) return;
       const blockDiv = document.createElement('div');
