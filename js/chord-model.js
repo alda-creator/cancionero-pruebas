@@ -60,9 +60,9 @@
   function isChordLine(line) {
     const tokens = String(line || '').trim().split(/\s+/);
     if (!tokens.length || tokens[0] === '') return false;
-    let count = 0;
-    for (const token of tokens) if (parseChordSymbol(token)) count++;
-    return count / tokens.length >= 0.5;
+    // Una línea mixta como "A Jesús." es letra, no una línea de acordes.
+    // Todos los tokens deben ser símbolos válidos para evitar falsos positivos.
+    return tokens.every(token => !!parseChordSymbol(token));
   }
 
   function normalizeIdPart(value) {

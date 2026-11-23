@@ -180,6 +180,14 @@ test('mantiene el acorde unido a la palabra cuando se inserta texto en su posici
 
 process.stdout.write('\nPruebas del modelo de acordes finalizadas.\n');
 
+test('no interpreta una frase que comienza con A como una línea de acordes', () => {
+  const result = ChordModel.convertLegacy('[CORO]\nA Jesús.');
+  assert.equal(result.ok, true, JSON.stringify(result.warnings));
+  const row = result.structuredContent.blocks[0].rows[0];
+  assert.equal(row.lyric, 'A Jesús.');
+  assert.equal(row.chords.length, 0);
+});
+
 test('acepta y serializa filas instrumentales con acordes espaciados y sin letra', () => {
   const result = ChordModel.convertLegacy('[INTRO]\nC     Dm     G7');
   assert.equal(result.ok, true, JSON.stringify(result.warnings));
