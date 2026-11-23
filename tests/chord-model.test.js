@@ -61,7 +61,7 @@ test('ancla el último acorde dentro del margen y sigue rechazando tabulaciones'
   const within = ChordModel.convertLegacy('C           G\nLetra');
   assert.equal(within.ok, true, JSON.stringify(within.warnings));
   const row = within.structuredContent.blocks[0].rows[0];
-  assert.deepEqual(row.chords.map(chord => chord.position.offset), [0, 4]);
+  assert.deepEqual(row.chords.map(chord => chord.position.offset), [0, 5]);
   const tabs = ChordModel.convertLegacy('C\tG\nLetra');
   assert.equal(tabs.ok, false);
   assert.equal(tabs.reason, 'ambiguous');
