@@ -58,7 +58,7 @@ test('convierte letras sin acordes y bloques repetidos con IDs únicos', () => {
 });
 
 test('rechaza posiciones ambiguas y tabulaciones sin inventar ubicaciones', () => {
-  const beyond = ChordModel.convertLegacy('C       G\nLetra');
+  const beyond = ChordModel.convertLegacy('C           G\nLetra');
   assert.equal(beyond.ok, false);
   assert.equal(beyond.reason, 'ambiguous');
   const tabs = ChordModel.convertLegacy('C\tG\nLetra');
@@ -267,7 +267,7 @@ test('reconoce notación compacta de compases con barras verticales', () => {
 });
 
 test('convierte una canción con inversiones separadas, interludio y líneas instrumentales', () => {
-  const raw = '[ESTROFA 1]\\n        Ab\\nTe amo Diós\\n     Db            Ab\\nTu amor nunca me falla\\nEb /G   Fm        Db    Eb\\nMi existir en Tus manos está\\n                          Fm   Db\\nDesde el momento que despierto\\n         Ab Eb /G Fm\\nHasta el anochecer\\n         Db      Esus      Ab\\nYo cantaré de la bondad de Dios\\n[PUENTE]\\nAb /C         Db\\nTu fidelidad sigue\\nEb          Ab\\nPersiguiéndome\\n[INTERLUDIO]\\n|Ab//Db|Ab///|\\n[PUENTE FINAL]\\nC  Dm  G7';
+  const raw = '[ESTROFA 1]\n        Ab\nTe amo Diós\n     Db            Ab\nTu amor nunca me falla\nEb /G   Fm        Db    Eb\nMi existir en Tus manos está\n                          Fm   Db\nDesde el momento que despierto\n         Ab Eb /G Fm\nHasta el anochecer\n         Db      Esus      Ab\nYo cantaré de la bondad de Dios\n[PUENTE]\nAb /C         Db\nTu fidelidad sigue\nEb          Ab\nPersiguiéndome\n[INTERLUDIO]\n|Ab//Db|Ab///|\n[PUENTE FINAL]\nC  Dm  G7';
   const result = ChordModel.convertLegacy(raw);
   assert.equal(result.ok, true, JSON.stringify(result.warnings));
   const rows = result.structuredContent.blocks.flatMap(block => block.rows);
