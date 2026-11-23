@@ -208,11 +208,12 @@
         let offset = Array.from(chordLine.slice(0, token.index)).length;
         const lyricLength = Array.from(lyric).length;
         if (lyric && offset > lyricLength) {
-          // Algunas partituras alinean el acorde final ligeramente después
-          // del último carácter. Se acepta un margen corto (hasta 4 columnas)
-          // solo para el último acorde y se ancla al final de la frase.
+          // Algunas partituras alinean el acorde final después del último
+          // carácter. Aceptamos hasta 10 columnas únicamente para el último
+          // acorde de la línea y lo anclamos al final de la frase. Un margen
+          // mayor sigue siendo ambiguo y conserva la protección.
           const isLastChord = index === tokens.length - 1;
-          if (isLastChord && offset <= lyricLength + 4) {
+          if (isLastChord && offset <= lyricLength + 10) {
             offset = lyricLength;
           } else {
             return { error: 'Un acorde queda demasiado lejos del final de la letra; su posición es ambigua.' };
