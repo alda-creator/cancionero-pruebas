@@ -191,7 +191,7 @@ test('conserva la posición original del último acorde una columna después de 
 
 test('conserva la separación original hasta 10 columnas después del final', () => {
   const lyric = 'Levantemos nuestras manos y adoremos,';
-  for (const distance of [4, 5, 8, 10]) {
+  for (const distance of [4, 5, 8, 10, 16, 20]) {
     const chordLine = 'C     G' + ' '.repeat(Math.max(0, lyric.length + distance - 7)) + 'Bm';
     const result = ChordModel.convertLegacy('[CORO]\n' + chordLine + '\n' + lyric);
     assert.equal(result.ok, true, 'distancia ' + distance + ': ' + JSON.stringify(result.warnings));
@@ -203,9 +203,9 @@ test('conserva la separación original hasta 10 columnas después del final', ()
   }
 });
 
-test('mantiene la protección cuando el último acorde supera 10 columnas', () => {
+test('mantiene la protección cuando el último acorde supera 20 columnas', () => {
   const lyric = 'Levantemos nuestras manos y adoremos,';
-  const chordLine = 'C     G' + ' '.repeat(Math.max(0, lyric.length + 11 - 7)) + 'Bm';
+  const chordLine = 'C     G' + ' '.repeat(Math.max(0, lyric.length + 21 - 7)) + 'Bm';
   const result = ChordModel.convertLegacy('[CORO]\n' + chordLine + '\n' + lyric);
   assert.equal(result.ok, false);
   assert.equal(result.reason, 'ambiguous');
@@ -335,7 +335,7 @@ test('no clasifica instrucciones de repeticion ni frases breves como encabezados
 test('conserva la separación entre Eb/G y Fm aunque Fm quede después de la letra', () => {
   const chordLine = 'Db                   Ab       Eb /G         Fm';
   const lyric = 'Con mi ser, con cada aliento';
-  const result = ChordModel.convertLegacy('[CORO]\\n' + chordLine + '\\n' + lyric);
+  const result = ChordModel.convertLegacy('[CORO]\n' + chordLine + '\n' + lyric);
   assert.equal(result.ok, true, JSON.stringify(result.warnings));
   const row = result.structuredContent.blocks[0].rows[0];
   assert.deepEqual(row.chords.map(chord => chord.root), ['D','A','E','F']);
