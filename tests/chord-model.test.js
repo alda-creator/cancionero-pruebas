@@ -338,7 +338,7 @@ test('conserva la separación entre Eb/G y Fm aunque Fm quede después de la let
   const result = ChordModel.convertLegacy('[CORO]\n' + chordLine + '\n' + lyric);
   assert.equal(result.ok, true, JSON.stringify(result.warnings));
   const row = result.structuredContent.blocks[0].rows[0];
-  assert.deepEqual(row.chords.map(chord => chord.root), ['D','A','E','F']);
+  assert.deepEqual(row.chords.map(chord => chord.root), ['Db','Ab','Eb','F']);
   assert.equal(row.chords[2].bass, 'G');
   assert.equal(row.chords[3].position.offset, chordLine.indexOf('Fm'));
   assert.ok(row.chords[3].position.offset > Array.from(lyric).length);
