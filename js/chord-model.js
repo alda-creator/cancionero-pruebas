@@ -58,7 +58,9 @@
   }
 
   function compactBarChordTokens(line) {
-    const value = String(line || '').trim();
+    const original = String(line || '');
+    const leadingOffset = (original.match(/^\s*/) || [''])[0].length;
+    const value = original.trim();
     if (!/^\|.*\|$/.test(value) || !/\/{2,3}/.test(value)) return null;
     const tokens = [];
     const re = /[A-G](?:#|b)?(?:maj|min|m|dim|aug|sus2|sus4|sus|add\d+)?(?:13|11|9|7|6|5|4|2)?/gi;
@@ -68,7 +70,7 @@
       const between = value.slice(cursor, match.index);
       if (between && !/^(?:\|+|\/{2,3})+$/.test(between)) return null;
       if (!parseChordSymbol(match[0])) return null;
-      tokens.push({ symbol: match[0], index: match.index });
+      tokens.push({ symbol: match[0], index: match.index + leadingOffset });
       cursor = re.lastIndex;
     }
     if (!tokens.length || !/^(?:\|+|\/{2,3})+$/.test(value.slice(cursor))) return null;
