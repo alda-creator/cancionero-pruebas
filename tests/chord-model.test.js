@@ -239,3 +239,23 @@ test('reconcilia acordes escritos en rawText para una fila instrumental', () => 
   assert.deepEqual(row.chords.map(chord => chord.root + chord.quality), ['C','Dm','G7']);
   assert.deepEqual(row.chords.map(chord => chord.position.offset), [0,6,13]);
 });
+
+
+test('mantiene el acorde al inicio cuando se escribe la primera letra debajo', () => {
+  const original = ChordModel.convertLegacy('G').structuredContent;
+  const result = ChordModel.reconcileLyrics(original, 'G\\nUna letra nueva');
+  assert.equal(result.ok, true, JSON.stringify(result.warnings));
+  const row = result.structuredContent.blocks[0].rows[0];
+  assert.equal(row.lyric, 'Una letra nueva');
+  assert.equal(row.chords.length, 1);
+  assert.equal(row.chords[0].root, 'G');
+  assert.equal(row.chords[0].position.offset, 0);
+});
+
+test('conserva la posición explícita de un acorde instrumental al agregar letra', () => {
+  const original = ChordModel.convertLegacy('              G').structuredContent;
+  const result = ChordModel.reconcileLyrics(original, '              G\\nUna letra nueva');
+  assert.equal(result.ok, true, JSON.stringify(result.warnings));
+  const row = result.structuredContent.blocks[0].rows[0];
+  assert.equal(row.chords[0].position.offset, 14);
+});
