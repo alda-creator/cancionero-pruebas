@@ -238,6 +238,10 @@
   function adjustChordOffset(oldLyric, newLyric, offset, affinity) {
     const oldChars = Array.from(oldLyric || '');
     const newChars = Array.from(newLyric || '');
+    // Si la fila era instrumental y ahora recibe su primera letra, la
+    // posición del acorde ya era explícita. No debe desplazarse al final
+    // del texto recién escrito por interpretarlo como una inserción previa.
+    if (oldChars.length === 0) return Math.max(0, Math.min(newChars.length, offset));
     let prefix = 0;
     while (prefix < oldChars.length && prefix < newChars.length &&
            oldChars[prefix] === newChars[prefix]) prefix++;
