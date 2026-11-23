@@ -1300,8 +1300,8 @@
         const displaySymbol = transposeChordToken(symbol, transposeSteps);
         chord.textContent = displaySymbol;
         const chordOffset = chordData.position ? chordData.position.offset : chordData.offset;
-      const chordAffinity = chordData.position ? chordData.position.affinity : chordData.affinity;
-      chord.style.left = (chordOffset + (chordAffinity === 'after' ? 1 : 0)) + 'ch';
+        const chordAffinity = chordData.position ? chordData.position.affinity : chordData.affinity;
+        chord.style.left = (chordOffset + (chordAffinity === 'after' ? 1 : 0)) + 'ch';
         chord.dataset.chordId = chordData.id;
         chord.setAttribute('aria-label', displaySymbol);
         lyricHost.appendChild(chord);
