@@ -58,7 +58,7 @@ test('convierte letras sin acordes y bloques repetidos con IDs únicos', () => {
 });
 
 test('rechaza posiciones ambiguas y tabulaciones sin inventar ubicaciones', () => {
-  const beyond = ChordModel.convertLegacy('C       G\nLetra');
+  const beyond = ChordModel.convertLegacy('C           G\nLetra');
   assert.equal(beyond.ok, false);
   assert.equal(beyond.reason, 'ambiguous');
   const tabs = ChordModel.convertLegacy('C\tG\nLetra');
@@ -189,10 +189,10 @@ test('acepta el último acorde una columna después del final de la frase y lo a
 });
 
 test('sigue rechazando acordes claramente fuera de la frase', () => {
-  const result = ChordModel.convertLegacy('[CORO]\n      G              A         F#m      Bm\nLevantemos nuestras manos y adoremos,');
+  const result = ChordModel.convertLegacy('[CORO]\n      G              A         F#m        Bm\nLevantemos nuestras manos y adoremos,');
   assert.equal(result.ok, false);
   assert.equal(result.reason, 'ambiguous');
-  assert.ok(result.warnings.some(warning => warning.includes('más allá del final')));
+  assert.ok(result.warnings.some(warning => warning.includes('demasiado lejos')));
 });
 
 process.stdout.write('\nPruebas del modelo de acordes finalizadas.\n');
@@ -238,4 +238,41 @@ test('reconcilia acordes escritos en rawText para una fila instrumental', () => 
   assert.equal(row.lyric, '');
   assert.deepEqual(row.chords.map(chord => chord.root + chord.quality), ['C','Dm','G7']);
   assert.deepEqual(row.chords.map(chord => chord.position.offset), [0,6,13]);
+});
+
+
+test('acepta un acorde final ligeramente posterior a la última palabra y lo ancla al cierre', () => {
+  const result = ChordModel.convertLegacy('[CORO]\n              Am   D     G    Am\nte entrego mi voluntad a Tí');
+  assert.equal(result.ok, true, JSON.stringify(result.warnings));
+  const row = result.structuredContent.blocks[0].rows[0];
+  assert.deepEqual(row.chords.map(chord => chord.root), ['A','D','G','A']);
+  assert.deepEqual(row.chords.map(chord => chord.position.offset), [14,19,25,Array.from(row.lyric).length]);
+});
+
+test('reconoce acordes con bajo escrito separado por un espacio', () => {
+  const result = ChordModel.convertLegacy('[VERSO 2]\nEb /G Fm\nMi existir en Tus manos está');
+  assert.equal(result.ok, true, JSON.stringify(result.warnings));
+  const row = result.structuredContent.blocks[0].rows[0];
+  assert.deepEqual(row.chords.map(chord => [chord.root,chord.bass]), [['Eb','G'],['F',null]]);
+  assert.deepEqual(row.chords.map(chord => chord.position.offset), [0,6]);
+});
+
+test('reconoce notación compacta de compases con barras verticales', () => {
+  const result = ChordModel.convertLegacy('[INTERLUDIO]\n|Ab//Db|Ab///|');
+  assert.equal(result.ok, true, JSON.stringify(result.warnings));
+  const row = result.structuredContent.blocks[0].rows[0];
+  assert.equal(row.lyric, '');
+  assert.deepEqual(row.chords.map(chord => chord.root), ['Ab','Db','Ab']);
+  assert.deepEqual(row.chords.map(chord => chord.position.offset), [1,5,8]);
+});
+
+test('convierte una canción con inversiones separadas, interludio y líneas instrumentales', () => {
+  const raw = '[ESTROFA 1]\n        Ab\nTe amo Diós\n     Db            Ab\nTu amor nunca me falla\nEb /G   Fm        Db    Eb\nMi existir en Tus manos está\n                          Fm   Db\nDesde el momento que despierto\n         Ab Eb /G Fm\nHasta el anochecer\n         Db      Esus      Ab\nYo cantaré de la bondad de Dios\n[PUENTE]\nAb /C         Db\nTu fidelidad sigue\nEb          Ab\nPersiguiéndome\n[INTERLUDIO]\n|Ab//Db|Ab///|\n[PUENTE FINAL]\nC  Dm  G7';
+  const result = ChordModel.convertLegacy(raw);
+  assert.equal(result.ok, true, JSON.stringify(result.warnings));
+  const rows = result.structuredContent.blocks.flatMap(block => block.rows);
+  assert.ok(rows.some(row => row.chords.some(chord => chord.bass === 'G')));
+  assert.ok(rows.some(row => row.chords.some(chord => chord.bass === 'C')));
+  assert.ok(rows.some(row => row.chords.map(chord => chord.root).join(',') === 'Ab,Db,Ab'));
+  assert.ok(rows.some(row => row.chords.map(chord => chord.root).join(',') === 'C,D,G'));
 });
