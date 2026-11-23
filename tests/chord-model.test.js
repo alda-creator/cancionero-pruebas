@@ -465,6 +465,7 @@ test('distribuye acordes traducidos sin modificar offsets musicales', () => {
   );
   assert.deepEqual(layout.placements.map(item => item.offset), [0, 20, 28, 35]);
   assert.ok(layout.lyric.length > lyric.length);
+  assert.ok(layout.lyric.length >= layout.placements[3].offset + layout.placements[3].displaySymbol.length);
   assert.equal(layout.sourceOffsetAtVisual(layout.lyric.length), lyric.length);
   assert.deepEqual(chords.map(chord => chord.position.offset), [0, 20, 28, 33]);
 });
@@ -480,4 +481,20 @@ test('distribuye grupos densos y acordes largos de forma acumulativa', () => {
     assert.ok(layout.placements[i].offset >= previous.offset + previous.displaySymbol.length);
   }
   assert.equal(layout.placements.length, 12);
+});
+
+
+test('conserva afinidad after y reserva espacio cuando el acorde rebasa la letra', () => {
+  const chords = [
+    { id: 'before', root: 'C', quality: '', position: { offset: 2, affinity: 'before' } },
+    { id: 'after', root: 'F', quality: 'maj7', position: { offset: 2, affinity: 'after' } }
+  ];
+  const layout = ChordModel.layoutChordRow('Sol', chords, chord => chord.id === 'before' ? 'Do' : 'Famaj7');
+  assert.equal(layout.placements[0].offset, 2);
+  assert.ok(layout.placements[1].offset >= layout.placements[0].offset + layout.placements[0].displaySymbol.length);
+  assert.ok(layout.lyric.length >= layout.placements[1].offset + layout.placements[1].displaySymbol.length);
+  assert.deepEqual(chords.map(chord => chord.position), [
+    { offset: 2, affinity: 'before' },
+    { offset: 2, affinity: 'after' }
+  ]);
 });
