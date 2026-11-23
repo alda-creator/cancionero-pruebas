@@ -179,17 +179,17 @@ test('mantiene el acorde unido a la palabra cuando se inserta texto en su posici
   assert.equal(chord.position.offset, 13);
 });
 
-test('acepta el último acorde una columna después del final de la frase y lo ancla al cierre', () => {
+test('conserva la posición original del último acorde una columna después de la frase', () => {
   const result = ChordModel.convertLegacy('[CORO]\n      G              A         F#m    Bm\nLevantemos nuestras manos y adoremos,');
   assert.equal(result.ok, true, JSON.stringify(result.warnings));
   const row = result.structuredContent.blocks[0].rows[0];
   assert.equal(row.lyric, 'Levantemos nuestras manos y adoremos,');
   assert.deepEqual(row.chords.map(chord => chord.root + chord.quality), ['G','A','F#m','Bm']);
-  assert.equal(row.chords[3].position.offset, Array.from(row.lyric).length);
+  assert.equal(row.chords[3].position.offset, '      G              A         F#m    Bm'.indexOf('Bm'));
   assert.equal(ChordModel.validateStructuredContent(result.structuredContent).valid, true);
 });
 
-test('acepta el último acorde hasta 10 columnas después del final y lo ancla al cierre', () => {
+test('conserva la separación original hasta 10 columnas después del final', () => {
   const lyric = 'Levantemos nuestras manos y adoremos,';
   for (const distance of [4, 5, 8, 10]) {
     const chordLine = 'C     G' + ' '.repeat(Math.max(0, lyric.length + distance - 7)) + 'Bm';
@@ -198,7 +198,7 @@ test('acepta el último acorde hasta 10 columnas después del final y lo ancla a
     const row = result.structuredContent.blocks[0].rows[0];
     assert.deepEqual(row.chords.map(chord => chord.root), ['C', 'G', 'B']);
     assert.deepEqual(row.chords.slice(0, 2).map(chord => chord.position.offset), [0, 6]);
-    assert.equal(row.chords[2].position.offset, Array.from(lyric).length);
+    assert.equal(row.chords[2].position.offset, Array.from(lyric).length + distance);
     assert.equal(ChordModel.validateStructuredContent(result.structuredContent).valid, true);
   }
 });
@@ -330,6 +330,19 @@ test('no clasifica instrucciones de repeticion ni frases breves como encabezados
   assert.equal(result.ok, true, JSON.stringify(result.warnings));
   assert.equal(result.structuredContent.blocks[0].label, 'ESTROFA 1');
   assert.deepEqual(result.structuredContent.blocks[0].rows.map(row => row.lyric), ['REPITEN CORO 1','Te amo Dios','A Jesús']);
+});
+
+test('conserva la separación entre Eb/G y Fm aunque Fm quede después de la letra', () => {
+  const chordLine = 'Db                   Ab       Eb /G         Fm';
+  const lyric = 'Con mi ser, con cada aliento';
+  const result = ChordModel.convertLegacy('[CORO]\\n' + chordLine + '\\n' + lyric);
+  assert.equal(result.ok, true, JSON.stringify(result.warnings));
+  const row = result.structuredContent.blocks[0].rows[0];
+  assert.deepEqual(row.chords.map(chord => chord.root), ['D','A','E','F']);
+  assert.equal(row.chords[2].bass, 'G');
+  assert.equal(row.chords[3].position.offset, chordLine.indexOf('Fm'));
+  assert.ok(row.chords[3].position.offset > Array.from(lyric).length);
+  assert.equal(ChordModel.validateStructuredContent(result.structuredContent).valid, true);
 });
 
 test('protege slash chords espaciados y barras de compas en texto realista', () => {
