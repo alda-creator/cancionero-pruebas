@@ -129,6 +129,64 @@
     return /-\d+$/.test(part) && occurrence === 1 ? part : part + '-' + occurrence;
   }
 
+  // Distribuye acordes sin alterar sus posiciones musicales guardadas.
+  // Cuando un símbolo traducido ocupa más espacio, desplaza visualmente los
+  // acordes posteriores y la letra desde el punto de colisión.
+  function layoutChordRow(lyric, chords, getDisplaySymbol) {
+    const source = Array.from(String(lyric || ''));
+    const ordered = (Array.isArray(chords) ? chords : []).map((chord, index) => ({
+      chord, index,
+      sourceOffset: Math.max(0, Number(chord && chord.position ? chord.position.offset : chord && chord.offset) || 0)
+    })).sort((a, b) => a.sourceOffset - b.sourceOffset || a.index - b.index);
+    const insertions = new Map();
+    const placements = [];
+    let cumulativeShift = 0;
+    let previousEnd = 0;
+    ordered.forEach(item => {
+      const chord = item.chord || {};
+      const symbol = typeof getDisplaySymbol === 'function'
+        ? String(getDisplaySymbol(chord))
+        : String(chord.root || '') + String(chord.quality || '') + (chord.bass ? '/' + chord.bass : '');
+      let visualOffset = item.sourceOffset + cumulativeShift;
+      const extra = Math.max(0, previousEnd - visualOffset);
+      if (extra) {
+        insertions.set(item.sourceOffset, (insertions.get(item.sourceOffset) || 0) + extra);
+        cumulativeShift += extra;
+        visualOffset += extra;
+      }
+      placements.push({
+        id: chord.id || null,
+        sourceOffset: item.sourceOffset,
+        offset: visualOffset,
+        displaySymbol: symbol,
+        shift: visualOffset - item.sourceOffset
+      });
+      previousEnd = visualOffset + Array.from(symbol).length;
+    });
+    const expanded = [];
+    const visualToSource = [];
+    for (let i = 0; i <= source.length; i++) {
+      const spaces = insertions.get(i) || 0;
+      for (let j = 0; j < spaces; j++) {
+        expanded.push(' ');
+        visualToSource.push(i);
+      }
+      if (i < source.length) {
+        expanded.push(source[i]);
+        visualToSource.push(i);
+      }
+    }
+    return {
+      lyric: expanded.join(''),
+      placements,
+      visualToSource,
+      sourceOffsetAtVisual(offset) {
+        const index = Math.max(0, Math.min(visualToSource.length, Math.floor(Number(offset) || 0)));
+        return index >= visualToSource.length ? source.length : visualToSource[index];
+      }
+    };
+  }
+
   function validateStructuredContent(content) {
     const errors = [];
     if (!content || typeof content !== 'object' || content.version !== 2 || !Array.isArray(content.blocks)) {
@@ -462,6 +520,7 @@
     version: 2,
     parseChordSymbol,
     detectSectionHeader,
+    layoutChordRow,
     validateStructuredContent,
     convertLegacy,
     reconcileLyrics,
