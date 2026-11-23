@@ -57,12 +57,41 @@
     return { root: main.root, quality, bass };
   }
 
+  function compactBarChordTokens(line) {
+    const value = String(line || '').trim();
+    if (!/^\|.*\|$/.test(value) || !/\/{2,3}/.test(value)) return null;
+    const tokens = [];
+    const re = /[A-G](?:#|b)?(?:maj|min|m|dim|aug|sus2|sus4|sus|add\d+)?(?:13|11|9|7|6|5|4|2)?/gi;
+    let cursor = 0;
+    let match;
+    while ((match = re.exec(value)) !== null) {
+      const between = value.slice(cursor, match.index);
+      if (between && !/^(?:\|+|\/{2,3})+$/.test(between)) return null;
+      if (!parseChordSymbol(match[0])) return null;
+      tokens.push({ symbol: match[0], index: match.index });
+      cursor = re.lastIndex;
+    }
+    if (!tokens.length || !/^(?:\|+|\/{2,3})+$/.test(value.slice(cursor))) return null;
+    return tokens;
+  }
+
+  function chordLineTokens(line) {
+    const tokens = [];
+    const re = /\S+(?:[ \t]+\/[A-G](?:#|b)?)?/g;
+    let match;
+    while ((match = re.exec(String(line || ''))) !== null) {
+      tokens.push({ symbol: match[0].replace(/[ \t]+/g, ''), index: match.index });
+    }
+    return tokens;
+  }
+
   function isChordLine(line) {
-    const tokens = String(line || '').trim().split(/\s+/);
-    if (!tokens.length || tokens[0] === '') return false;
+    if (compactBarChordTokens(line)) return true;
+    const tokens = chordLineTokens(line);
+    if (!tokens.length) return false;
     // Una línea mixta como "A Jesús." es letra, no una línea de acordes.
     // Todos los tokens deben ser símbolos válidos para evitar falsos positivos.
-    return tokens.every(token => !!parseChordSymbol(token));
+    return tokens.every(token => !!parseChordSymbol(token.symbol));
   }
 
   function normalizeIdPart(value) {
@@ -153,23 +182,24 @@
       if (/\t/.test(chordLine) || /\t/.test(lyric)) {
         return { error: 'Se encontró una tabulación; no es posible deducir con seguridad la posición horizontal.' };
       }
+      const compactTokens = compactBarChordTokens(chordLine);
+      const tokens = compactTokens || chordLineTokens(chordLine);
       const entries = [];
-      const re = /\S+/g;
-      let match;
-      while ((match = re.exec(chordLine)) !== null) {
-        const parsed = parseChordSymbol(match[0]);
+      for (let index = 0; index < tokens.length; index++) {
+        const token = tokens[index];
+        const parsed = parseChordSymbol(token.symbol);
         if (!parsed) return { error: 'La línea contiene un token que no se puede interpretar como acorde.' };
-        let offset = Array.from(chordLine.slice(0, match.index)).length;
+        let offset = Array.from(chordLine.slice(0, token.index)).length;
         const lyricLength = Array.from(lyric).length;
         if (lyric && offset > lyricLength) {
-          // Algunos cantos colocan el último acorde justo después de la frase.
-          // Solo aceptamos un desfase de una columna y únicamente para el
-          // último token; se ancla al final de la letra sin inventar más espacio.
-          const isLastChord = chordLine.slice(re.lastIndex).trim() === '';
-          if (isLastChord && offset === lyricLength + 1) {
+          // Algunas partituras alinean el acorde final ligeramente después
+          // del último carácter. Se acepta un margen corto (hasta 4 columnas)
+          // solo para el último acorde y se ancla al final de la frase.
+          const isLastChord = index === tokens.length - 1;
+          if (isLastChord && offset <= lyricLength + 4) {
             offset = lyricLength;
           } else {
-            return { error: 'Un acorde queda más allá del final de la letra; su posición es ambigua.' };
+            return { error: 'Un acorde queda demasiado lejos del final de la letra; su posición es ambigua.' };
           }
         }
         entries.push({
