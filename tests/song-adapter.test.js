@@ -11,7 +11,7 @@ test('clasifica canción vacía y entrada inválida',()=>{assert.equal(Adapter.a
 test('no funciona si el modelo falta',()=>{const result=Adapter.adapt({rawText:'C'},null);assert.equal(result.status,'model-unavailable');});
 
 test('prepara una canción heredada con acorde final para el editor sin perder rawText',()=>{
- const raw='[CORO]\\n      G              A         F#m    Bm\\nLevantemos nuestras manos y adoremos,';
+ const raw='[CORO]\n      G              A         F#m    Bm\nLevantemos nuestras manos y adoremos,';
  const song={title:'Prueba',rawText:raw};
  const adapted=Adapter.adapt(song,Model);
  assert.equal(adapted.ok,true);
