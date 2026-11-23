@@ -159,9 +159,18 @@
       while ((match = re.exec(chordLine)) !== null) {
         const parsed = parseChordSymbol(match[0]);
         if (!parsed) return { error: 'La línea contiene un token que no se puede interpretar como acorde.' };
-        const offset = Array.from(chordLine.slice(0, match.index)).length;
-        if (lyric && offset > Array.from(lyric).length) {
-          return { error: 'Un acorde queda más allá del final de la letra; su posición es ambigua.' };
+        let offset = Array.from(chordLine.slice(0, match.index)).length;
+        const lyricLength = Array.from(lyric).length;
+        if (lyric && offset > lyricLength) {
+          // Algunos cantos colocan el último acorde justo después de la frase.
+          // Solo aceptamos un desfase de una columna y únicamente para el
+          // último token; se ancla al final de la letra sin inventar más espacio.
+          const isLastChord = chordLine.slice(re.lastIndex).trim() === '';
+          if (isLastChord && offset === lyricLength + 1) {
+            offset = lyricLength;
+          } else {
+            return { error: 'Un acorde queda más allá del final de la letra; su posición es ambigua.' };
+          }
         }
         entries.push({
           id: makeChordId(blockIndex, rowIndex, entries.length),
