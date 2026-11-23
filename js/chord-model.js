@@ -236,7 +236,13 @@
         current = { label: line.trim().slice(1, -1), rows: [] };
         continue;
       }
-      const detectedHeader = detectSectionHeader(line);\n      if (detectedHeader) {\n        pushBlock();\n        current = { label: detectedHeader, rows: [] };\n        continue;\n      }\n      if (!line.trim()) continue;
+      const detectedHeader = detectSectionHeader(line);
+      if (detectedHeader) {
+        pushBlock();
+        current = { label: detectedHeader, rows: [] };
+        continue;
+      }
+      if (!line.trim()) continue;
 
       if (isChordLine(line)) {
         const next = lines[i + 1];
