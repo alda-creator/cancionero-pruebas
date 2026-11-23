@@ -430,7 +430,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.2.6 · Editor compatible con canciones antiguas · (PRUEBAS)</div>
+        <div class="app-version">v1.2.7 · Editor compatible con canciones antiguas · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -1346,7 +1346,9 @@
       const chordOffset = chordData.position ? chordData.position.offset : chordData.offset;
       const chordAffinity = chordData.position ? chordData.position.affinity : chordData.affinity;
       const visualOffset = chordOffset + (chordAffinity === 'after' ? 1 : 0);
-      const offset = Math.max(0, Math.min(chars.length, visualOffset));
+      // Los acordes pueden quedar después de la última palabra. No limitar
+      // su offset al largo de la letra: eso los empalma al final del renglón.
+      const offset = Math.max(0, visualOffset);
       const word = words.find(item => offset <= item.end) || words[words.length - 1];
       const localOffset = offset - word.start;
       const chord = document.createElement('span');
@@ -1358,8 +1360,7 @@
       chord.dataset.chordId = chordData.id;
       chord.setAttribute('aria-label', displaySymbol);
       word.element.appendChild(chord);
-      const wordRemaining = Math.max(0, word.end - offset);
-      const reserve = Math.max(0, Array.from(displaySymbol).length - wordRemaining);
+      const reserve = Math.max(0, offset + Array.from(displaySymbol).length - word.end);
       if (reserve) {
         const current = parseFloat(word.element.dataset.chordReserve || '0');
         word.element.dataset.chordReserve = String(Math.max(current, reserve));
