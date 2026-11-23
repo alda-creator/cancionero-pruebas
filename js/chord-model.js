@@ -167,16 +167,27 @@
     });
     const expanded = [];
     const visualToSource = [];
-    for (let i = 0; i <= source.length; i++) {
+    const furthestSourceOffset = Math.max(source.length, ...ordered.map(item => item.sourceOffset));
+    for (let i = 0; i <= furthestSourceOffset; i++) {
       const spaces = insertions.get(i) || 0;
       for (let j = 0; j < spaces; j++) {
         expanded.push(' ');
-        visualToSource.push(i);
+        visualToSource.push(Math.min(i, source.length));
       }
       if (i < source.length) {
         expanded.push(source[i]);
         visualToSource.push(i);
+      } else if (i < furthestSourceOffset) {
+        // Los offsets musicales pueden rebasar el final de la letra.
+        // Materializamos ese tramo como espacio visual, sin alterar la letra guardada.
+        expanded.push(' ');
+        visualToSource.push(source.length);
       }
+    }
+    const requiredVisualLength = Math.max(source.length, ...placements.map(item => item.offset + Array.from(item.displaySymbol).length));
+    while (expanded.length < requiredVisualLength) {
+      expanded.push(' ');
+      visualToSource.push(source.length);
     }
     return {
       lyric: expanded.join(''),
