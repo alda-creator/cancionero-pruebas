@@ -7,6 +7,7 @@ on:
       - "js/chord-model.js"
       - "js/song-diagnostics.js"
       - "js/song-adapter.js"
+      - "js/song-document.js"
       - "tests/**"
       - "index.html"
       - "sw.js"
@@ -38,5 +39,7 @@ jobs:
         run: node tests/song-diagnostics.test.js
       - name: Test song adapter
         run: node tests/song-adapter.test.js
+      - name: Test song document
+        run: node tests/song-document.test.js
       - name: Check inline JavaScript syntax
         run: node tests/check-inline-scripts.js
