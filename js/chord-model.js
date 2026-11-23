@@ -164,7 +164,7 @@
           }
           if (chord && chord.bass !== null && !ROOTS.has(chord.bass)) errors.push(cp + ': bajo inválido.');
           if (!chord || !chord.position || !Number.isInteger(chord.position.offset) ||
-              chord.position.offset < 0 || (length === 0 ? chord.position.offset > 10000 : chord.position.offset > length + 10) ||
+              chord.position.offset < 0 || (length === 0 ? chord.position.offset > 10000 : chord.position.offset > length + 20) ||
               !['before','after'].includes(chord.position.affinity)) {
             errors.push(cp + ': posición inválida o fuera de la letra.');
           }
@@ -220,7 +220,7 @@
       const lyricLength = Array.from(lyric).length;
       if (lyric && entries.length) {
         const overflow = Math.max(...entries.map(entry => entry.position.offset)) - lyricLength;
-        if (overflow > 10) {
+        if (overflow > 20) {
           return { error: 'Un acorde queda demasiado lejos del final de la letra; su posición es ambigua.' };
         }
       }
