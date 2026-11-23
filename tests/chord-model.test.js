@@ -298,7 +298,7 @@ test('conserva la posición explícita de un acorde instrumental al agregar letr
 });
 
 test('detecta encabezados de seccion sin corchetes y los serializa estructuralmente', () => {
-  const raw = 'Intro\\n|Ab//Db|Ab///|\\n\\nVerso 1\\nAb\\nTe amo Dios\\n\\nCoro 1\\nDb\\nCantemos';
+  const raw = 'Intro\n|Ab//Db|Ab///|\n\nVerso 1\nAb\nTe amo Dios\n\nCoro 1\nDb\nCantemos';
   const result = ChordModel.convertLegacy(raw);
   assert.equal(result.ok, true, JSON.stringify(result.warnings));
   assert.deepEqual(result.structuredContent.blocks.map(block => block.label), ['Intro','Verso 1','Coro 1']);
@@ -309,14 +309,14 @@ test('detecta encabezados de seccion sin corchetes y los serializa estructuralme
 });
 
 test('no clasifica instrucciones de repeticion ni frases breves como encabezados', () => {
-  const result = ChordModel.convertLegacy('REPITEN CORO 1\\nTe amo Dios\\nA Jesús');
+  const result = ChordModel.convertLegacy('REPITEN CORO 1\nTe amo Dios\nA Jesús');
   assert.equal(result.ok, true, JSON.stringify(result.warnings));
   assert.equal(result.structuredContent.blocks[0].label, 'ESTROFA 1');
   assert.deepEqual(result.structuredContent.blocks[0].rows.map(row => row.lyric), ['REPITEN CORO 1','Te amo Dios','A Jesús']);
 });
 
 test('protege slash chords espaciados y barras de compas en texto realista', () => {
-  const raw = 'Intro\\n|Ab//Db|Ab///|\\nVerso 1\\nAb\\nTe amo Dios\\nEb /G   Fm\\nMi existir en Tus manos está\\n\\nPuente\\nAb /C         Db\\nTu fidelidad sigue\\n\\nInterludio\\n|Ab//Db|Ab///|';
+  const raw = 'Intro\n|Ab//Db|Ab///|\nVerso 1\nAb\nTe amo Dios\nEb /G   Fm\nMi existir en Tus manos está\n\nPuente\nAb /C         Db\nTu fidelidad sigue\n\nInterludio\n|Ab//Db|Ab///|';
   const result = ChordModel.convertLegacy(raw);
   assert.equal(result.ok, true, JSON.stringify(result.warnings));
   const rows = result.structuredContent.blocks.flatMap(block => block.rows);
