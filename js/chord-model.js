@@ -101,7 +101,7 @@
     const value = String(line || '').trim();
     if (!value || value.length > 40) return null;
     const patterns = [
-      /^(?:intro|introducci[oó]n|preludio|interludio|instrumental|outro|coda|final|tag)$/i,
+      /^(?:intro|introducci[oó]n|preludio|interludio|interludo|instrumental|outro|coda|final|tag)$/i,
       /^(?:verso|verse|estrofa)\s*\d*$/i,
       /^(?:coro|chorus|estribillo)\s*\d*$/i,
       /^(?:puente|bridge)\s*\d*$/i,
@@ -205,20 +205,7 @@
         const token = tokens[index];
         const parsed = parseChordSymbol(token.symbol);
         if (!parsed) return { error: 'La línea contiene un token que no se puede interpretar como acorde.' };
-        let offset = Array.from(chordLine.slice(0, token.index)).length;
-        const lyricLength = Array.from(lyric).length;
-        if (lyric && offset > lyricLength) {
-          // Algunas partituras alinean el acorde final después del último
-          // carácter. Aceptamos hasta 10 columnas únicamente para el último
-          // acorde de la línea y lo anclamos al final de la frase. Un margen
-          // mayor sigue siendo ambiguo y conserva la protección.
-          const isLastChord = index === tokens.length - 1;
-          if (isLastChord && offset <= lyricLength + 10) {
-            offset = lyricLength;
-          } else {
-            return { error: 'Un acorde queda demasiado lejos del final de la letra; su posición es ambigua.' };
-          }
-        }
+        const offset = Array.from(chordLine.slice(0, token.index)).length;
         entries.push({
           id: makeChordId(blockIndex, rowIndex, entries.length),
           root: parsed.root,
@@ -226,6 +213,26 @@
           bass: parsed.bass,
           position: { offset, affinity: 'before' }
         });
+      }
+      // Evaluar la línea completa como un grupo: si todos los acordes están
+      // desplazados a la derecha por un margen pequeño, mover el grupo entero
+      // conserva sus distancias relativas. Nunca comprimir acordes individuales.
+      const lyricLength = Array.from(lyric).length;
+      if (lyric && entries.length) {
+        const overflow = Math.max(...entries.map(entry => entry.position.offset)) - lyricLength;
+        if (overflow > 10) {
+          return { error: 'Un acorde queda demasiado lejos del final de la letra; su posición es ambigua.' };
+        }
+        if (overflow > 0) {
+          const firstOverflow = entries.findIndex(entry => entry.position.offset > lyricLength);
+          const overflowingSuffix = entries.slice(firstOverflow);
+          // Ajustar como unidad el sufijo contiguo de acordes que rebasa la letra.
+          // Los acordes anteriores, ya dentro del rango, conservan su anclaje.
+          if (overflowingSuffix.some(entry => entry.position.offset - overflow < 0)) {
+            return { error: 'El grupo de acordes queda fuera del rango de la letra; su alineación es ambigua.' };
+          }
+          overflowingSuffix.forEach(entry => { entry.position.offset -= overflow; });
+        }
       }
       return { entries };
     }

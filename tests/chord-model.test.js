@@ -341,3 +341,99 @@ test('protege slash chords espaciados y barras de compas en texto realista', () 
   assert.ok(rows.some(row => row.chords.some(chord => chord.bass === 'C')));
   assert.ok(rows.some(row => row.chords.length === 3 && row.chords.map(chord => chord.root).join(',') === 'Ab,Db,Ab'));
 });
+
+
+test('regresión: convierte íntegra la canción Bondad de Dios copiada de internet', () => {
+  const raw = `Intro
+
+|Ab//Db|Ab///|Ab//Db|Ab///|
+
+
+Verso 1
+        Ab
+Te amo Diós
+     Db            Ab
+Tu amor nunca me falla
+Eb /G   Fm        Db    Eb
+Mi existir en Tus manos está
+                          Fm   Db
+Desde el momento que despierto
+          Ab Eb /G Fm
+Hasta el anochecer
+         Db      Esus      Ab
+Yo cantaré de la bondad de Dios
+
+Coro 1
+Db                  Ab
+En mi vida has sido bueno
+Db                  Ab   Eb
+En mi vida has sido tan fiel
+Db                   Ab       Eb /G Fm
+Con mi ser, con cada aliento
+        Db       Eb        Ab
+Yo cantaré de la bondad de Dios
+
+Verso 2
+
+          Db
+Yo amo Tu voz
+       Db              Ab
+Me has guiado por el fuego
+          Eb /G Fm
+Tu cerca estás
+   Db        Eb
+En la oscuridad
+                Fm     Db
+Te conozco como Padre
+        Ab   Eb /G Fm
+Y como amigo fiel
+          Db       Esus      Ab
+Mi vida está en la bondad de Dios
+
+
+REPITEN CORO 1
+
+Puente
+
+Ab /C         Db
+Tu fidelidad sigue
+Eb          Ab
+Persiguiéndome
+Ab /C        Db
+Tu fidelidad sigue
+Eb         Ab
+Persiguiéndome
+           Ab /C
+Todo lo que soy
+              Ab
+Te lo entrego hoy
+  Eb         Fm
+A Ti me rendiré
+Ab /C        Db
+Tu fidelidad sigue
+Eb          Ab
+Persiguiéndome
+
+REPITEN PUENTE
+
+Interludo
+
+|Ab//Db|Ab///|
+
+
+REPITEN CORO 1
+
+Tag
+
+        Db       Eb        Ab
+Yo cantaré de la bondad de Dios`;
+  const result = ChordModel.convertLegacy(raw);
+  assert.equal(result.ok, true, JSON.stringify(result.warnings));
+  assert.deepEqual(result.structuredContent.blocks.map(block => block.label), ['Intro','Verso 1','Coro 1','Verso 2','Puente','Interludo','Tag']);
+  const rows = result.structuredContent.blocks.flatMap(block => block.rows);
+  assert.ok(rows.some(row => row.chords.some(chord => chord.bass === 'G')));
+  assert.ok(rows.some(row => row.chords.some(chord => chord.bass === 'C')));
+  assert.ok(rows.some(row => row.chords.length === 3 && row.chords.map(chord => chord.root).join(',') === 'Ab,Db,Ab'));
+  assert.ok(rows.some(row => row.lyric.includes('REPITEN CORO 1')));
+  assert.ok(rows.some(row => row.lyric.includes('REPITEN PUENTE')));
+});
