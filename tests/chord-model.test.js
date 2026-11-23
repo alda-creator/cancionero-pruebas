@@ -76,7 +76,7 @@ test('valida IDs, raíces y límites de posición', () => {
         id: 'r1', lyric: 'Sol',
         chords: [{
           id: 'c1', root: 'C', quality: '', bass: null,
-          position: { offset: 4, affinity: 'before' }
+          position: { offset: 24, affinity: 'before' }
         }]
       }]
     }]
@@ -189,7 +189,7 @@ test('conserva la posición original del último acorde una columna después de 
   assert.equal(ChordModel.validateStructuredContent(result.structuredContent).valid, true);
 });
 
-test('conserva la separación original hasta 10 columnas después del final', () => {
+test('conserva la separación original hasta 20 columnas después del final', () => {
   const lyric = 'Levantemos nuestras manos y adoremos,';
   for (const distance of [4, 5, 8, 10, 16, 20]) {
     const chordLine = 'C     G' + ' '.repeat(Math.max(0, lyric.length + distance - 7)) + 'Bm';
@@ -243,6 +243,7 @@ test('instrumental row accepts offsets but lyric rows retain position bounds', (
   assert.equal(ChordModel.validateStructuredContent(instrumental).valid,true);
   const lyricRow = JSON.parse(JSON.stringify(instrumental));
   lyricRow.blocks[0].rows[0].lyric='Hi';
+  lyricRow.blocks[0].rows[0].chords[0].position.offset=23;
   assert.equal(ChordModel.validateStructuredContent(lyricRow).valid,false);
 });
 
@@ -258,12 +259,12 @@ test('reconcilia acordes escritos en rawText para una fila instrumental', () => 
 });
 
 
-test('acepta un acorde final ligeramente posterior a la última palabra y lo ancla al cierre', () => {
+test('conserva el offset original de acordes después de la última palabra', () => {
   const result = ChordModel.convertLegacy('[CORO]\n              Am   D     G    Am\nte entrego mi voluntad a Tí');
   assert.equal(result.ok, true, JSON.stringify(result.warnings));
   const row = result.structuredContent.blocks[0].rows[0];
   assert.deepEqual(row.chords.map(chord => chord.root), ['A','D','G','A']);
-  assert.deepEqual(row.chords.map(chord => chord.position.offset), [14,19,25,Array.from(row.lyric).length]);
+  assert.deepEqual(row.chords.map(chord => chord.position.offset), [14,19,25,30]);
 });
 
 test('reconoce acordes con bajo escrito separado por un espacio', () => {
