@@ -458,15 +458,15 @@ test('distribuye acordes traducidos sin modificar offsets musicales', () => {
     { id: 'a', root: 'Db', quality: '', position: { offset: 0, affinity: 'before' } },
     { id: 'b', root: 'Ab', quality: '', position: { offset: 20, affinity: 'before' } },
     { id: 'c', root: 'Eb', quality: '', bass: 'G', position: { offset: 28, affinity: 'before' } },
-    { id: 'd', root: 'F', quality: 'm', position: { offset: 38, affinity: 'before' } }
+    { id: 'd', root: 'F', quality: 'm', position: { offset: 33, affinity: 'before' } }
   ];
   const layout = ChordModel.layoutChordRow(lyric, chords, chord =>
     chord.id === 'c' ? 'Mib/Sol' : chord.id === 'd' ? 'Fam' : chord.root
   );
-  assert.deepEqual(layout.placements.map(item => item.offset), [0, 20, 28, 36]);
+  assert.deepEqual(layout.placements.map(item => item.offset), [0, 20, 28, 35]);
   assert.ok(layout.lyric.length > lyric.length);
   assert.equal(layout.sourceOffsetAtVisual(layout.lyric.length), lyric.length);
-  assert.deepEqual(chords.map(chord => chord.position.offset), [0, 20, 28, 38]);
+  assert.deepEqual(chords.map(chord => chord.position.offset), [0, 20, 28, 33]);
 });
 
 test('distribuye grupos densos y acordes largos de forma acumulativa', () => {
