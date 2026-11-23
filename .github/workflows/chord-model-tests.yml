@@ -5,7 +5,8 @@ on:
     branches: [main]
     paths:
       - "js/chord-model.js"
-      - "js/song-diagnostics.js"\n      - "js/song-adapter.js"
+      - "js/song-diagnostics.js"
+      - "js/song-adapter.js"
       - "tests/**"
       - "index.html"
       - "sw.js"
@@ -15,6 +16,7 @@ on:
     paths:
       - "js/chord-model.js"
       - "js/song-diagnostics.js"
+      - "js/song-adapter.js"
       - "tests/**"
       - "index.html"
       - "sw.js"
@@ -34,5 +36,7 @@ jobs:
         run: node tests/chord-model.test.js
       - name: Test song diagnostics
         run: node tests/song-diagnostics.test.js
+      - name: Test song adapter
+        run: node tests/song-adapter.test.js
       - name: Check inline JavaScript syntax
         run: node tests/check-inline-scripts.js
