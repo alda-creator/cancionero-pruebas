@@ -190,8 +190,20 @@
       expanded.push(' ');
       visualToSource.push(Math.max(source.length, furthestSourceOffset) + (expanded.length - expandedLengthBeforeChordTail - 1));
     }
+    const visualLyric = expanded.join('');
+    const visualChars = Array.from(visualLyric);
+    const wordSegments = [];
+    let cursor = 0;
+    while (cursor < visualChars.length) {
+      while (cursor < visualChars.length && /\\s/u.test(visualChars[cursor])) cursor++;
+      if (cursor >= visualChars.length) break;
+      const start = cursor;
+      while (cursor < visualChars.length && !/\\s/u.test(visualChars[cursor])) cursor++;
+      wordSegments.push({ start, end: cursor });
+    }
     return {
-      lyric: expanded.join(''),
+      lyric: visualLyric,
+      wordSegments,
       placements,
       visualToSource,
       sourceOffsetAtVisual(offset) {
