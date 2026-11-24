@@ -47,18 +47,20 @@
 
 ### 3.1 P0 — GO_TO_BLOCK con bloques repetidos
 
-**Estado:** pendiente de diagnóstico y corrección.
+**Estado:** corrección integrada en el laboratorio (PR #69); pruebas automatizadas aprobadas. Pendiente de validación manual del usuario en iPhone tras confirmar despliegue de Pages.
 
 Caso reproducido por el usuario:
 - Secuencia del Director: Estrofa 1 → Coro → Puente → Coro.
 - El Director toca la etiqueta del segundo Coro.
-- La pantalla del músico salta al primer Coro, no al segundo.
+- La pantalla del músico saltaba al primer Coro, no al segundo.
 
-El seguimiento manual y Auto-Scroll funcionan; el defecto se observa al seleccionar mediante GO_TO_BLOCK una instancia repetida.
+**Causa identificada:** el código principal enviaba y recibía `instanceId`, pero el wrapper de `director-fix.js` redefinía `goToRemoteBlock` aceptando solo `blockId`; descartaba la identidad de la aparición. El manejador original entonces elegía el primer bloque con ese mismo ID.
 
-**Criterio de aceptación:** cada aparición de un bloque debe tener una identidad de instancia única y estable dentro de la secuencia. El evento remoto debe transmitir esa identidad/posición y el músico debe desplazarse a la misma aparición exacta. No basta con enviar el nombre o tipo del bloque ("CORO").
+**Corrección aplicada:** el wrapper ahora acepta y reenvía `instanceId`. Se agregó una prueba de regresión para el recorrido emisor → wrapper → manejador. PR #69 también actualiza la versión de laboratorio a v1.3.1 y la caché PWA a v38.
 
-**Pruebas:** secuencias con dos o más coros, dos estrofas con igual etiqueta, bloques repetidos consecutivos, reordenamiento, reconexión y navegación Director/Músico.
+**Criterio de aceptación manual:** con dos Coros separados por un Puente, al tocar el segundo Coro en el Director, el músico debe saltar al segundo Coro. También comprobar la primera aparición, Auto-Scroll y seguimiento posterior. Si la prueba manual detecta cualquier desfase, no se inicia la unificación del editor hasta resolverlo.
+
+**Pruebas automatizadas:** prueba de navegación repetida, modelo de acordes, diagnósticos, adaptador, documento y sintaxis inline; todas pasaron en CI para PR #69.
 
 ### 3.2 P1 — Separación visual de acordes en notación latina
 
