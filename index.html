@@ -451,7 +451,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.3.1 · Navegación precisa de bloques repetidos · (PRUEBAS)</div>
+        <div class="app-version">v1.3.2 · Reinicio de lectura al cambiar canción · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -1701,8 +1701,12 @@
     if (targetIndex >= 0 && targetIndex < songSetIds.length) {
       const targetId = songSetIds[targetIndex];
       openSong(targetId, 'set');
-      if (document.getElementById('live-screen').style.display !== 'none') {
+      const liveScreen = document.getElementById('live-screen');
+      if (liveScreen && liveScreen.style.display !== 'none') {
         buildBlocksHTML(document.getElementById('live-body'));
+        // En Vivo desplaza #live-screen, no window. Cada canción nueva
+        // debe comenzar desde arriba aunque la anterior terminara abajo.
+        liveScreen.scrollTop = 0;
       }
     }
   }
@@ -2514,6 +2518,9 @@
     
     buildBlocksHTML(liveBody);
     liveScreen.style.display = 'flex';
+    // Restablecer el contenedor real de lectura al entrar a En Vivo.
+    // window.scrollTo no afecta este panel porque tiene scroll propio.
+    liveScreen.scrollTop = 0;
     updateSequenceEditorUI();
 
     const exitBtn = document.getElementById('live-exit-btn');
