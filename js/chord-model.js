@@ -172,7 +172,7 @@
       const spaces = insertions.get(i) || 0;
       for (let j = 0; j < spaces; j++) {
         expanded.push(' ');
-        visualToSource.push(Math.min(i, source.length));
+        visualToSource.push(i);
       }
       if (i < source.length) {
         expanded.push(source[i]);
@@ -181,21 +181,28 @@
         // Los offsets musicales pueden rebasar el final de la letra.
         // Materializamos ese tramo como espacio visual, sin alterar la letra guardada.
         expanded.push(' ');
-        visualToSource.push(source.length);
+        visualToSource.push(i);
       }
     }
     const requiredVisualLength = Math.max(source.length, ...placements.map(item => item.offset + Array.from(item.displaySymbol).length));
+    const expandedLengthBeforeChordTail = expanded.length;
     while (expanded.length < requiredVisualLength) {
       expanded.push(' ');
-      visualToSource.push(source.length);
+      visualToSource.push(Math.max(source.length, furthestSourceOffset) + (expanded.length - expandedLengthBeforeChordTail - 1));
     }
     return {
       lyric: expanded.join(''),
       placements,
       visualToSource,
       sourceOffsetAtVisual(offset) {
-        const index = Math.max(0, Math.min(visualToSource.length, Math.floor(Number(offset) || 0)));
-        return index >= visualToSource.length ? source.length : visualToSource[index];
+        const index = Math.max(0, Math.floor(Number(offset) || 0));
+        if (index >= visualToSource.length) {
+          const lastMusicalOffset = visualToSource.length
+            ? visualToSource[visualToSource.length - 1] + 1
+            : source.length;
+          return Math.max(source.length, lastMusicalOffset) + (index - visualToSource.length);
+        }
+        return visualToSource[index];
       }
     };
   }
