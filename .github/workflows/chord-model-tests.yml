@@ -36,6 +36,8 @@ jobs:
           node-version: 22
       - name: Test chord model
         run: node tests/chord-model.test.js
+      - name: Test Director repeated block navigation
+        run: node tests/director-navigation.test.js
       - name: Test song diagnostics
         run: node tests/song-diagnostics.test.js
       - name: Test song adapter
