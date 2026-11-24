@@ -511,3 +511,18 @@ test('conserva afinidad after y reserva espacio cuando el acorde rebasa la letra
     { offset: 2, affinity: 'after' }
   ]);
 });
+
+
+test('expone anclas por palabra para envolver filas sin desbordar el viewport', () => {
+  const chords = [
+    { id: 'a', root: 'C', quality: '', position: { offset: 0, affinity: 'before' } },
+    { id: 'b', root: 'F', quality: 'm', position: { offset: 35, affinity: 'before' } }
+  ];
+  const layout = ChordModel.layoutChordRow('Una frase musical de prueba', chords,
+    chord => chord.id === 'a' ? 'Do' : 'Fam');
+  assert.deepEqual(layout.wordSegments.map(segment =>
+    Array.from(layout.lyric).slice(segment.start, segment.end).join('')
+  ), ['Una', 'frase', 'musical', 'de', 'prueba']);
+  assert.ok(layout.placements[1].offset >= layout.wordSegments.at(-1).end);
+  assert.equal(layout.wordSegments.at(-1).end <= Array.from(layout.lyric).length, true);
+});

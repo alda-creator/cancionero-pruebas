@@ -282,22 +282,34 @@
       position:absolute; top:0; color:var(--chord); font-weight:700;
       white-space:nowrap; line-height:1.25; pointer-events:auto;
     }
-    .structured-lyric.structured-distributed-track {
-      position:relative; width:max-content; min-width:100%; min-height:1.35em;
-      box-sizing:border-box; padding-top:1.35em; white-space:pre;
+    .structured-lyric {
+      display:block; width:100%; max-width:100%; min-width:0;
+      color:var(--text); white-space:pre-wrap; overflow-wrap:break-word;
     }
-    .structured-line-pair:has(.structured-distributed-track) {
-      overflow-x:auto; overflow-y:hidden; white-space:nowrap;
-      -webkit-overflow-scrolling:touch; scrollbar-width:thin;
+    .structured-word-unit {
+      position:relative; display:inline-block; max-width:100%;
+      padding-top:1.35em; margin:0; vertical-align:bottom;
+      white-space:pre-wrap; overflow-wrap:anywhere;
+    }
+    .structured-word-unit .structured-chord {
+      position:absolute; top:0; color:var(--chord); font-weight:700;
+      white-space:nowrap; line-height:1.25; pointer-events:auto;
     }
     .structured-lyric.structured-instrumental-track {
       position:relative; width:max-content; min-width:80ch; min-height:1.35em;
       padding-top:1.35em; white-space:pre;
     }
-    .structured-instrumental-track .structured-chord,
-    .structured-distributed-track .structured-chord {
+    .structured-line-pair:has(.structured-instrumental-track) {
+      overflow-x:auto; overflow-y:hidden; white-space:nowrap;
+      -webkit-overflow-scrolling:touch; scrollbar-width:thin;
+    }
+    .structured-instrumental-track .structured-chord {
       position:absolute; top:0; color:var(--chord); font-weight:700;
       white-space:nowrap; line-height:1.25; pointer-events:auto;
+    }
+    html, body { max-width:100%; overflow-x:hidden; }
+    #song-viewer, #song-content, #live-body, .song-block {
+      min-width:0; max-width:100%;
     }
 
     .admin-menu {
@@ -439,7 +451,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.2.9 · Posiciones musicales extendidas · (PRUEBAS)</div>
+        <div class="app-version">v1.3.0 · Ajuste de línea y ancho móvil · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -1309,27 +1321,77 @@
       return transposeChordToken(symbol, transposeSteps);
     };
     const layout = window.ChordModel.layoutChordRow(lyric, chords, symbolFor);
-    if (!lyric) lyricHost.classList.add('structured-instrumental-track');
-    else {
-      lyricHost.classList.add('structured-distributed-track');
-      lyricHost.textContent = layout.lyric;
+    if (!lyric) {
+      lyricHost.classList.add('structured-instrumental-track');
+      layout.placements.forEach(placement => {
+        const chord = document.createElement('span');
+        chord.className = 'structured-chord';
+        chord.textContent = placement.displaySymbol;
+        chord.style.left = placement.offset + 'ch';
+        chord.dataset.chordId = placement.id || '';
+        chord.setAttribute('aria-label', placement.displaySymbol);
+        lyricHost.appendChild(chord);
+      });
+      const instrumentalWidth = Math.max(80, layout.lyric.length,
+        ...layout.placements.map(item => item.offset + Array.from(item.displaySymbol).length + 2));
+      lyricHost.style.width = instrumentalWidth + 'ch';
+      lyricHost.style.minWidth = instrumentalWidth + 'ch';
+      pair.appendChild(lyricHost);
+      return;
     }
+
+    // Volvemos a anclar cada acorde a su palabra. Las palabras y los espacios
+    // permanecen en el flujo normal del navegador, por lo que una frase larga
+    // puede pasar al siguiente renglón sin ensanchar la página completa.
+    const visualChars = Array.from(layout.lyric);
+    const wordElements = [];
+    let cursor = 0;
+    layout.wordSegments.forEach(segment => {
+      if (segment.start > cursor) {
+        lyricHost.appendChild(document.createTextNode(visualChars.slice(cursor, segment.start).join('')));
+      }
+      const word = document.createElement('span');
+      word.className = 'structured-word-unit';
+      word.textContent = visualChars.slice(segment.start, segment.end).join('');
+      lyricHost.appendChild(word);
+      wordElements.push({ ...segment, element: word });
+      cursor = segment.end;
+    });
+    if (cursor < visualChars.length) {
+      lyricHost.appendChild(document.createTextNode(visualChars.slice(cursor).join('')));
+    }
+    if (!wordElements.length) {
+      const word = document.createElement('span');
+      word.className = 'structured-word-unit';
+      word.textContent = ' ';
+      lyricHost.appendChild(word);
+      wordElements.push({ start: 0, end: 1, element: word });
+    }
+
     layout.placements.forEach(placement => {
+      // Anclar al último término que comienza antes del acorde. Si cae después
+      // de la última palabra, el espacio reservado hace que el renglón pueda
+      // envolver de forma natural en lugar de crear un área horizontal global.
+      let anchor = wordElements[0];
+      for (const candidate of wordElements) {
+        if (candidate.start <= placement.offset) anchor = candidate;
+        else break;
+      }
       const chord = document.createElement('span');
       chord.className = 'structured-chord';
       chord.textContent = placement.displaySymbol;
-      chord.style.left = placement.offset + 'ch';
+      const localOffset = Math.max(0, placement.offset - anchor.start);
+      chord.style.left = localOffset + 'ch';
       chord.dataset.chordId = placement.id || '';
       chord.setAttribute('aria-label', placement.displaySymbol);
-      lyricHost.appendChild(chord);
+      anchor.element.appendChild(chord);
+      const reserve = Math.max(0, localOffset + Array.from(placement.displaySymbol).length - (anchor.end - anchor.start));
+      if (reserve > 0) {
+        const current = parseFloat(anchor.element.dataset.chordReserve || '0');
+        anchor.element.dataset.chordReserve = String(Math.max(current, reserve));
+        anchor.element.style.paddingRight = anchor.element.dataset.chordReserve + 'ch';
+      }
     });
-    const visualTrackLength = Math.max(
-      layout.lyric.length,
-      ...layout.placements.map(item => item.offset + Array.from(item.displaySymbol).length + 2),
-      lyric ? 1 : 80
-    );
-    lyricHost.style.width = visualTrackLength + 'ch';
-    if (!lyric) lyricHost.style.minWidth = visualTrackLength + 'ch';
     pair.appendChild(lyricHost);
   }
 
