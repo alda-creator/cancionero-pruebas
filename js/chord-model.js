@@ -195,10 +195,10 @@
     const wordSegments = [];
     let cursor = 0;
     while (cursor < visualChars.length) {
-      while (cursor < visualChars.length && /\\s/u.test(visualChars[cursor])) cursor++;
+      while (cursor < visualChars.length && /\s/u.test(visualChars[cursor])) cursor++;
       if (cursor >= visualChars.length) break;
       const start = cursor;
-      while (cursor < visualChars.length && !/\\s/u.test(visualChars[cursor])) cursor++;
+      while (cursor < visualChars.length && !/\s/u.test(visualChars[cursor])) cursor++;
       wordSegments.push({ start, end: cursor });
     }
     return {
