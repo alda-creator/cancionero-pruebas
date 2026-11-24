@@ -466,8 +466,21 @@ test('distribuye acordes traducidos sin modificar offsets musicales', () => {
   assert.deepEqual(layout.placements.map(item => item.offset), [0, 20, 28, 35]);
   assert.ok(layout.lyric.length > lyric.length);
   assert.ok(layout.lyric.length >= layout.placements[3].offset + layout.placements[3].displaySymbol.length);
-  assert.equal(layout.sourceOffsetAtVisual(layout.lyric.length), lyric.length);
+  assert.equal(layout.sourceOffsetAtVisual(layout.lyric.length), layout.placements[3].sourceOffset + layout.placements[3].displaySymbol.length);
   assert.deepEqual(chords.map(chord => chord.position.offset), [0, 20, 28, 33]);
+});
+
+test('permite posiciones musicales después de la última palabra y del último acorde', () => {
+  const lyric = 'Al que es Digno';
+  const chords = [
+    { id: 'a', root: 'C', quality: '', position: { offset: 0, affinity: 'before' } },
+    { id: 'b', root: 'G', quality: '', position: { offset: 22, affinity: 'before' } }
+  ];
+  const layout = ChordModel.layoutChordRow(lyric, chords, chord => chord.root);
+  assert.equal(layout.placements[1].sourceOffset, 22);
+  assert.equal(layout.sourceOffsetAtVisual(layout.lyric.length), 23);
+  assert.equal(layout.sourceOffsetAtVisual(layout.lyric.length + 5), 28);
+  assert.deepEqual(chords.map(chord => chord.position.offset), [0, 22]);
 });
 
 test('distribuye grupos densos y acordes largos de forma acumulativa', () => {
