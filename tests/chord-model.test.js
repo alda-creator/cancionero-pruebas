@@ -474,7 +474,7 @@ test('permite posiciones musicales después de la última palabra y del último 
   const lyric = 'Al que es Digno';
   const chords = [
     { id: 'a', root: 'C', quality: '', position: { offset: 0, affinity: 'before' } },
-    { id: 'b', root: 'G', quality: '', position: { offset: 35, affinity: 'before' } }
+    { id: 'b', root: 'G', quality: '', position: { offset: 22, affinity: 'before' } }
   ];
   const layout = ChordModel.layoutChordRow(lyric, chords, chord => chord.root);
   assert.equal(layout.placements[1].sourceOffset, 22);
@@ -516,7 +516,7 @@ test('conserva afinidad after y reserva espacio cuando el acorde rebasa la letra
 test('expone anclas por palabra para envolver filas sin desbordar el viewport', () => {
   const chords = [
     { id: 'a', root: 'C', quality: '', position: { offset: 0, affinity: 'before' } },
-    { id: 'b', root: 'F', quality: 'm', position: { offset: 22, affinity: 'before' } }
+    { id: 'b', root: 'F', quality: 'm', position: { offset: 35, affinity: 'before' } }
   ];
   const layout = ChordModel.layoutChordRow('Una frase musical de prueba', chords,
     chord => chord.id === 'a' ? 'Do' : 'Fam');
