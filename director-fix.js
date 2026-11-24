@@ -93,10 +93,13 @@ window.changeLiveSpeed = function(delta) {
 };
 
 const originalGoToRemoteBlock = window.goToRemoteBlock;
-window.goToRemoteBlock = function(blockId) {
+window.goToRemoteBlock = function(blockId, instanceId = null) {
   remoteBlockNavigationTarget = blockId || null;
   if (typeof originalGoToRemoteBlock === 'function') {
-    originalGoToRemoteBlock(blockId);
+    // Conservar la identidad de la aparición del bloque. Si solo se pasa
+    // blockId, el renderizador puede elegir el primer CORO aunque se haya
+    // seleccionado una repetición posterior.
+    originalGoToRemoteBlock(blockId, instanceId);
   }
 };
 
@@ -189,4 +192,4 @@ window.handleDirectorCommand = function(data) {
   }
 };
 
-console.info('[Cancionero] Director Mode v1.1.14 activo: rAF + sincronización semántica + timestamps.');
+console.info('[Cancionero] Director Mode v1.1.15 activo: rAF + sincronización semántica + timestamps.');
