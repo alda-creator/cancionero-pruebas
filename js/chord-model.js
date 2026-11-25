@@ -657,6 +657,33 @@
     return { ok: true, structuredContent: nextContent, blockId, rowId, warnings: [] };
   }
 
+
+  // Reordena una sección por su ID y su índice final, conservando todo su contenido e identidad.
+  function moveBlock(existingContent, blockId, targetIndex) {
+    const validation = validateStructuredContent(existingContent);
+    if (!validation.valid) {
+      return { ok: false, structuredContent: null, warnings: validation.errors };
+    }
+    if (typeof blockId !== 'string' || !blockId) {
+      return { ok: false, structuredContent: null, warnings: ['Se requiere el ID de la sección que se desea mover.'] };
+    }
+    const currentIndex = existingContent.blocks.findIndex(block => block.id === blockId);
+    if (currentIndex < 0) {
+      return { ok: false, structuredContent: null, warnings: ['No se encontró la sección que se desea mover.'] };
+    }
+    if (!Number.isInteger(targetIndex) || targetIndex < 0 || targetIndex >= existingContent.blocks.length) {
+      return { ok: false, structuredContent: null, warnings: ['La posición de destino no es válida.'] };
+    }
+    const nextContent = JSON.parse(JSON.stringify(existingContent));
+    const [movingBlock] = nextContent.blocks.splice(currentIndex, 1);
+    nextContent.blocks.splice(targetIndex, 0, movingBlock);
+    const nextValidation = validateStructuredContent(nextContent);
+    if (!nextValidation.valid) {
+      return { ok: false, structuredContent: null, warnings: nextValidation.errors };
+    }
+    return { ok: true, structuredContent: nextContent, movedBlockId: blockId, fromIndex: currentIndex, toIndex: targetIndex, warnings: [] };
+  }
+
   // Elimina una sección por ID sin mutar el documento ni alterar los IDs restantes.
   // Se conserva al menos una sección para evitar dejar una canción sin punto de edición.
   function removeBlock(existingContent, blockId) {
@@ -694,6 +721,7 @@
     updateBlockLabel,
     addBlock,
     removeBlock,
+    moveBlock,
     serializeLegacy,
     isChordLine
   };
