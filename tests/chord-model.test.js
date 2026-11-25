@@ -138,6 +138,33 @@ test('no serializa una afinidad que el formato heredado no puede representar', (
   assert.equal(result.rawText, null);
 });
 
+test('renombra un bloque conservando IDs, filas, acordes y la estructura original', () => {
+  const original = ChordModel.convertLegacy('[CORO]\nC       G\nSublime gracia').structuredContent;
+  const block = original.blocks[0];
+  const before = JSON.stringify(original);
+  const renamed = ChordModel.updateBlockLabel(original, block.id, 'PRE-CORO');
+  assert.equal(renamed.ok, true);
+  assert.equal(renamed.structuredContent.blocks[0].id, block.id);
+  assert.equal(renamed.structuredContent.blocks[0].label, 'PRE-CORO');
+  assert.deepEqual(renamed.structuredContent.blocks[0].rows, block.rows);
+  assert.equal(JSON.stringify(original), before, 'no debe mutar la estructura original');
+  const serialized = ChordModel.serializeLegacy(renamed.structuredContent);
+  assert.equal(serialized.ok, true);
+  assert.ok(serialized.rawText.startsWith('[PRE-CORO]'));
+  assert.equal(ChordModel.validateStructuredContent(renamed.structuredContent).valid, true);
+});
+
+test('rechaza nombres de bloque vacíos, multilínea o con corchetes', () => {
+  const original = ChordModel.convertLegacy('[CORO]\nLetra').structuredContent;
+  const id = original.blocks[0].id;
+  for (const label of ['', '   ', 'DOS\nLINEAS', '[CORO]', 'x'.repeat(61)]) {
+    const result = ChordModel.updateBlockLabel(original, id, label);
+    assert.equal(result.ok, false, JSON.stringify(label));
+    assert.equal(result.structuredContent, null);
+  }
+  assert.equal(ChordModel.updateBlockLabel(original, 'no-existe', 'PUENTE').ok, false);
+});
+
 test('actualiza una línea de forma aislada y conserva offsets de acordes al final', () => {
   const original = ChordModel.convertLegacy('C        G\nHola mundo').structuredContent;
   const row = original.blocks[0].rows[0];

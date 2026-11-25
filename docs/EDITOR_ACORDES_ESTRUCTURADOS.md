@@ -189,3 +189,8 @@ La vista musical del editor permite arrastrar un acorde directamente sobre el re
 ## 12. Protección contra click residual después del arrastre
 
 En iOS y otros navegadores, al finalizar un gesto de puntero puede generarse un click sintético. Si el rechazo de un arrastre vuelve a dibujar el editor antes de ese click, el destino del click puede pasar del acorde original al renglón de letra. El contenedor estable del editor captura y descarta ese click residual cuando cae sobre la letra durante una ventana breve posterior al arrastre. La protección no modifica el contenido ni los offsets de la canción; un toque normal sobre la letra fuera de esa ventana conserva su función.
+
+
+## 13. Edición de nombres de sección — candidata v1.3.7
+
+El encabezado de cada bloque estructurado ofrece una acción contextual para renombrarlo. La edición se valida y aplica sobre una copia del documento; mantiene el ID del bloque y todas sus filas/acordes. Los nombres vacíos, multilínea, con corchetes o de más de 60 caracteres se rechazan. La serialización heredada se actualiza solo cuando puede representar la estructura sin pérdida. Esta iteración no agrega, elimina ni reordena bloques.
