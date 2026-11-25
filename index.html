@@ -1918,7 +1918,6 @@
           // sin depender de los controles de incremento/decremento.
           positionedChord.addEventListener('pointerdown', event => {
             if (event.pointerType === 'mouse' && event.button !== 0) return;
-            event.preventDefault();
             event.stopPropagation();
             selectedDraftRowId = row.id;
             selectedDraftChordId = chord.id;
