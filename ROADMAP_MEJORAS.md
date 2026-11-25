@@ -302,30 +302,17 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 **Estado:** completado y validado manualmente por el usuario en iPhone en v1.3.8 (PR #82).
 
 
-## 16. Mi Set — actualizar contenido de canciones sin perder personalización
+## 16. Mi Set — sincronización de contenido fuente y personalización
 
-**Estado:** resuelto y validado por el usuario en v1.3.9. Las pruebas confirmaron que los cambios de letra/acordes/bloques de la canción fuente llegan a Mi Set; se conserva la transposición individual y la secuencia personalizada. Los bloques eliminados dejan de aparecer; los nuevos quedan disponibles para incorporarlos manualmente a la secuencia. No se reconstruye ni se pierde la personalización. Detectada por el usuario al probar v1.3.8.
+**Estado:** resuelto y validado por el usuario en v1.3.9 (PR #84).
 
-**Comportamiento actual observado:** cuando se corrige y guarda una canción en la biblioteca, la copia que ya está agregada a Mi Set no refleja necesariamente esa corrección. Para verla, el usuario debe quitar y volver a agregar la canción. Esto puede dejar a un usuario leyendo una letra o acordes desactualizados.
+El usuario comprobó en iPhone que los cambios editoriales de la canción original se reflejan en Mi Set sin quitar y volver a agregar la canción:
+- Al corregir un acorde en la biblioteca, Mi Set recibe el acorde corregido y aplica la transposición individual que ya estaba configurada.
+- Al eliminar una sección de la canción fuente, desaparece la referencia correspondiente de Mi Set.
+- Al agregar una sección nueva, no se inserta automáticamente en la secuencia personalizada; queda disponible para que el usuario decida si la agrega y dónde la coloca.
+- Se conserva la personalización de tono y la secuencia de Mi Set.
 
-**Comportamiento deseado:**
-- Mi Set debe recibir las correcciones de contenido de la canción fuente (letra, acordes, bloques/etiquetas y demás datos editoriales) sin exigir quitar y volver a agregarla.
-- La actualización del contenido fuente no debe sobrescribir la personalización de Mi Set: tono/transposición individual, orden de canciones y secuencia personalizada de bloques.
-- La transposición debe aplicarse sobre los acordes ya corregidos de la fuente. Ejemplo: si un acorde fuente cambia de G a A y la canción está transportada dos semitonos arriba, Mi Set debe mostrar B; si está un tono abajo, debe mostrar G.
-- Si se modifica la estructura de bloques, conservar las referencias de secuencia que todavía correspondan; definir un comportamiento seguro y comprensible para bloques eliminados o sustituidos, sin saltos silenciosos ni pérdida de personalización.
-- La biblioteca original debe seguir siendo la fuente de verdad del contenido; Mi Set debe guardar solo la personalización y las referencias necesarias, o sincronizar una instantánea de forma controlada.
-
-**Auditoría previa obligatoria:**
-1. Revisar cómo Mi Set guarda actualmente canciones: copia completa, referencia por ID, instantánea local o combinación.
-2. Identificar cómo se calculan y persisten tono, orden y secuencia personalizada, y cómo se resuelven los IDs de bloques.
-3. Comprobar efectos en Director/Músico, modo offline, caché local y reconexión.
-4. Diseñar una estrategia de actualización/versionado que no sobrescriba cambios locales pendientes ni convierta una canción antigua de forma destructiva.
-5. Añadir pruebas de regresión para cambio de letra, cambio de acorde, transposición positiva/negativa, bloques renombrados/agregados/eliminados y persistencia offline.
-
-**Criterio de aceptación:** una corrección guardada en la canción fuente aparece en Mi Set al volver a abrir/actualizar la canción, mientras que el tono elegido, orden y secuencia personalizada permanecen intactos. La transposición se recalcula usando los acordes corregidos de la fuente.
-
-**Regla de seguridad:** no implementar una actualización que simplemente reemplace la canción completa dentro de Mi Set, porque podría borrar la transposición o la secuencia personalizada. Primero auditar y separar explícitamente contenido fuente de personalización del usuario.
-
+**Decisión de arquitectura validada:** la biblioteca es la fuente del contenido editorial; Mi Set conserva su organización y transposición personal. No reconstruir la secuencia personalizada a partir del orden de la canción fuente.
 
 ## 17. Edición de bloques — eliminar secciones (candidata v1.3.9)
 
