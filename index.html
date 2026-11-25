@@ -469,7 +469,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.3.10 · Reordenar secciones en el editor · (PRUEBAS)</div>
+        <div class="app-version">v1.3.11 · Arrastre libre entre secciones · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -1955,26 +1955,31 @@
           if (!moved) return;
           moveEvent.preventDefault();
           const siblings = Array.from(rowsHost.querySelectorAll('.structured-editor-block-card')).filter(item => item !== blockCard);
-          targetIndex = siblings.findIndex(item => moveEvent.clientY < item.getBoundingClientRect().top + item.getBoundingClientRect().height / 2);
-          if (targetIndex < 0) targetIndex = siblings.length;
+          const rects = siblings.map(item => {
+            const rect = item.getBoundingClientRect();
+            return { top: rect.top, height: rect.height };
+          });
+          targetIndex = window.ChordModel.blockInsertionIndex(rects, moveEvent.clientY);
+          if (targetIndex < 0) targetIndex = blockIndex;
           if (dropTarget) dropTarget.classList.remove('drop-target');
           dropTarget = siblings[Math.min(targetIndex, Math.max(0, siblings.length - 1))] || blockCard;
           if (dropTarget) dropTarget.classList.add('drop-target');
         };
         const finish = (finishEvent, cancelled) => {
           if (finishEvent.pointerId !== pointerId) return;
-          dragHandle.removeEventListener('pointermove', onMove);
-          dragHandle.removeEventListener('pointerup', onUp);
-          dragHandle.removeEventListener('pointercancel', onCancel);
+          window.removeEventListener('pointermove', onMove);
+          window.removeEventListener('pointerup', onUp);
+          window.removeEventListener('pointercancel', onCancel);
           try { if (dragHandle.hasPointerCapture(pointerId)) dragHandle.releasePointerCapture(pointerId); } catch (_) {}
           if (dropTarget) dropTarget.classList.remove('drop-target');
           if (moved && !cancelled) reorderStructuredDraftBlock(block.id, targetIndex);
         };
         const onUp = finishEvent => finish(finishEvent, false);
         const onCancel = finishEvent => finish(finishEvent, true);
-        dragHandle.addEventListener('pointermove', onMove);
-        dragHandle.addEventListener('pointerup', onUp);
-        dragHandle.addEventListener('pointercancel', onCancel);
+        try { dragHandle.setPointerCapture(pointerId); } catch (_) {}
+        window.addEventListener('pointermove', onMove, { passive: false });
+        window.addEventListener('pointerup', onUp);
+        window.addEventListener('pointercancel', onCancel);
       });
       blockHeading.appendChild(dragHandle);
 
