@@ -194,3 +194,8 @@ En iOS y otros navegadores, al finalizar un gesto de puntero puede generarse un 
 ## 13. Edición de nombres de sección — candidata v1.3.7
 
 El encabezado de cada bloque estructurado ofrece una acción contextual para renombrarlo. La edición se valida y aplica sobre una copia del documento; mantiene el ID del bloque y todas sus filas/acordes. Los nombres vacíos, multilínea, con corchetes o de más de 60 caracteres se rechazan. La serialización heredada se actualiza solo cuando puede representar la estructura sin pérdida. Mi Set obtiene las etiquetas e IDs desde el documento normalizado para que los cambios de nombre no rompan las secuencias guardadas. Esta iteración no agrega, elimina ni reordena bloques.
+
+
+## 14. Agregar una sección desde el editor — candidata v1.3.8
+
+El botón «＋ Sección» agrega al final del documento un bloque llamado inicialmente «NUEVA SECCIÓN» con una fila instrumental vacía. El nombre queda abierto para edición inmediata. Después puede agregarse letra desde «+ Agregar letra» o acordes tocando la fila instrumental. La operación clona y valida el documento, genera IDs únicos y conserva íntegros los bloques existentes. No elimina ni reordena secciones. La eliminación se implementará en una etapa independiente.

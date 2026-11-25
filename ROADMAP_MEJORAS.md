@@ -266,7 +266,9 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 - **Validado por el usuario en iPhone:** al arrastrar un acorde a una posición ocupada, el movimiento se rechaza y la última letra de la línea permanece intacta; el arrastre a una posición libre funciona; el toque normal sobre la letra sigue permitiendo insertar acordes. El desplazamiento horizontal de la fila también funciona sin iniciar sobre un acorde.
 
 
-## 14. Edición de bloques — renombrar secciones (candidata v1.3.7)
+## 14. Edición de bloques — renombrar secciones (v1.3.7)
+
+**Estado:** completado y validado por el usuario en iPhone, incluyendo Mi Set y Director/Músico.
 
 **Alcance de esta iteración:** permitir cambiar el nombre de una sección desde su encabezado en el editor estructurado.
 
@@ -278,5 +280,21 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 - Mi Set consume los IDs del documento normalizado para que renombrar una etiqueta no invalide las secuencias guardadas.
 - No altera la composición de las secuencias personalizadas de Mi Set ni la navegación Director/Músico.
 - Pruebas de modelo: renombrado, no mutación del original, preservación de IDs/contenido, serialización y validación de entradas inválidas.
+
+**Estado:** implementación en rama de laboratorio; pendiente revisión, CI, despliegue y prueba manual en iPhone.
+
+
+## 15. Edición de bloques — agregar secciones (candidata v1.3.8)
+
+**Alcance de esta iteración:** agregar una sección nueva desde el editor unificado, sin recurrir al editor de texto heredado.
+
+- Acción contextual «＋ Sección» en el encabezado del editor.
+- Crea al final un bloque con nombre inicial «NUEVA SECCIÓN» y una fila instrumental vacía para que el usuario pueda renombrarlo y agregar letra/acordes. También permite iniciar el documento estructurado cuando se crea una canción completamente nueva y aún no tiene texto.
+- El nuevo bloque y su fila reciben IDs únicos; los bloques y filas existentes conservan sus IDs y contenido.
+- La operación valida el documento, trabaja sobre una copia y no modifica el original si falla.
+- El texto heredado se actualiza únicamente si la estructura puede serializarse; la estructura validada permanece como fuente principal.
+- No elimina ni reordena bloques. La eliminación queda para una etapa separada con confirmación.
+- No altera la lógica de Mi Set ni Director/Músico; los nuevos IDs se integran al mismo documento estructurado.
+- Pruebas cubren orden al final, fila vacía inicial, IDs únicos, no mutación y rechazo de etiquetas inválidas.
 
 **Estado:** implementación en rama de laboratorio; pendiente revisión, CI, despliegue y prueba manual en iPhone.
