@@ -614,6 +614,49 @@
     return { ok: true, structuredContent: nextContent, warnings: [] };
   }
 
+  // Agrega una sección al final sin mutar el documento original.
+  // La fila inicial vacía permite comenzar escribiendo letra o acordes.
+  function addBlock(existingContent, nextLabel) {
+    const validation = validateStructuredContent(existingContent);
+    if (!validation.valid) {
+      return { ok: false, structuredContent: null, warnings: validation.errors };
+    }
+    if (typeof nextLabel !== 'string') {
+      return { ok: false, structuredContent: null, warnings: ['El nombre de la sección debe ser texto.'] };
+    }
+    const label = nextLabel.trim();
+    if (!label || label.length > 60 || label.includes('[') || label.includes(']') || /[\r\n]/.test(label)) {
+      return { ok: false, structuredContent: null, warnings: ['Usa un nombre de 1 a 60 caracteres, sin corchetes ni saltos de línea.'] };
+    }
+    const nextContent = JSON.parse(JSON.stringify(existingContent));
+    const usedIds = new Set();
+    nextContent.blocks.forEach(block => {
+      usedIds.add(block.id);
+      block.rows.forEach(row => {
+        usedIds.add(row.id);
+        row.chords.forEach(chord => usedIds.add(chord.id));
+      });
+    });
+    let sequence = 1;
+    let blockId;
+    let rowId;
+    do {
+      blockId = 'block-added-' + sequence;
+      rowId = 'row-added-' + sequence + '-1';
+      sequence++;
+    } while (usedIds.has(blockId) || usedIds.has(rowId));
+    nextContent.blocks.push({
+      id: blockId,
+      label,
+      rows: [{ id: rowId, lyric: '', chords: [] }]
+    });
+    const nextValidation = validateStructuredContent(nextContent);
+    if (!nextValidation.valid) {
+      return { ok: false, structuredContent: null, warnings: nextValidation.errors };
+    }
+    return { ok: true, structuredContent: nextContent, blockId, rowId, warnings: [] };
+  }
+
   return {
     version: 2,
     parseChordSymbol,
@@ -624,6 +667,7 @@
     reconcileLyrics,
     updateRowLyric,
     updateBlockLabel,
+    addBlock,
     serializeLegacy,
     isChordLine
   };
