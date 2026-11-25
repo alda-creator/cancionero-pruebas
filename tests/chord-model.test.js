@@ -748,7 +748,7 @@ test('reordena secciones por ID y conserva intactos contenido e identificadores'
 });
 
 test('reordena al inicio y al final, y rechaza IDs o destinos inválidos', () => {
-  const original = ChordModel.convertLegacy('[ESTROFA 1]\\nUno\\n[CORO]\\nDos\\n[PUENTE]\\nTres').structuredContent;
+  const original = ChordModel.convertLegacy('[ESTROFA 1]\nUno\n[CORO]\nDos\n[PUENTE]\nTres').structuredContent;
   const first = ChordModel.moveBlock(original, original.blocks[2].id, 0);
   assert.equal(first.ok, true);
   assert.deepEqual(first.structuredContent.blocks.map(block => block.label), ['PUENTE', 'ESTROFA 1', 'CORO']);
