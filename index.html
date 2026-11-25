@@ -469,7 +469,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.3.12 · Recuperación del arrastre táctil · (PRUEBAS)</div>
+        <div class="app-version">v1.3.13 · Auto-desplazamiento al reordenar · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -1948,27 +1948,57 @@
         let moved = false;
         let targetIndex = blockIndex;
         let dropTarget = null;
-        const onMove = moveEvent => {
-          if (moveEvent.pointerId !== pointerId) return;
-          if (Math.abs(moveEvent.clientY - startY) >= 5) moved = true;
-          if (!moved) return;
-          moveEvent.preventDefault();
+        let lastClientY = startY;
+        let autoScrollFrame = 0;
+        const updateDropTarget = clientY => {
           const siblings = Array.from(rowsHost.querySelectorAll('.structured-editor-block-card')).filter(item => item !== blockCard);
           const rects = siblings.map(item => {
             const rect = item.getBoundingClientRect();
             return { top: rect.top, height: rect.height };
           });
-          targetIndex = window.ChordModel.blockInsertionIndex(rects, moveEvent.clientY);
+          targetIndex = window.ChordModel.blockInsertionIndex(rects, clientY);
           if (targetIndex < 0) targetIndex = blockIndex;
           if (dropTarget) dropTarget.classList.remove('drop-target');
           dropTarget = siblings[Math.min(targetIndex, Math.max(0, siblings.length - 1))] || blockCard;
           if (dropTarget) dropTarget.classList.add('drop-target');
+        };
+        const autoScrollTick = () => {
+          autoScrollFrame = 0;
+          if (!moved) return;
+          const delta = window.ChordModel.blockDragAutoScrollDelta(lastClientY, window.innerHeight);
+          if (!delta) return;
+          const scrollingElement = document.scrollingElement || document.documentElement;
+          const maxScroll = Math.max(0, scrollingElement.scrollHeight - window.innerHeight);
+          const canScroll = delta < 0 ? window.scrollY > 0 : window.scrollY < maxScroll - 1;
+          if (!canScroll) return;
+          window.scrollBy(0, delta);
+          updateDropTarget(lastClientY);
+          autoScrollFrame = requestAnimationFrame(autoScrollTick);
+        };
+        const syncAutoScroll = () => {
+          const delta = window.ChordModel.blockDragAutoScrollDelta(lastClientY, window.innerHeight);
+          if (delta && !autoScrollFrame) autoScrollFrame = requestAnimationFrame(autoScrollTick);
+          else if (!delta && autoScrollFrame) {
+            cancelAnimationFrame(autoScrollFrame);
+            autoScrollFrame = 0;
+          }
+        };
+        const onMove = moveEvent => {
+          if (moveEvent.pointerId !== pointerId) return;
+          lastClientY = moveEvent.clientY;
+          if (Math.abs(moveEvent.clientY - startY) >= 5) moved = true;
+          if (!moved) return;
+          moveEvent.preventDefault();
+          updateDropTarget(lastClientY);
+          syncAutoScroll();
         };
         const finish = (finishEvent, cancelled) => {
           if (finishEvent.pointerId !== pointerId) return;
           document.removeEventListener('pointermove', onMove, true);
           document.removeEventListener('pointerup', onUp, true);
           document.removeEventListener('pointercancel', onCancel, true);
+          if (autoScrollFrame) cancelAnimationFrame(autoScrollFrame);
+          autoScrollFrame = 0;
           try { if (dragHandle.hasPointerCapture(pointerId)) dragHandle.releasePointerCapture(pointerId); } catch (_) {}
           if (dropTarget) dropTarget.classList.remove('drop-target');
           if (moved && !cancelled) reorderStructuredDraftBlock(block.id, targetIndex);
