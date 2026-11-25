@@ -801,7 +801,8 @@
   let structuredDraftSyncError = null;
   let selectedDraftRowId = null;
   let selectedDraftChordId = null;
-  let editingDraftRowId = null;  
+  let editingDraftRowId = null;
+  let editingDraftBlockId = null;
   let currentTransposeSteps = 0;
   const SET_TONE_STORAGE_KEY = 'church_song_set_transpose_v1';
   const SET_SEQUENCE_STORAGE_KEY = 'church_song_set_sequences_v1';
@@ -1728,6 +1729,7 @@
     structuredDraftDirty = false;
     selectedDraftRowId = null;
     selectedDraftChordId = null;
+    editingDraftBlockId = null;
   
     stopAutoScroll();  
     editingSongId = null;  
@@ -2347,6 +2349,7 @@
     selectedDraftRowId = null;
     selectedDraftChordId = null;
     editingDraftRowId = null;
+    editingDraftBlockId = null;
     renderStructuredEditor();
   }
 
