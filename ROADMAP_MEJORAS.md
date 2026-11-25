@@ -6,7 +6,7 @@
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Versión de laboratorio validada por el usuario:** v1.3.12 (PR #87); v1.3.13 candidata con auto-desplazamiento durante arrastre
+**Versión de laboratorio validada por el usuario:** v1.3.13 (PR #89), incluido auto-desplazamiento durante arrastre
 
 ## 1. Reglas permanentes de trabajo
 
@@ -212,7 +212,7 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 - **v1.3.0 (PR #67):** ajuste natural por palabras, eliminación del desbordamiento horizontal global/espacio lateral y corrección de presentación en modo Director.
 - **v1.3.1 (PR #69):** preservación de `instanceId` en GO_TO_BLOCK para navegar a la instancia correcta de bloques repetidos; validada manualmente por el usuario.
 - **v1.3.2 (PR #71):** reinicio de `#live-screen` al cambiar canciones y al abrir En Vivo; pruebas automatizadas aprobadas y validación manual satisfactoria del usuario en iPhone.
-- **v1.3.13 (candidata):** auto-desplazamiento vertical progresivo durante el arrastre de secciones; pendiente de CI y validación manual en iPhone.
+- **v1.3.13 (PR #89):** auto-desplazamiento vertical progresivo durante el arrastre de secciones; CI, GitHub Pages y validación manual en iPhone exitosos. Reordenamiento de secciones cerrado.
 - **24-nov-2026:** usuario confirmó Director + Mi Set: el músico recibe tono, orden y secuencia personalizados, y mantiene su propia notación. Se detectó la incidencia GO_TO_BLOCK con segundo bloque repetido.
 - **24-nov-2026:** decisión de mantener v1.3.0 como referencia estable y aplazar la separación visual adicional para acordes latinos largos.
 - **24-nov-2026:** GO_TO_BLOCK con bloques repetidos validado por el usuario; incidencia cerrada.
@@ -346,7 +346,7 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 **Estado:** completado y validado por el usuario en iPhone en v1.3.10. El usuario confirmó que el arrastre y el orden resultante funcionan correctamente. Producción y Firebase de producción permanecen intactas.
 
 
-## 19. Arrastre libre de secciones (v1.3.11)
+## 19. Arrastre libre y auto-desplazamiento de secciones (v1.3.11–v1.3.13)
 
 **Observación validada por el usuario en v1.3.10:** el arrastre funciona, pero se percibe como movimiento de una posición por gesto.
 
@@ -358,4 +358,6 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 - Conservar el movimiento por ID estable y todo el contenido interno del bloque.
 - Pruebas del cálculo de inserción en el inicio, posiciones intermedias y final.
 
-**Estado:** v1.3.12 validada por el usuario en iPhone. En la candidata v1.3.13 se incorpora auto-desplazamiento vertical progresivo al mantener el dedo cerca de los bordes de la ventana; el destino se recalcula durante el desplazamiento y el ciclo se detiene al salir del borde, soltar o cancelar. Las flechas mantienen el movimiento de una posición por pulsación y el arrastre conserva el destino libre. **Pendiente de despliegue en Pages y validación manual del usuario en iPhone.**
+**Estado:** completado y validado por el usuario en iPhone en v1.3.13 (PR #89). El usuario confirmó que el auto-desplazamiento funciona con fluidez en ambas direcciones, incluso al pasar secciones largas. Las flechas conservan el movimiento de una posición por pulsación; el arrastre libre permite saltar varias posiciones y el auto-scroll facilita continuar el gesto sin soltar. CI y GitHub Pages exitosos. Producción y Firebase de producción permanecen intactas.
+
+- **25-nov-2026:** el usuario validó v1.3.13 en iPhone y confirmó que el auto-desplazamiento durante el arrastre es fluido; se cierra la etapa de reordenamiento de secciones. Siguiente fase acordada: auditoría y unificación de etiquetas heredadas en el editor, preservando la compatibilidad con texto pegado desde Internet.
