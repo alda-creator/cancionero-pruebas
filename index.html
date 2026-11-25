@@ -411,6 +411,27 @@
     .highlight-chord { color: var(--chord); font-weight: bold; }
     .highlight-tag { color: var(--accent); font-weight: bold; background: rgba(59, 130, 246, 0.2); border-radius: 4px; padding: 0 4px; }
 
+    .legacy-editor-panel {
+      margin: 12px 0;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      background: var(--card);
+      overflow: hidden;
+    }
+    .legacy-editor-panel > summary {
+      padding: 11px 12px;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+    }
+    .legacy-editor-panel[open] > summary {
+      border-bottom: 1px solid var(--card-border);
+      color: var(--text);
+    }
+    .legacy-editor-panel .legacy-editor-content { padding: 10px; }
+
     .quick-tags {
       display: flex;
       gap: 6px;
@@ -469,7 +490,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.3.14 · Etiquetas heredadas unificadas · (PRUEBAS)</div>
+        <div class="app-version">v1.3.15 · Editor unificado prioritario · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -620,14 +641,6 @@
       <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="field-buttons"></div>
     </div>
 
-    <div class="quick-tags">
-      <span style="font-size:12px; color:var(--text-muted); align-self:center;">Insertar Bloque:</span>
-      <button class="tag-btn" onclick="insertTag('[ESTROFA 1]')">+ Estrofa 1</button>
-      <button class="tag-btn" onclick="insertTag('[ESTROFA 2]')">+ Estrofa 2</button>
-      <button class="tag-btn" onclick="insertTag('[CORO]')">+ Coro</button>
-      <button class="tag-btn" onclick="insertTag('[PUENTE]')">+ Puente</button>
-    </div>
-
     <section id="structured-editor-panel" class="structured-editor-panel" aria-label="Editor visual de acordes">
       <div class="structured-editor-heading">
         <strong>Editor unificado</strong>
@@ -648,10 +661,22 @@
       <p class="structured-editor-help">Toca la letra para colocar un acorde; toca un acorde para editarlo.</p>
     </section>
 
-    <div class="editor-container">  
-      <div id="edit-preview" class="editor-layer"></div>
-      <textarea id="edit-raw" class="editor-layer" placeholder="Ingresa los acordes y la letra..." oninput="handleEditorInput()"></textarea>  
-    </div>  
+    <details id="legacy-editor-panel" class="legacy-editor-panel" open>
+      <summary>Editor de texto original (alternativo)</summary>
+      <div class="legacy-editor-content">
+        <div class="quick-tags">
+          <span style="font-size:12px; color:var(--text-muted); align-self:center;">Insertar Bloque:</span>
+          <button class="tag-btn" onclick="insertTag('[ESTROFA 1]')">+ Estrofa 1</button>
+          <button class="tag-btn" onclick="insertTag('[ESTROFA 2]')">+ Estrofa 2</button>
+          <button class="tag-btn" onclick="insertTag('[CORO]')">+ Coro</button>
+          <button class="tag-btn" onclick="insertTag('[PUENTE]')">+ Puente</button>
+        </div>
+        <div class="editor-container">  
+          <div id="edit-preview" class="editor-layer"></div>
+          <textarea id="edit-raw" class="editor-layer" placeholder="Ingresa los acordes y la letra..." oninput="handleEditorInput()"></textarea>  
+        </div>
+      </div>
+    </details>
 
     <button class="btn-action primary" style="width: 100%; padding: 14px;" onclick="saveSong()">Guardar Canción</button>  
   </div>  
@@ -1762,6 +1787,8 @@
     document.getElementById('edit-raw').value = '';  
     document.getElementById('edit-original-key').value = 'C';
     handleEditorInput();
+    const legacyPanel = document.getElementById('legacy-editor-panel');
+    if (legacyPanel) legacyPanel.open = false;
   }  
 
   function editCurrentSong() {
@@ -1830,6 +1857,11 @@
       selectedDraftChordId = null;
       renderStructuredEditor();
     }
+    // Si la estructura es válida, el editor unificado es la superficie principal.
+    // El editor heredado sigue disponible como alternativa y se abre automáticamente
+    // cuando la conversión no es segura.
+    const legacyPanel = document.getElementById('legacy-editor-panel');
+    if (legacyPanel) legacyPanel.open = !structuredDraft;
   }
 
   function insertTag(tag) {
