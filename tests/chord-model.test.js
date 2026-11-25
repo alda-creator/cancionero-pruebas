@@ -821,7 +821,7 @@ test('conserva etiquetas personalizadas entre corchetes y bloques repetidos', ()
 });
 
 test('no convierte etiquetas entre corchetes dentro de una línea de letra', () => {
-  const raw = '[CORO]\nAlabemos [con gozo] al Señor\n[ESTROFA 2]';
+  const raw = '[CORO]\nAlabemos [con gozo] al Señor\n[ESTROFA 2]\nSegunda estrofa';
   const converted = ChordModel.convertLegacy(raw);
   assert.equal(converted.ok, true, JSON.stringify(converted.warnings));
   assert.deepEqual(converted.structuredContent.blocks.map(block => block.label), ['CORO', 'ESTROFA 2']);
