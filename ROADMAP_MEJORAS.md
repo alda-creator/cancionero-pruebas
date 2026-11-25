@@ -342,7 +342,7 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 - Mi Set recibe el nuevo orden de la canción fuente, pero conserva su propia secuencia personalizada y transposición.
 - Pruebas de modelo para movimientos al inicio, al final y posiciones intermedias, IDs inexistentes, índices inválidos, no mutación y preservación de contenido.
 
-**Estado:** en desarrollo en rama `feature/editor-reordenar-secciones`. Producción y Firebase de producción no se modifican.
+**Estado:** completado y validado por el usuario en iPhone en v1.3.10. El usuario confirmó que el arrastre y el orden resultante funcionan correctamente. Producción y Firebase de producción permanecen intactas.
 
 
 ## 19. Arrastre libre de secciones (candidata v1.3.11)
