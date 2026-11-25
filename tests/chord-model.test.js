@@ -186,6 +186,17 @@ test('agrega una sección al final con fila vacía e IDs únicos sin mutar el or
   assert.equal(ChordModel.validateStructuredContent(added.structuredContent).valid, true);
 });
 
+test('permite iniciar un documento vacío con la primera sección', () => {
+  const added = ChordModel.addBlock({ version: 2, blocks: [] }, 'INTRO');
+  assert.equal(added.ok, true);
+  assert.equal(added.structuredContent.blocks.length, 1);
+  assert.equal(added.structuredContent.blocks[0].label, 'INTRO');
+  assert.equal(ChordModel.validateStructuredContent(added.structuredContent).valid, true);
+  const serialized = ChordModel.serializeLegacy(added.structuredContent);
+  assert.equal(serialized.ok, true);
+  assert.ok(serialized.rawText.startsWith('[INTRO]'));
+});
+
 test('genera IDs nuevos al agregar varias secciones y rechaza etiquetas inválidas', () => {
   const original = ChordModel.convertLegacy('[CORO]\nLetra').structuredContent;
   const first = ChordModel.addBlock(original, 'PUENTE');
