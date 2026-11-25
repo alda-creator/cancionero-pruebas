@@ -217,3 +217,8 @@ La operación de reordenamiento identifica la sección mediante su ID estable y 
 ## Arrastre libre entre posiciones
 
 El asa de arrastre calcula el índice final de inserción comparando la coordenada vertical del puntero con los puntos medios de todas las secciones restantes. Así puede saltar varias posiciones en un solo gesto. Las flechas de subir y bajar siguen moviendo una sola posición por pulsación. El seguimiento se registra en la fase de captura de `document` para mayor compatibilidad con Safari en iOS; una cancelación no modifica el documento.
+
+
+### Estado de arrastre y mejora futura
+
+En v1.3.12 se validó en iPhone el reordenamiento libre de secciones: el asa permite saltar varias posiciones y las flechas suben o bajan una posición por pulsación. Queda registrada como mejora de experiencia la auto-desplazamiento vertical del contenedor durante el arrastre: cuando una sección vecina es muy alta, el usuario actualmente debe soltar y continuar el gesto para avanzar más allá de ella. Esta limitación no impide reordenar y no invalida la funcionalidad actual.
