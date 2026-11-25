@@ -150,7 +150,7 @@ test('renombra un bloque conservando IDs, filas, acordes y la estructura origina
   assert.equal(JSON.stringify(original), before, 'no debe mutar la estructura original');
   const serialized = ChordModel.serializeLegacy(renamed.structuredContent);
   assert.equal(serialized.ok, true);
-  assert.match(serialized.rawText, /^\\[PRE-CORO\\]/);
+  assert.ok(serialized.rawText.startsWith('[PRE-CORO]'));
   assert.equal(ChordModel.validateStructuredContent(renamed.structuredContent).valid, true);
 });
 
