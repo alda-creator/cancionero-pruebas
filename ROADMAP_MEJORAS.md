@@ -345,7 +345,7 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 **Estado:** completado y validado por el usuario en iPhone en v1.3.10. El usuario confirmó que el arrastre y el orden resultante funcionan correctamente. Producción y Firebase de producción permanecen intactas.
 
 
-## 19. Arrastre libre de secciones (candidata v1.3.11)
+## 19. Arrastre libre de secciones (v1.3.11)
 
 **Observación validada por el usuario en v1.3.10:** el arrastre funciona, pero se percibe como movimiento de una posición por gesto.
 
@@ -357,4 +357,4 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 - Conservar el movimiento por ID estable y todo el contenido interno del bloque.
 - Pruebas del cálculo de inserción en el inicio, posiciones intermedias y final.
 
-**Estado:** implementado en rama `fix/editor-arrastre-multiples-posiciones`; pendiente CI, revisión, despliegue y prueba manual.
+**Estado:** v1.3.11 validada parcialmente por el usuario en iPhone: las flechas funcionan, pero el arrastre táctil dejó de responder. Se detectó que el seguimiento estaba escuchando en `window` en fase de burbujeo; se corrige en v1.3.12 registrando `pointermove`, `pointerup` y `pointercancel` en `document` durante la fase de captura, manteniendo la captura del puntero y el cálculo de posición libre. Pendiente CI, despliegue y prueba manual.
