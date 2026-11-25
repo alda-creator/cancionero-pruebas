@@ -6,7 +6,7 @@
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Versión de laboratorio validada por el usuario:** v1.3.8 (PR #82); v1.3.9 pendiente de validación
+**Versión de laboratorio validada por el usuario:** v1.3.9 (PR #84); v1.3.10 en desarrollo
 
 ## 1. Reglas permanentes de trabajo
 
@@ -304,7 +304,7 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 
 ## 16. Mi Set — actualizar contenido de canciones sin perder personalización
 
-**Estado:** mejora registrada; pendiente de auditoría técnica y diseño antes de implementar. Detectada por el usuario al probar v1.3.8.
+**Estado:** resuelto y validado por el usuario en v1.3.9. Las pruebas confirmaron que los cambios de letra/acordes/bloques de la canción fuente llegan a Mi Set; se conserva la transposición individual y la secuencia personalizada. Los bloques eliminados dejan de aparecer; los nuevos quedan disponibles para incorporarlos manualmente a la secuencia. No se reconstruye ni se pierde la personalización. Detectada por el usuario al probar v1.3.8.
 
 **Comportamiento actual observado:** cuando se corrige y guarda una canción en la biblioteca, la copia que ya está agregada a Mi Set no refleja necesariamente esa corrección. Para verla, el usuario debe quitar y volver a agregar la canción. Esto puede dejar a un usuario leyendo una letra o acordes desactualizados.
 
@@ -340,4 +340,19 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 - La operación trabaja sobre una copia validada y no muta el documento original si falla.
 - La serialización heredada se actualiza solo si no pierde información; de lo contrario se conserva el respaldo y la estructura validada sigue siendo la fuente principal.
 
-**Estado:** implementado en laboratorio; pendiente CI, despliegue y prueba manual en iPhone. No modifica producción ni Firebase de producción.
+**Estado:** completado y validado por el usuario en iPhone en v1.3.9 (PR #84). El usuario confirmó eliminación, persistencia y comportamiento esperado en Mi Set. Producción y Firebase de producción permanecen intactas.
+
+
+## 18. Edición de bloques — reordenar secciones en la canción original (candidata v1.3.10)
+
+**Objetivo:** permitir que el usuario cambie el orden de las secciones de la canción fuente desde el editor unificado, sin confundirlo con la secuencia personalizada de Mi Set.
+
+- Arrastrar una sección desde un asa visible en su encabezado para colocarla antes o después de las demás.
+- Ofrecer controles de subir/bajar como alternativa precisa y accesible al gesto táctil.
+- Reordenar por ID estable y posición final; no reconstruir los bloques a partir de sus etiquetas ni índices.
+- Conservar íntegros los IDs, etiquetas, filas, letras, acordes, offsets y contenido de cada sección; solo cambia el arreglo de bloques.
+- Serializar el nuevo orden al texto heredado cuando sea posible y mantener la estructura validada como fuente principal si no lo es.
+- Mi Set recibe el nuevo orden de la canción fuente, pero conserva su propia secuencia personalizada y transposición.
+- Pruebas de modelo para movimientos al inicio, al final y posiciones intermedias, IDs inexistentes, índices inválidos, no mutación y preservación de contenido.
+
+**Estado:** en desarrollo en rama `feature/editor-reordenar-secciones`. Producción y Firebase de producción no se modifican.
