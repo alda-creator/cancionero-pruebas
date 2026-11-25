@@ -759,3 +759,18 @@ test('reordena al inicio y al final, y rechaza IDs o destinos inválidos', () =>
   assert.equal(ChordModel.moveBlock(original, original.blocks[0].id, 9).ok, false);
   assert.equal(ChordModel.moveBlock(original, original.blocks[0].id, 1.5).ok, false);
 });
+
+
+test('calcula posiciones de inserción para arrastrar una sección a cualquier lugar', () => {
+  const cards = [
+    { top: 100, height: 80 },
+    { top: 190, height: 120 },
+    { top: 320, height: 60 }
+  ];
+  assert.equal(ChordModel.blockInsertionIndex(cards, 90), 0);
+  assert.equal(ChordModel.blockInsertionIndex(cards, 150), 1);
+  assert.equal(ChordModel.blockInsertionIndex(cards, 260), 2);
+  assert.equal(ChordModel.blockInsertionIndex(cards, 370), 3);
+  assert.equal(ChordModel.blockInsertionIndex([], 200), 0);
+  assert.equal(ChordModel.blockInsertionIndex(cards, NaN), -1);
+});
