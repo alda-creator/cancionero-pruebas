@@ -184,3 +184,8 @@ La vista musical del editor permite arrastrar un acorde directamente sobre el re
 - Los controles existentes de desplazamiento fino siguen disponibles como alternativa accesible y precisa.
 - El arrastre captura el gesto únicamente al comenzar sobre un símbolo; tocar o desplazar el resto de la superficie conserva el desplazamiento horizontal normal.
 - Se agregó una prueba del mapeo entre posición visual y offset musical original. La interacción táctil requiere validación manual en iPhone antes de considerarse terminada.
+
+
+## 12. Protección contra click residual después del arrastre
+
+En iOS y otros navegadores, al finalizar un gesto de puntero puede generarse un click sintético. Si el rechazo de un arrastre vuelve a dibujar el editor antes de ese click, el destino del click puede pasar del acorde original al renglón de letra. El contenedor estable del editor captura y descarta ese click residual cuando cae sobre la letra durante una ventana breve posterior al arrastre. La protección no modifica el contenido ni los offsets de la canción; un toque normal sobre la letra fuera de esa ventana conserva su función.
