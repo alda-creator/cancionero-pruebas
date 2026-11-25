@@ -598,7 +598,7 @@
       return { ok: false, structuredContent: null, warnings: ['El nombre de la sección debe ser texto.'] };
     }
     const label = nextLabel.trim();
-    if (!label || label.length > 60 || /[\\[\\]\\r\\n]/.test(label)) {
+    if (!label || label.length > 60 || label.includes('[') || label.includes(']') || /[\r\n]/.test(label)) {
       return { ok: false, structuredContent: null, warnings: ['Usa un nombre de 1 a 60 caracteres, sin corchetes ni saltos de línea.'] };
     }
     const nextContent = JSON.parse(JSON.stringify(existingContent));
