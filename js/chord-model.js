@@ -110,6 +110,17 @@
     return patterns.some(pattern => pattern.test(value)) ? value : null;
   }
 
+  // Interpreta una línea completa como etiqueta heredada usando una sola regla.
+  // Por compatibilidad, cualquier etiqueta aislada entre corchetes (incluidas
+  // las personalizadas) es estructural; las etiquetas sin corchetes se limitan
+  // al vocabulario reconocido por detectSectionHeader.
+  function parseSectionHeaderLine(line) {
+    const value = String(line || '').trim();
+    const bracketed = value.match(/^\[([^\r\n]*)\]$/);
+    if (bracketed) return bracketed[1].trim();
+    return detectSectionHeader(value);
+  }
+
   function normalizeIdPart(value) {
     return String(value || 'bloque').normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '').toLowerCase()
@@ -319,13 +330,8 @@
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      if (/^\s*\[.*\]\s*$/.test(line)) {
-        pushBlock();
-        current = { label: line.trim().slice(1, -1), rows: [] };
-        continue;
-      }
-      const detectedHeader = detectSectionHeader(line);
-      if (detectedHeader) {
+      const detectedHeader = parseSectionHeaderLine(line);
+      if (detectedHeader !== null) {
         pushBlock();
         current = { label: detectedHeader, rows: [] };
         continue;
@@ -335,7 +341,7 @@
       if (isChordLine(line)) {
         const next = lines[i + 1];
         const hasLyric = typeof next === 'string' && next.trim() !== '' &&
-          !isChordLine(next) && !/^\s*\[.*\]\s*$/.test(next);
+          !isChordLine(next) && parseSectionHeaderLine(next) === null;
         const lyric = hasLyric ? next : '';
         const blockIndex = blocks.length;
         const rowIndex = current.rows.length;
@@ -734,6 +740,7 @@
     version: 2,
     parseChordSymbol,
     detectSectionHeader,
+    parseSectionHeaderLine,
     layoutChordRow,
     validateStructuredContent,
     convertLegacy,
