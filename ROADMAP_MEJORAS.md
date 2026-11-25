@@ -275,7 +275,8 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 - Rechaza nombres vacíos, mayores de 60 caracteres, con corchetes o saltos de línea para evitar etiquetas heredadas malformadas.
 - Cuando la estructura puede serializarse sin pérdida, actualiza también la vista de texto heredado; si no puede, conserva ese respaldo y guarda la estructura válida como fuente principal.
 - No agrega, elimina ni reordena bloques en esta iteración.
-- No modifica secuencias personalizadas de Mi Set ni la navegación Director/Músico.
+- Mi Set consume los IDs del documento normalizado para que renombrar una etiqueta no invalide las secuencias guardadas.
+- No altera la composición de las secuencias personalizadas de Mi Set ni la navegación Director/Músico.
 - Pruebas de modelo: renombrado, no mutación del original, preservación de IDs/contenido, serialización y validación de entradas inválidas.
 
 **Estado:** implementación en rama de laboratorio; pendiente revisión, CI, despliegue y prueba manual en iPhone.
