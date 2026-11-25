@@ -6,7 +6,7 @@
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Versión de laboratorio validada por el usuario:** v1.3.6 (PR #77)
+**Versión de laboratorio validada por el usuario:** v1.3.6 (PR #77); v1.3.7 en desarrollo
 
 ## 1. Reglas permanentes de trabajo
 
@@ -84,7 +84,7 @@ Observación del usuario: símbolos como `Mib/Sol` y `Fam` no se empalman, pero 
 
 ## 4. Siguiente proyecto principal — Editor unificado
 
-**Estado:** etapa actual validada por el usuario en v1.3.6 (PR #74–#77). Se completó la validación manual del arrastre, protección de la letra al rechazar destinos ocupados, toque normal para insertar acordes y desplazamiento horizontal de filas. La unificación continúa por etapas; no se considera terminado todo el proyecto del editor.
+**Estado:** etapa actual validada por el usuario en v1.3.6 (PR #74–#77). Se completó la validación manual del arrastre, protección de la letra al rechazar destinos ocupados, toque normal para insertar acordes y desplazamiento horizontal de filas. La unificación continúa por etapas; no se considera terminado todo el proyecto del editor. Siguiente iteración en desarrollo: renombrar secciones desde el encabezado del editor, sin cambiar IDs ni contenido musical.
 
 Objetivo: integrar las superficies superior e inferior actuales en una sola experiencia coherente. La letra, los acordes y los bloques deben sentirse como elementos del mismo editor, sin obligar al usuario a cambiar de panel para completar operaciones relacionadas.
 
@@ -264,3 +264,18 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 - Se añade una protección de captura en el contenedor estable del editor para descartar ese click residual únicamente si cae sobre la letra durante el breve intervalo posterior al arrastre.
 - No cambia el texto, los offsets ni el algoritmo de distribución; los destinos ocupados siguen rechazándose y el gesto normal de tocar la letra sigue disponible.
 - **Validado por el usuario en iPhone:** al arrastrar un acorde a una posición ocupada, el movimiento se rechaza y la última letra de la línea permanece intacta; el arrastre a una posición libre funciona; el toque normal sobre la letra sigue permitiendo insertar acordes. El desplazamiento horizontal de la fila también funciona sin iniciar sobre un acorde.
+
+
+## 14. Edición de bloques — renombrar secciones (candidata v1.3.7)
+
+**Alcance de esta iteración:** permitir cambiar el nombre de una sección desde su encabezado en el editor estructurado.
+
+- La operación trabaja sobre una copia validada del documento.
+- Conserva el ID del bloque, el orden, las filas, los IDs de fila y todos los acordes/offsets.
+- Rechaza nombres vacíos, mayores de 60 caracteres, con corchetes o saltos de línea para evitar etiquetas heredadas malformadas.
+- Cuando la estructura puede serializarse sin pérdida, actualiza también la vista de texto heredado; si no puede, conserva ese respaldo y guarda la estructura válida como fuente principal.
+- No agrega, elimina ni reordena bloques en esta iteración.
+- No modifica secuencias personalizadas de Mi Set ni la navegación Director/Músico.
+- Pruebas de modelo: renombrado, no mutación del original, preservación de IDs/contenido, serialización y validación de entradas inválidas.
+
+**Estado:** implementación en rama de laboratorio; pendiente revisión, CI, despliegue y prueba manual en iPhone.
