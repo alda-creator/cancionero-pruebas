@@ -207,3 +207,8 @@ El botón «＋ Sección» agrega al final del documento un bloque llamado inici
 - La eliminación identifica el bloque por ID, solicita confirmación en la interfaz y conserva todas las demás secciones sin modificar sus filas, acordes ni offsets.
 - Se conserva al menos una sección. La eliminación de una sección referenciada por Mi Set deja obsoleta esa referencia; las secuencias se normalizan contra los IDs que sigan existiendo.
 - La eliminación no debe reemplazar indiscriminadamente el documento fuente ni alterar el tono personalizado de Mi Set.
+
+
+## Reordenar secciones desde el editor unificado
+
+La operación de reordenamiento identifica la sección mediante su ID estable y recibe el índice final de destino. Se crea una copia del documento, se mueve únicamente el bloque completo y se valida el resultado. No se reconstruyen IDs ni se modifican etiquetas, filas, acordes, offsets o letras. La interfaz ofrece un asa táctil de arrastre y controles alternativos para subir o bajar. El orden personalizado de Mi Set permanece independiente del orden de la canción fuente.
