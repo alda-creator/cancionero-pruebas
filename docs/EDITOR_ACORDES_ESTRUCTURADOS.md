@@ -201,7 +201,7 @@ El encabezado de cada bloque estructurado ofrece una acción contextual para ren
 El botón «＋ Sección» agrega al final del documento un bloque llamado inicialmente «NUEVA SECCIÓN» con una fila instrumental vacía. El nombre queda abierto para edición inmediata. Después puede agregarse letra desde «+ Agregar letra» o acordes tocando la fila instrumental. La operación clona y valida el documento, genera IDs únicos y conserva íntegros los bloques existentes. No elimina ni reordena secciones. La eliminación se implementará en una etapa independiente.
 
 
-## 9. Operaciones de bloques desde el editor unificado
+## 15. Operaciones de bloques desde el editor unificado
 
 - Renombrar y agregar secciones trabajan sobre copias validadas y preservan los IDs estables de los bloques existentes.
 - La eliminación identifica el bloque por ID, solicita confirmación en la interfaz y conserva todas las demás secciones sin modificar sus filas, acordes ni offsets.
