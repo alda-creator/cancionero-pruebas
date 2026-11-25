@@ -1948,7 +1948,6 @@
         let moved = false;
         let targetIndex = blockIndex;
         let dropTarget = null;
-        try { dragHandle.setPointerCapture(pointerId); } catch (_) {}
         const onMove = moveEvent => {
           if (moveEvent.pointerId !== pointerId) return;
           if (Math.abs(moveEvent.clientY - startY) >= 5) moved = true;
