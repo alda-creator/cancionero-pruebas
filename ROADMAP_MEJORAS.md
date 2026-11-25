@@ -6,7 +6,7 @@
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Versión de laboratorio validada por el usuario:** v1.3.9 (PR #84); v1.3.10 validada por el usuario; v1.3.11 en desarrollo
+**Versión de laboratorio validada por el usuario:** v1.3.12 (PR #87); v1.3.13 candidata con auto-desplazamiento durante arrastre
 
 ## 1. Reglas permanentes de trabajo
 
@@ -212,6 +212,7 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 - **v1.3.0 (PR #67):** ajuste natural por palabras, eliminación del desbordamiento horizontal global/espacio lateral y corrección de presentación en modo Director.
 - **v1.3.1 (PR #69):** preservación de `instanceId` en GO_TO_BLOCK para navegar a la instancia correcta de bloques repetidos; validada manualmente por el usuario.
 - **v1.3.2 (PR #71):** reinicio de `#live-screen` al cambiar canciones y al abrir En Vivo; pruebas automatizadas aprobadas y validación manual satisfactoria del usuario en iPhone.
+- **v1.3.13 (candidata):** auto-desplazamiento vertical progresivo durante el arrastre de secciones; pendiente de CI y validación manual en iPhone.
 - **24-nov-2026:** usuario confirmó Director + Mi Set: el músico recibe tono, orden y secuencia personalizados, y mantiene su propia notación. Se detectó la incidencia GO_TO_BLOCK con segundo bloque repetido.
 - **24-nov-2026:** decisión de mantener v1.3.0 como referencia estable y aplazar la separación visual adicional para acordes latinos largos.
 - **24-nov-2026:** GO_TO_BLOCK con bloques repetidos validado por el usuario; incidencia cerrada.
