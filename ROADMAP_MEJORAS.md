@@ -289,7 +289,7 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 **Alcance de esta iteración:** agregar una sección nueva desde el editor unificado, sin recurrir al editor de texto heredado.
 
 - Acción contextual «＋ Sección» en el encabezado del editor.
-- Crea al final un bloque con nombre inicial «NUEVA SECCIÓN» y una fila instrumental vacía para que el usuario pueda renombrarlo y agregar letra/acordes.
+- Crea al final un bloque con nombre inicial «NUEVA SECCIÓN» y una fila instrumental vacía para que el usuario pueda renombrarlo y agregar letra/acordes. También permite iniciar el documento estructurado cuando se crea una canción completamente nueva y aún no tiene texto.
 - El nuevo bloque y su fila reciben IDs únicos; los bloques y filas existentes conservan sus IDs y contenido.
 - La operación valida el documento, trabaja sobre una copia y no modifica el original si falla.
 - El texto heredado se actualiza únicamente si la estructura puede serializarse; la estructura validada permanece como fuente principal.
