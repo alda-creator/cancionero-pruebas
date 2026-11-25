@@ -219,13 +219,15 @@ La operación de reordenamiento identifica la sección mediante su ID estable y 
 El asa de arrastre calcula el índice final de inserción comparando la coordenada vertical del puntero con los puntos medios de todas las secciones restantes. Así puede saltar varias posiciones en un solo gesto. Las flechas de subir y bajar siguen moviendo una sola posición por pulsación. El seguimiento se registra en la fase de captura de `document` para mayor compatibilidad con Safari en iOS; una cancelación no modifica el documento.
 
 
-### Estado de arrastre y mejora futura
+### Estado de arrastre y auto-desplazamiento — v1.3.13
 
-En v1.3.12 se validó en iPhone el reordenamiento libre de secciones: el asa permite saltar varias posiciones y las flechas suben o bajan una posición por pulsación. Queda registrada como mejora de experiencia la auto-desplazamiento vertical del contenedor durante el arrastre: cuando una sección vecina es muy alta, el usuario actualmente debe soltar y continuar el gesto para avanzar más allá de ella. Esta limitación no impide reordenar y no invalida la funcionalidad actual.
+Etapa completada y validada por el usuario en iPhone. El asa permite saltar varias posiciones; las flechas mueven una posición por pulsación. Durante el arrastre, mantener el dedo cerca del borde superior o inferior desplaza la página progresivamente y recalcula el destino, incluso con secciones largas. El ciclo se detiene al salir de la zona de borde, soltar o cancelar. El usuario confirmó que la interacción ahora se siente fluida.
+
+CI y GitHub Pages exitosos en PR #89. Producción y Firebase de producción permanecen intactas.
 
 
-## Auto-desplazamiento durante el reordenamiento — candidata v1.3.13
+## Auto-desplazamiento durante el reordenamiento — v1.3.13 validada
 
 Durante el arrastre libre, al mantener el puntero cerca del borde superior o inferior de la ventana, la página se desplaza automáticamente de forma progresiva. El índice de destino se recalcula durante cada fotograma de desplazamiento, incluso si el dedo permanece quieto junto al borde. El ciclo se cancela al salir de la zona de borde, soltar o cancelar el gesto. Las flechas conservan su movimiento de una posición por pulsación y el modelo sigue moviendo bloques completos por ID estable.
 
-La validación manual en Safari/PWA de iPhone debe cubrir secciones vecinas muy largas, desplazamiento hacia ambos extremos, detención inmediata al soltar/cancelar y conservación de letras, acordes, offsets e IDs.
+El usuario validó en Safari/PWA de iPhone secciones largas, desplazamiento en ambas direcciones y la fluidez general. Se conserva como criterio de regresión comprobar la detención al soltar/cancelar y la integridad de letras, acordes, offsets e IDs.
