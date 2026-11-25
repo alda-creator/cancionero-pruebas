@@ -242,7 +242,7 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 
 ## 12. Movimiento táctil directo de acordes (candidata v1.3.5)
 
-**Estado:** implementado en rama de trabajo; pendiente de CI, revisión de diff, despliegue en Pages y validación manual en iPhone.
+**Estado:** v1.3.5 validada por el usuario para arrastre normal; detectado y corregido en v1.3.6 un click sintético que podía caer sobre la letra después de rechazar un destino ocupado. Pendiente de CI, Pages y nueva validación manual.
 
 - Se puede arrastrar un símbolo de acorde directamente sobre el renglón para cambiar su posición musical.
 - El mapeo de posición visual a offset de origen conserva la ubicación musical real incluso cuando el render añade espacios para evitar colisiones.
@@ -253,3 +253,12 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 - Se agregó una prueba para verificar el mapeo visual/original de los offsets.
 
 **Criterio de aceptación:** arrastrar acordes con el dedo en iPhone, sin mover accidentalmente otros acordes, sin cambiar la letra y sin interferir con el desplazamiento horizontal de la línea. Probar también mouse/trackpad y filas instrumentales. No retirar el editor heredado ni modificar producción.
+
+
+## 13. Protección de la letra ante arrastres rechazados (candidata v1.3.6)
+
+- Al terminar un arrastre, el navegador puede emitir un click sintético después de que la vista se vuelve a dibujar.
+- Si el nodo del acorde fue reemplazado, ese click puede aterrizar sobre el renglón de letra y colocar un acorde en la posición del toque, haciendo que los espacios visuales cambien (por ejemplo, desplazando la última letra de una palabra).
+- Se añade una protección de captura en el contenedor estable del editor para descartar ese click residual únicamente si cae sobre la letra durante el breve intervalo posterior al arrastre.
+- No cambia el texto, los offsets ni el algoritmo de distribución; los destinos ocupados siguen rechazándose y el gesto normal de tocar la letra sigue disponible.
+- Debe probarse en iPhone con destino ocupado, destino libre y toque normal sobre la letra.
