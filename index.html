@@ -859,8 +859,8 @@
   }
   function getCurrentSequenceSnapshot() {
     if (!currentSong) return [];
-    const parsed = parseRawSongWithBlocks(getSongRawText(currentSong));
-    return getEffectiveBlockSequence(parsed.blocks).map(item => ({ ...item }));
+    const blocks = getCurrentSongSequenceBlocks();
+    return getEffectiveBlockSequence(blocks).map(item => ({ ...item }));
   }
 
   function readSetTonePreferences() {
