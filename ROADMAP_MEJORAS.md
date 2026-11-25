@@ -6,7 +6,7 @@
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Versión de laboratorio validada por el usuario:** v1.3.0 (PR #67)
+**Versión de laboratorio validada por el usuario:** v1.3.2 (PR #71)
 
 ## 1. Reglas permanentes de trabajo
 
@@ -32,9 +32,9 @@
 | Director/Músico: compartir canción, tono, orden y secuencia | Implementado y probado por el usuario | El músico recibe la organización del Director sin necesitar tenerla guardada en su propio Mi Set. |
 | Notación independiente por dispositivo | Implementada y probada | Director y músico pueden usar CDE o Do-Re-Mi sin cambiar la secuencia compartida. |
 | Sincronización de desplazamiento y Auto-Scroll | Implementada y probada | El músico sigue la lectura del Director. |
-| GO_TO_BLOCK | Implementado; regresión detectada en bloques repetidos | Véase sección 3. Debe navegar a la instancia exacta del bloque, no solo al primer bloque con el mismo nombre. |
+| GO_TO_BLOCK | Corregido y validado por el usuario | PR #69; el segundo bloque repetido ahora lleva a su instancia correcta. |
 | Modo Director, animaciones y controles de seguimiento | Implementados y probados | El usuario confirmó funcionamiento correcto en v1.3.0, salvo la incidencia de instancia repetida indicada arriba. |
-| Navegación entre canciones y gestos | Implementados y probados | No modificar salvo evidencia de una regresión. |
+| Navegación entre canciones y gestos | Implementados y probados | PR #71 corrigió el reinicio de lectura al cambiar de canción en En Vivo. Validado por el usuario en iPhone; no modificar salvo regresión. |
 | Notación anglosajona/latina | Implementada | Preferencia local por dispositivo: C-D-E / Do-Re-Mi. |
 | Motor de reconocimiento y transposición de acordes | Implementado y probado | Incluye acordes básicos, extendidos, alterados e inversiones dentro de los casos ya validados. |
 | Selector manual de tonalidad original | Implementado y probado | Independiente de la sugerencia basada en el primer acorde. |
@@ -45,9 +45,9 @@
 
 ## 3. Incidencias y mejoras activas
 
-### 3.1 P0 — GO_TO_BLOCK con bloques repetidos
+### 3.1 GO_TO_BLOCK con bloques repetidos
 
-**Estado:** corrección integrada en el laboratorio (PR #69); pruebas automatizadas aprobadas. Pendiente de validación manual del usuario en iPhone tras confirmar despliegue de Pages.
+**Estado:** corregido, desplegado y validado manualmente por el usuario en iPhone (PR #69, v1.3.1).
 
 Caso reproducido por el usuario:
 - Secuencia del Director: Estrofa 1 → Coro → Puente → Coro.
@@ -58,7 +58,7 @@ Caso reproducido por el usuario:
 
 **Corrección aplicada:** el wrapper ahora acepta y reenvía `instanceId`. Se agregó una prueba de regresión para el recorrido emisor → wrapper → manejador. PR #69 también actualiza la versión de laboratorio a v1.3.1 y la caché PWA a v38.
 
-**Criterio de aceptación manual:** con dos Coros separados por un Puente, al tocar el segundo Coro en el Director, el músico debe saltar al segundo Coro. También comprobar la primera aparición, Auto-Scroll y seguimiento posterior. Si la prueba manual detecta cualquier desfase, no se inicia la unificación del editor hasta resolverlo.
+**Validación manual:** el usuario confirmó que la navegación al segundo Coro funciona como debería y que las pruebas propuestas fueron satisfactorias. Incidencia cerrada.
 
 **Pruebas automatizadas:** prueba de navegación repetida, modelo de acordes, diagnósticos, adaptador, documento y sintaxis inline; todas pasaron en CI para PR #69.
 
@@ -69,6 +69,18 @@ Caso reproducido por el usuario:
 Observación del usuario: símbolos como `Mib/Sol` y `Fam` no se empalman, pero se ven más juntos que `Eb/G` y `Fm`. La lectura es posible para músicos experimentados, pero puede resultar menos clara para principiantes.
 
 **Decisión:** conservar v1.3.0 como referencia estable. Más adelante investigar un ajuste visual específico y proporcional al ancho real de los símbolos latinos, sin cambiar posiciones musicales guardadas, reflujo, editor ni modo Director. Debe poder revertirse y pasar pruebas comparativas con ambas nomenclaturas.
+
+### 3.3 P2 — Zoom automático al enfocar campos de texto en iPhone
+
+**Estado:** observado por el usuario en la PWA instalada; pendiente de auditoría y corrección en una iteración posterior. No bloquea el uso ni la validación de v1.3.2.
+
+**Comportamiento observado:** al tocar el campo para introducir la clave del Director o el campo de búsqueda, justo cuando aparece el teclado del iPhone, Safari amplía ligeramente el campo de texto. El usuario realiza las pruebas desde la PWA instalada en iPhone.
+
+**Hipótesis técnica por verificar:** comportamiento habitual de Safari/WebKit en iOS cuando un campo enfocado tiene un tamaño de fuente inferior a 16 px. La PWA instalada sigue utilizando el motor del navegador del sistema, por lo que puede presentar el mismo comportamiento.
+
+**Siguiente paso:** auditar los estilos efectivos (incluidos estilos responsivos y estados de foco) de los campos de búsqueda y clave del Director. Si alguno usa menos de 16 px, probar un ajuste a 16 px o más sin alterar la composición visual. Verificar también que no haya reglas de zoom/viewport que introduzcan efectos secundarios. Probar en PWA instalada y Safari, en orientación vertical y con teclado visible.
+
+**Criterio de aceptación:** al enfocar ambos campos, el teclado aparece sin ampliación automática molesta; el tamaño del campo, la búsqueda, el ingreso de clave y el resto de la interfaz siguen funcionando correctamente. Mantenerlo como mejora de experiencia móvil de baja prioridad, separada del trabajo del editor unificado.
 
 ## 4. Siguiente proyecto principal — Editor unificado
 
@@ -97,8 +109,9 @@ Alcance acordado:
 
 | Prioridad | Trabajo | Estado | Criterio de aceptación |
 |---|---|---|---|
-| P0 | Corregir GO_TO_BLOCK para instancias repetidas | Pendiente | El segundo Coro lleva al músico al segundo Coro, y así con cualquier bloque repetido. |
+| P0 | Corregir GO_TO_BLOCK para instancias repetidas | Completado y validado | PR #69; el segundo Coro lleva al músico a su segunda instancia. |
 | P0 | Editor unificado | Siguiente desarrollo | Edición integrada sin perder funciones ya validadas. |
+| P2 | Evitar zoom automático en campos al abrir teclado en iPhone | Anotado; auditoría posterior | Buscar y clave del Director no deben provocar ampliación automática molesta. Véase sección 3.3. |
 | P0 | Compatibilidad de canciones antiguas y nuevas | Auditoría continua | Ninguna canción pierde texto, acordes ni posiciones; conversiones ambiguas permanecen intactas. |
 | P0 | Director/Músico y modo offline | Auditoría final | Tono, orden, secuencia, notación local y seguimiento correctos tras conexión, desconexión y reconexión. |
 | P1 | Modo proyección/pantalla externa | Pendiente | Mostrar letra y acordes o solo letra; seguir la secuencia del Director. |
@@ -162,7 +175,9 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 
 ## 8. Lista de verificación antes del evento
 
-- [ ] GO_TO_BLOCK lleva a la instancia exacta cuando hay bloques repetidos.
+- [x] GO_TO_BLOCK lleva a la instancia exacta cuando hay bloques repetidos.
+- [x] Cambiar canción en En Vivo reinicia la lectura al inicio, incluso después de desplazarse hasta el final (v1.3.2, PR #71).
+- [ ] Auditar y corregir, si procede, el zoom automático al enfocar búsqueda y clave del Director en iPhone.
 - [ ] Director/Músico comparte canción, tono, orden y secuencia personalizados.
 - [ ] Cada dispositivo conserva su notación CDE/Do-Re-Mi.
 - [ ] Desplazamiento manual y Auto-Scroll siguen correctamente al Director.
@@ -186,10 +201,15 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 - **v1.1.22 / v1.1.23:** iteraciones del editor estructurado y preservación/reflujo de acordes.
 - **v1.2.8 (PR #64):** distribución visual compartida de acordes; generó regresiones de desplazamiento horizontal y ancho de página que luego se corrigieron.
 - **v1.2.9 (PR #66):** recuperación de posiciones musicales extendidas después de la última palabra.
-- **v1.3.0 (PR #67):** ajuste natural por palabras, eliminación del desbordamiento horizontal global/espacio lateral y corrección de presentación en modo Director. Validada por el usuario en laboratorio.
+- **v1.3.0 (PR #67):** ajuste natural por palabras, eliminación del desbordamiento horizontal global/espacio lateral y corrección de presentación en modo Director.
+- **v1.3.1 (PR #69):** preservación de `instanceId` en GO_TO_BLOCK para navegar a la instancia correcta de bloques repetidos; validada manualmente por el usuario.
+- **v1.3.2 (PR #71):** reinicio de `#live-screen` al cambiar canciones y al abrir En Vivo; pruebas automatizadas aprobadas y validación manual satisfactoria del usuario en iPhone.
 - **24-nov-2026:** usuario confirmó Director + Mi Set: el músico recibe tono, orden y secuencia personalizados, y mantiene su propia notación. Se detectó la incidencia GO_TO_BLOCK con segundo bloque repetido.
 - **24-nov-2026:** decisión de mantener v1.3.0 como referencia estable y aplazar la separación visual adicional para acordes latinos largos.
-- **24-nov-2026:** siguiente proyecto principal acordado: editor unificado. Prioridad inmediata de corrección: GO_TO_BLOCK para instancias repetidas.
+- **24-nov-2026:** GO_TO_BLOCK con bloques repetidos validado por el usuario; incidencia cerrada.
+- **24-nov-2026:** usuario validó v1.3.2 en iPhone: al cambiar de canción en En Vivo, la lectura inicia desde arriba.
+- **24-nov-2026:** se registra observación de zoom automático al enfocar búsqueda y clave del Director en iPhone; se investigará como mejora móvil posterior, sin bloquear el editor unificado.
+- **24-nov-2026:** siguiente proyecto principal acordado: editor unificado.
 
 ## 10. Arquitectura y migración al formato estructurado
 
