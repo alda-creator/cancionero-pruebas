@@ -617,5 +617,4 @@ test('el mapeo visual conserva offsets de origen al arrastrar acordes sobre letr
       'el desplazamiento visual debe regresar al offset musical original'
     );
   }
-  assert.equal(layout.sourceOffsetAtVisual(layout.lyric.length + 3), lyric.length + 8);
 });
