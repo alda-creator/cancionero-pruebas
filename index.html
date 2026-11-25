@@ -337,7 +337,7 @@
     .structured-editor-row { padding:5px 7px; border:1px solid transparent; border-radius:8px; background:transparent; }
     .structured-editor-row.selected { border-color:var(--accent); background:var(--card); }
     .structured-editor-row-label { display:block; font-size:10px; color:var(--text-muted); margin-bottom:2px; }
-    .structured-editor-block-heading { display:flex; align-items:center; gap:6px; margin:8px 0 3px; }
+    .structured-editor-block-card { padding:3px 0 7px; border-bottom:1px solid var(--card-border); border-radius:7px; }\n    .structured-editor-block-card.drop-target { outline:2px dashed var(--accent); outline-offset:2px; }\n    .structured-editor-block-heading { display:flex; align-items:center; gap:6px; margin:8px 0 3px; min-height:30px; }\n    .structured-block-drag-handle { border:0; background:transparent; color:var(--text-muted); padding:5px 7px; font-size:17px; line-height:1; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; }\n    .structured-block-drag-handle:active { cursor:grabbing; }\n    .structured-block-order-button { border:0; background:transparent; color:var(--text-muted); padding:5px 6px; font-size:14px; cursor:pointer; }\n    .structured-block-order-button:disabled { opacity:.3; cursor:default; }
     .structured-editor-block-heading strong { font-size:11px; color:var(--text-muted); }
     .structured-block-edit-button { border:0; background:transparent; color:var(--text-muted); padding:2px 5px; font-size:12px; cursor:pointer; }
     .structured-block-label-editor { display:flex; gap:6px; align-items:center; margin:4px 0 6px; }
@@ -463,7 +463,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.3.9 · Eliminar secciones con protección · (PRUEBAS)</div>
+        <div class="app-version">v1.3.10 · Reordenar secciones en el editor · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -1920,9 +1920,75 @@
       return;
     }
     let rowCount = 0;
-    draft.blocks.forEach(block => {
+    draft.blocks.forEach((block, blockIndex) => {
+      const blockCard = document.createElement('div');
+      blockCard.className = 'structured-editor-block-card';
+      blockCard.dataset.blockId = block.id;
       const blockHeading = document.createElement('div');
       blockHeading.className = 'structured-editor-block-heading';
+
+      const dragHandle = document.createElement('button');
+      dragHandle.type = 'button';
+      dragHandle.className = 'structured-block-drag-handle';
+      dragHandle.textContent = '⠿';
+      dragHandle.setAttribute('aria-label', 'Arrastrar para reordenar ' + block.label);
+      dragHandle.title = 'Arrastra esta sección para cambiar su posición';
+      dragHandle.addEventListener('pointerdown', event => {
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const pointerId = event.pointerId;
+        const startY = event.clientY;
+        let moved = false;
+        let targetIndex = blockIndex;
+        let dropTarget = null;
+        try { dragHandle.setPointerCapture(pointerId); } catch (_) {}
+        const onMove = moveEvent => {
+          if (moveEvent.pointerId !== pointerId) return;
+          if (Math.abs(moveEvent.clientY - startY) >= 5) moved = true;
+          if (!moved) return;
+          moveEvent.preventDefault();
+          const siblings = Array.from(rowsHost.querySelectorAll('.structured-editor-block-card')).filter(item => item !== blockCard);
+          targetIndex = siblings.findIndex(item => moveEvent.clientY < item.getBoundingClientRect().top + item.getBoundingClientRect().height / 2);
+          if (targetIndex < 0) targetIndex = siblings.length;
+          if (dropTarget) dropTarget.classList.remove('drop-target');
+          dropTarget = siblings[Math.min(targetIndex, Math.max(0, siblings.length - 1))] || blockCard;
+          if (dropTarget) dropTarget.classList.add('drop-target');
+        };
+        const finish = finishEvent => {
+          if (finishEvent.pointerId !== pointerId) return;
+          dragHandle.removeEventListener('pointermove', onMove);
+          dragHandle.removeEventListener('pointerup', onUp);
+          dragHandle.removeEventListener('pointercancel', onCancel);
+          try { if (dragHandle.hasPointerCapture(pointerId)) dragHandle.releasePointerCapture(pointerId); } catch (_) {}
+          if (dropTarget) dropTarget.classList.remove('drop-target');
+          if (moved) reorderStructuredDraftBlock(block.id, targetIndex);
+        };
+        const onUp = finishEvent => finish(finishEvent);
+        const onCancel = finishEvent => finish(finishEvent);
+        dragHandle.addEventListener('pointermove', onMove);
+        dragHandle.addEventListener('pointerup', onUp);
+        dragHandle.addEventListener('pointercancel', onCancel);
+      });
+      blockHeading.appendChild(dragHandle);
+
+      const moveUpButton = document.createElement('button');
+      moveUpButton.type = 'button';
+      moveUpButton.className = 'structured-block-order-button';
+      moveUpButton.textContent = '↑';
+      moveUpButton.disabled = blockIndex === 0;
+      moveUpButton.setAttribute('aria-label', 'Subir sección ' + block.label);
+      moveUpButton.addEventListener('click', () => reorderStructuredDraftBlock(block.id, blockIndex - 1));
+      blockHeading.appendChild(moveUpButton);
+
+      const moveDownButton = document.createElement('button');
+      moveDownButton.type = 'button';
+      moveDownButton.className = 'structured-block-order-button';
+      moveDownButton.textContent = '↓';
+      moveDownButton.disabled = blockIndex === draft.blocks.length - 1;
+      moveDownButton.setAttribute('aria-label', 'Bajar sección ' + block.label);
+      moveDownButton.addEventListener('click', () => reorderStructuredDraftBlock(block.id, blockIndex + 1));
+      blockHeading.appendChild(moveDownButton);
       const blockTitle = document.createElement('strong');
       blockTitle.textContent = block.label;
       blockHeading.appendChild(blockTitle);
@@ -1941,7 +2007,7 @@
         }
       });
       blockHeading.appendChild(editBlockButton);
-      rowsHost.appendChild(blockHeading);
+      blockCard.appendChild(blockHeading);
       if (editingDraftBlockId === block.id) {
         const editor = document.createElement('div');
         editor.className = 'structured-block-label-editor';
@@ -1970,7 +2036,7 @@
         remove.textContent = 'Eliminar sección';
         remove.addEventListener('click', () => deleteStructuredDraftBlock(block.id, block.label));
         editor.append(field, cancel, apply, remove);
-        rowsHost.appendChild(editor);
+        blockCard.appendChild(editor);
       }
       block.rows.forEach(row => {
         rowCount++;
@@ -2172,8 +2238,9 @@
           editor.appendChild(actions);
           card.appendChild(editor);
         }
-        rowsHost.appendChild(card);
+        blockCard.appendChild(card);
       });
+      rowsHost.appendChild(blockCard);
     });
     panel.classList.toggle('has-selection', !!selectedDraftRowId);
     status.textContent = structuredDraftSyncError
@@ -2336,6 +2403,25 @@
     renderStructuredEditor();
     const field = document.querySelector('#structured-editor-rows .structured-block-label-editor input');
     if (field) { field.focus({ preventScroll: true }); field.select(); }
+  }
+
+  function reorderStructuredDraftBlock(blockId, targetIndex) {
+    if (!structuredDraft || !window.ChordModel || typeof window.ChordModel.moveBlock !== 'function') return;
+    const result = window.ChordModel.moveBlock(structuredDraft, blockId, targetIndex);
+    if (!result.ok) {
+      alert('No se pudo reordenar la sección: ' + result.warnings.join(' '));
+      return;
+    }
+    if (result.fromIndex === result.toIndex) return;
+    structuredDraft = result.structuredContent;
+    structuredDraftDirty = true;
+    structuredDraftSyncError = null;
+    const serialized = window.ChordModel.serializeLegacy(structuredDraft);
+    if (serialized.ok) {
+      document.getElementById('edit-raw').value = serialized.rawText;
+      renderRawEditorPreview();
+    }
+    renderStructuredEditor();
   }
 
   function deleteStructuredDraftBlock(blockId, blockLabel) {
