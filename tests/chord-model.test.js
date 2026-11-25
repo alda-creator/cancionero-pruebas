@@ -600,3 +600,22 @@ test('expone anclas por palabra para envolver filas sin desbordar el viewport', 
   assert.ok(layout.placements[1].offset >= layout.wordSegments.at(-1).end);
   assert.equal(layout.wordSegments.at(-1).end <= Array.from(layout.lyric).length, true);
 });
+
+
+test('el mapeo visual conserva offsets de origen al arrastrar acordes sobre letra y cola', () => {
+  const lyric = 'Sublime gracia del Señor';
+  const chords = [
+    { id: 'a', root: 'C', quality: '', bass: null, position: { offset: 0, affinity: 'before' } },
+    { id: 'b', root: 'G', quality: '', bass: null, position: { offset: 12, affinity: 'before' } },
+    { id: 'c', root: 'F', quality: '', bass: null, position: { offset: lyric.length + 8, affinity: 'before' } }
+  ];
+  const layout = ChordModel.layoutChordRow(lyric, chords, chord => chord.root);
+  for (const placement of layout.placements) {
+    assert.equal(
+      layout.sourceOffsetAtVisual(placement.offset),
+      placement.sourceOffset,
+      'el desplazamiento visual debe regresar al offset musical original'
+    );
+  }
+  assert.equal(layout.sourceOffsetAtVisual(layout.lyric.length + 3), lyric.length + 8);
+});
