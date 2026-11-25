@@ -165,6 +165,42 @@ test('rechaza nombres de bloque vacíos, multilínea o con corchetes', () => {
   assert.equal(ChordModel.updateBlockLabel(original, 'no-existe', 'PUENTE').ok, false);
 });
 
+test('agrega una sección al final con fila vacía e IDs únicos sin mutar el original', () => {
+  const original = ChordModel.convertLegacy('[CORO]\nC       G\nSublime gracia').structuredContent;
+  const firstBlock = original.blocks[0];
+  const firstRow = firstBlock.rows[0];
+  const before = JSON.stringify(original);
+  const added = ChordModel.addBlock(original, 'PUENTE');
+  assert.equal(added.ok, true);
+  assert.equal(added.structuredContent.blocks.length, 2);
+  const newBlock = added.structuredContent.blocks[1];
+  assert.equal(newBlock.id, added.blockId);
+  assert.equal(newBlock.label, 'PUENTE');
+  assert.equal(newBlock.rows.length, 1);
+  assert.equal(newBlock.rows[0].id, added.rowId);
+  assert.equal(newBlock.rows[0].lyric, '');
+  assert.deepEqual(newBlock.rows[0].chords, []);
+  assert.equal(added.structuredContent.blocks[0].id, firstBlock.id);
+  assert.deepEqual(added.structuredContent.blocks[0].rows[0], firstRow);
+  assert.equal(JSON.stringify(original), before, 'no debe mutar el documento original');
+  assert.equal(ChordModel.validateStructuredContent(added.structuredContent).valid, true);
+});
+
+test('genera IDs nuevos al agregar varias secciones y rechaza etiquetas inválidas', () => {
+  const original = ChordModel.convertLegacy('[CORO]\nLetra').structuredContent;
+  const first = ChordModel.addBlock(original, 'PUENTE');
+  const second = ChordModel.addBlock(first.structuredContent, 'INTRO');
+  assert.equal(second.ok, true);
+  const ids = second.structuredContent.blocks.flatMap(block => [
+    block.id, ...block.rows.flatMap(row => [row.id, ...row.chords.map(chord => chord.id)])
+  ]);
+  assert.equal(new Set(ids).size, ids.length);
+  for (const label of ['', '  ', '[PUENTE]', 'DOS\nLINEAS', 'x'.repeat(61)]) {
+    assert.equal(ChordModel.addBlock(original, label).ok, false, JSON.stringify(label));
+  }
+  assert.equal(ChordModel.addBlock(original, null).ok, false);
+});
+
 test('actualiza una línea de forma aislada y conserva offsets de acordes al final', () => {
   const original = ChordModel.convertLegacy('C        G\nHola mundo').structuredContent;
   const row = original.blocks[0].rows[0];
