@@ -658,6 +658,16 @@
   }
 
 
+
+  // Calcula el índice final de inserción a partir del centro vertical de cada sección restante.
+  function blockInsertionIndex(blockRects, pointerY) {
+    if (!Array.isArray(blockRects) || !Number.isFinite(pointerY)) return -1;
+    return blockRects.reduce((index, rect) => {
+      if (!rect || !Number.isFinite(rect.top) || !Number.isFinite(rect.height)) return index;
+      return pointerY >= rect.top + rect.height / 2 ? index + 1 : index;
+    }, 0);
+  }
+
   // Reordena una sección por su ID y su índice final, conservando todo su contenido e identidad.
   function moveBlock(existingContent, blockId, targetIndex) {
     const validation = validateStructuredContent(existingContent);
@@ -722,6 +732,7 @@
     addBlock,
     removeBlock,
     moveBlock,
+    blockInsertionIndex,
     serializeLegacy,
     isChordLine
   };
