@@ -252,3 +252,15 @@ El usuario probó la versión publicada en la PWA de laboratorio y confirmó:
 - El texto entre corchetes dentro de una frase, como `[con gozo]`, permanece dentro de la letra.
 
 **Estado:** reconocimiento e importación de etiquetas heredadas validados por el usuario. Pendiente la etapa complementaria de edición/renombrado desde el editor unificado, guardado/reapertura y comprobación de Mi Set.
+
+
+### Validación manual complementaria — edición de etiquetas y persistencia (v1.3.14)
+
+El usuario confirmó satisfactoriamente el ciclo completo desde el editor unificado:
+- Renombrar `[Coro Especial]` a `PUENTE`.
+- Cambiar `ESTROFA 1` a `VERSO 1`.
+- Guardar, salir de la canción y volver a abrirla.
+- Verificar que letra, acordes y posiciones musicales permanecen intactos.
+- Verificar que Mi Set conserva las referencias de las secciones después del renombrado.
+
+**Resultado:** validación manual satisfactoria. La identidad estable de los bloques y la persistencia de los cambios se comportan como se esperaba. No fue necesario modificar código; esta etapa queda cerrada en v1.3.14.
