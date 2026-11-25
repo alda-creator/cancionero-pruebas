@@ -84,7 +84,7 @@ Observación del usuario: símbolos como `Mib/Sol` y `Fam` no se empalman, pero 
 
 ## 4. Siguiente proyecto principal — Editor unificado
 
-**Estado:** siguiente desarrollo principal, todavía pendiente de implementación completa.
+**Estado:** en desarrollo por etapas. Primera iteración de edición contextual de letra implementada en la rama `feature/editor-unificado-edicion-letra-por-fila`; pendiente de CI, revisión y prueba manual en iPhone. No integrada aún en `main`.
 
 Objetivo: integrar las superficies superior e inferior actuales en una sola experiencia coherente. La letra, los acordes y los bloques deben sentirse como elementos del mismo editor, sin obligar al usuario a cambiar de panel para completar operaciones relacionadas.
 
@@ -97,6 +97,14 @@ Alcance acordado:
 - Mantener una experiencia táctil práctica en iPhone.
 - Conservar conversión conservadora y compatibilidad con canciones heredadas.
 - Compartir el mismo modelo musical entre editor, vista normal, En Vivo y Director.
+
+**Primera iteración — edición de letra por línea (candidata v1.3.3):**
+- Cada fila estructurada ofrece un control contextual para editar su letra sin acudir al campo de texto global.
+- La edición usa `ChordModel.updateRowLyric`, que trabaja sobre una copia y conserva IDs/acordes; ajusta offsets según los cambios y valida antes de aceptar.
+- Si la estructura puede serializarse sin pérdida, se actualiza también `rawText`; si no, se conserva el respaldo heredado original y `structuredContent` sigue siendo la fuente principal.
+- Se mantiene el editor de texto anterior como respaldo durante esta fase; no se elimina ni se oculta hasta validar importación, edición y guardado.
+- Prueba añadida: editar letra de una canción pegada de internet, serializar y volver a importar, comparando letra, símbolos y offsets de acordes.
+- **Pendiente:** CI, inspección del diff, despliegue Pages y prueba del usuario en iPhone. No declarar lista para probar antes de verificar el despliegue.
 
 **Criterios de seguridad:**
 - No modificar automáticamente canciones existentes por abrirlas.
