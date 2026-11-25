@@ -212,3 +212,8 @@ El botón «＋ Sección» agrega al final del documento un bloque llamado inici
 ## Reordenar secciones desde el editor unificado
 
 La operación de reordenamiento identifica la sección mediante su ID estable y recibe el índice final de destino. Se crea una copia del documento, se mueve únicamente el bloque completo y se valida el resultado. No se reconstruyen IDs ni se modifican etiquetas, filas, acordes, offsets o letras. La interfaz ofrece un asa táctil de arrastre y controles alternativos para subir o bajar. El orden personalizado de Mi Set permanece independiente del orden de la canción fuente.
+
+
+## Arrastre libre entre posiciones
+
+El asa de arrastre calcula el índice final de inserción comparando la coordenada vertical del puntero con los puntos medios de todas las secciones restantes. Así puede saltar varias posiciones en un solo gesto. Las flechas de subir y bajar siguen moviendo una sola posición por pulsación. El seguimiento del puntero se mantiene durante todo el gesto y una cancelación no modifica el documento.
