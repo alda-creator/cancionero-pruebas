@@ -6,7 +6,7 @@
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Versión de laboratorio validada por el usuario:** v1.3.8 (PR #82)
+**Versión de laboratorio validada por el usuario:** v1.3.8 (PR #82); v1.3.9 pendiente de validación
 
 ## 1. Reglas permanentes de trabajo
 
@@ -84,7 +84,7 @@ Observación del usuario: símbolos como `Mib/Sol` y `Fam` no se empalman, pero 
 
 ## 4. Siguiente proyecto principal — Editor unificado
 
-**Estado:** etapas validadas por el usuario hasta v1.3.8 (PR #74–#77 y #79–#82). Se validaron edición de letra, acordes, filas instrumentales, arrastre táctil, renombrado y creación de secciones. La unificación continúa por etapas; no se considera terminado todo el proyecto del editor. Siguiente iteración propuesta: eliminar secciones con confirmación y protección de contenido.
+**Estado:** etapas validadas por el usuario hasta v1.3.8 (PR #74–#77 y #79–#82). Se validaron edición de letra, acordes, filas instrumentales, arrastre táctil, renombrado y creación de secciones. La unificación continúa por etapas; no se considera terminado todo el proyecto del editor. Siguiente iteración: eliminación de secciones con confirmación y protección de contenido (v1.3.9), pendiente de validación manual.
 
 Objetivo: integrar las superficies superior e inferior actuales en una sola experiencia coherente. La letra, los acordes y los bloques deben sentirse como elementos del mismo editor, sin obligar al usuario a cambiar de panel para completar operaciones relacionadas.
 
@@ -325,3 +325,19 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 **Criterio de aceptación:** una corrección guardada en la canción fuente aparece en Mi Set al volver a abrir/actualizar la canción, mientras que el tono elegido, orden y secuencia personalizada permanecen intactos. La transposición se recalcula usando los acordes corregidos de la fuente.
 
 **Regla de seguridad:** no implementar una actualización que simplemente reemplace la canción completa dentro de Mi Set, porque podría borrar la transposición o la secuencia personalizada. Primero auditar y separar explícitamente contenido fuente de personalización del usuario.
+
+
+## 17. Edición de bloques — eliminar secciones (candidata v1.3.9)
+
+**Alcance:** eliminar una sección desde su encabezado en el editor unificado.
+
+- La acción se muestra dentro del modo de edición del encabezado, separada de renombrar.
+- Antes de eliminar, se solicita confirmación indicando que se borrarán la letra y los acordes de esa sección al guardar.
+- La operación se identifica por el ID estable del bloque; no depende de su posición ni etiqueta.
+- Los demás bloques, filas, acordes, offsets e IDs permanecen intactos.
+- Se conserva al menos una sección para que la canción no quede sin un punto de edición; si solo existe una, se debe vaciar su contenido en vez de eliminarla.
+- Si la sección participa en una secuencia personalizada de Mi Set, su referencia dejará de corresponder a un bloque existente. La normalización de secuencias descarta referencias inexistentes; el usuario debe revisar la secuencia después de eliminar bloques.
+- La operación trabaja sobre una copia validada y no muta el documento original si falla.
+- La serialización heredada se actualiza solo si no pierde información; de lo contrario se conserva el respaldo y la estructura validada sigue siendo la fuente principal.
+
+**Estado:** implementado en laboratorio; pendiente CI, despliegue y prueba manual en iPhone. No modifica producción ni Firebase de producción.

@@ -692,3 +692,36 @@ test('el mapeo visual conserva offsets de origen al arrastrar acordes sobre letr
     );
   }
 });
+
+
+test('eliminar sección conserva las demás secciones e IDs sin mutar el original', () => {
+  const original = {
+    version: 2,
+    blocks: [
+      { id: 'verse-1', label: 'ESTROFA 1', rows: [{ id: 'row-v', lyric: 'Letra uno', chords: [{ id: 'ch-v', root: 'G', quality: '', bass: null, position: { offset: 0, affinity: 'before' } }] }] },
+      { id: 'chorus-1', label: 'CORO', rows: [{ id: 'row-c', lyric: 'Letra dos', chords: [{ id: 'ch-c', root: 'A', quality: 'm', bass: null, position: { offset: 2, affinity: 'before' } }] }] },
+      { id: 'bridge-1', label: 'PUENTE', rows: [{ id: 'row-b', lyric: 'Letra tres', chords: [] }] }
+    ]
+  };
+  const snapshot = JSON.stringify(original);
+  const result = ChordModel.removeBlock(original, 'chorus-1');
+  assert.equal(result.ok, true, JSON.stringify(result.warnings));
+  assert.deepEqual(result.structuredContent.blocks.map(block => block.id), ['verse-1', 'bridge-1']);
+  assert.equal(result.structuredContent.blocks[0].rows[0].chords[0].id, 'ch-v');
+  assert.equal(result.structuredContent.blocks[1].rows[0].lyric, 'Letra tres');
+  assert.equal(JSON.stringify(original), snapshot);
+  assert.equal(ChordModel.validateStructuredContent(result.structuredContent).valid, true);
+});
+
+test('no permite eliminar la última sección ni un ID inexistente', () => {
+  const single = { version: 2, blocks: [{ id: 'only', label: 'ESTROFA', rows: [{ id: 'row-only', lyric: 'Texto', chords: [] }] }] };
+  assert.equal(ChordModel.removeBlock(single, 'only').ok, false);
+  const multiple = {
+    version: 2,
+    blocks: [
+      { id: 'one', label: 'UNO', rows: [{ id: 'row-one', lyric: '', chords: [] }] },
+      { id: 'two', label: 'DOS', rows: [{ id: 'row-two', lyric: '', chords: [] }] }
+    ]
+  };
+  assert.equal(ChordModel.removeBlock(multiple, 'missing').ok, false);
+});

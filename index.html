@@ -463,7 +463,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.3.8 · Agregar secciones desde el editor · (PRUEBAS)</div>
+        <div class="app-version">v1.3.9 · Eliminar secciones con protección · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -1964,7 +1964,12 @@
         apply.className = 'btn-action primary';
         apply.textContent = 'Aplicar';
         apply.addEventListener('click', () => applyStructuredBlockLabel(block.id, field.value));
-        editor.append(field, cancel, apply);
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'btn-action';
+        remove.textContent = 'Eliminar sección';
+        remove.addEventListener('click', () => deleteStructuredDraftBlock(block.id, block.label));
+        editor.append(field, cancel, apply, remove);
         rowsHost.appendChild(editor);
       }
       block.rows.forEach(row => {
@@ -2331,6 +2336,32 @@
     renderStructuredEditor();
     const field = document.querySelector('#structured-editor-rows .structured-block-label-editor input');
     if (field) { field.focus({ preventScroll: true }); field.select(); }
+  }
+
+  function deleteStructuredDraftBlock(blockId, blockLabel) {
+    if (!structuredDraft || !window.ChordModel || typeof window.ChordModel.removeBlock !== 'function') return;
+    const block = structuredDraft.blocks.find(item => item.id === blockId);
+    if (!block) return;
+    const confirmed = confirm('¿Eliminar la sección "' + blockLabel + '"?\n\nSe eliminarán su letra y sus acordes al guardar la canción. Las demás secciones conservarán su contenido e identidad. Si esta sección estaba en una secuencia personalizada de Mi Set, esa referencia dejará de estar disponible. Esta acción no se puede deshacer después de guardar.');
+    if (!confirmed) return;
+    const result = window.ChordModel.removeBlock(structuredDraft, blockId);
+    if (!result.ok) {
+      alert('No se pudo eliminar la sección: ' + result.warnings.join(' '));
+      return;
+    }
+    structuredDraft = result.structuredContent;
+    structuredDraftDirty = true;
+    structuredDraftSyncError = null;
+    selectedDraftRowId = null;
+    selectedDraftChordId = null;
+    editingDraftRowId = null;
+    editingDraftBlockId = null;
+    const serialized = window.ChordModel.serializeLegacy(structuredDraft);
+    if (serialized.ok) {
+      document.getElementById('edit-raw').value = serialized.rawText;
+      renderRawEditorPreview();
+    }
+    renderStructuredEditor();
   }
 
   function applyStructuredBlockLabel(blockId, nextLabel) {

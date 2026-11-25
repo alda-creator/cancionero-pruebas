@@ -657,6 +657,31 @@
     return { ok: true, structuredContent: nextContent, blockId, rowId, warnings: [] };
   }
 
+  // Elimina una sección por ID sin mutar el documento ni alterar los IDs restantes.
+  // Se conserva al menos una sección para evitar dejar una canción sin punto de edición.
+  function removeBlock(existingContent, blockId) {
+    const validation = validateStructuredContent(existingContent);
+    if (!validation.valid) {
+      return { ok: false, structuredContent: null, warnings: validation.errors };
+    }
+    if (typeof blockId !== 'string' || !blockId) {
+      return { ok: false, structuredContent: null, warnings: ['Se requiere el ID de la sección que se desea eliminar.'] };
+    }
+    if (!existingContent.blocks.some(block => block.id === blockId)) {
+      return { ok: false, structuredContent: null, warnings: ['No se encontró la sección que se desea eliminar.'] };
+    }
+    if (existingContent.blocks.length <= 1) {
+      return { ok: false, structuredContent: null, warnings: ['La canción debe conservar al menos una sección.'] };
+    }
+    const nextContent = JSON.parse(JSON.stringify(existingContent));
+    nextContent.blocks = nextContent.blocks.filter(block => block.id !== blockId);
+    const nextValidation = validateStructuredContent(nextContent);
+    if (!nextValidation.valid) {
+      return { ok: false, structuredContent: null, warnings: nextValidation.errors };
+    }
+    return { ok: true, structuredContent: nextContent, removedBlockId: blockId, warnings: [] };
+  }
+
   return {
     version: 2,
     parseChordSymbol,
@@ -668,6 +693,7 @@
     updateRowLyric,
     updateBlockLabel,
     addBlock,
+    removeBlock,
     serializeLegacy,
     isChordLine
   };
