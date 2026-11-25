@@ -1909,7 +1909,7 @@
     panel.style.display = 'block';
     rowsHost.innerHTML = '';
     const addBlockButton = document.getElementById('structured-add-block');
-    if (addBlockButton) addBlockButton.disabled = !draft;
+    if (addBlockButton) addBlockButton.disabled = !draft && !!document.getElementById('edit-raw').value.trim();
     if (!draft) {
       panel.classList.remove('has-selection');
       status.textContent = 'Este formato antiguo no se pudo convertir automáticamente. El texto original permanece intacto.';
