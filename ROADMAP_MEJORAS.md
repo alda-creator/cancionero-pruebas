@@ -6,7 +6,7 @@
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Versión de laboratorio validada por el usuario:** v1.3.9 (PR #84); v1.3.10 en desarrollo
+**Versión de laboratorio validada por el usuario:** v1.3.9 (PR #84); v1.3.10 validada por el usuario; v1.3.11 en desarrollo
 
 ## 1. Reglas permanentes de trabajo
 
@@ -330,7 +330,7 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 **Estado:** completado y validado por el usuario en iPhone en v1.3.9 (PR #84). El usuario confirmó eliminación, persistencia y comportamiento esperado en Mi Set. Producción y Firebase de producción permanecen intactas.
 
 
-## 18. Edición de bloques — reordenar secciones en la canción original (candidata v1.3.10)
+## 18. Edición de bloques — reordenar secciones en la canción original (v1.3.10)
 
 **Objetivo:** permitir que el usuario cambie el orden de las secciones de la canción fuente desde el editor unificado, sin confundirlo con la secuencia personalizada de Mi Set.
 
@@ -342,4 +342,19 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 - Mi Set recibe el nuevo orden de la canción fuente, pero conserva su propia secuencia personalizada y transposición.
 - Pruebas de modelo para movimientos al inicio, al final y posiciones intermedias, IDs inexistentes, índices inválidos, no mutación y preservación de contenido.
 
-**Estado:** en desarrollo en rama `feature/editor-reordenar-secciones`. Producción y Firebase de producción no se modifican.
+**Estado:** completado y validado por el usuario en iPhone en v1.3.10. El usuario confirmó que el arrastre y el orden resultante funcionan correctamente. Producción y Firebase de producción permanecen intactas.
+
+
+## 19. Arrastre libre de secciones (candidata v1.3.11)
+
+**Observación validada por el usuario en v1.3.10:** el arrastre funciona, pero se percibe como movimiento de una posición por gesto.
+
+**Ajuste:** el asa de arrastre permitirá colocar una sección directamente en cualquier posición, aunque implique saltar varias secciones. Las flechas ↑/↓ seguirán moviendo exactamente una posición por pulsación.
+
+- Calcular el índice final a partir de los puntos medios de todas las secciones restantes.
+- Escuchar el ciclo de puntero en la ventana para mantener seguimiento durante todo el gesto táctil.
+- Mantener indicador visual de destino y cancelar sin cambios al recibir `pointercancel`.
+- Conservar el movimiento por ID estable y todo el contenido interno del bloque.
+- Pruebas del cálculo de inserción en el inicio, posiciones intermedias y final.
+
+**Estado:** implementado en rama `fix/editor-arrastre-multiples-posiciones`; pendiente CI, revisión, despliegue y prueba manual.
