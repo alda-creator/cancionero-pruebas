@@ -149,3 +149,16 @@ No se cambia Firebase ni sus reglas en esta iniciativa.
 - El render de lectura divide visualmente cada fila en unidades de palabras con acordes anclados; el navegador puede envolverlas en varias líneas verticales sin scroll horizontal. La posición estructurada sigue almacenada como offset dentro de la letra original.
 - Las canciones heredadas se convierten solo para visualización cuando el parser puede hacerlo sin ambigüedad. No se migran ni escriben automáticamente.
 - Pendiente: pruebas reales en Safari/iPhone, Auto-Scroll, Director/Músico, Firestore y modo offline; comprobar líneas largas, acordes múltiples sobre una palabra y cambios complejos de varias estrofas.
+
+
+## 9. Editor unificado — primera iteración de letra por fila
+
+**Estado:** implementada en rama de trabajo; pendiente CI y validación manual en iPhone.
+
+- Cada fila del panel estructurado incorpora una acción contextual para editar la letra de esa fila.
+- La aplicación del cambio usa `ChordModel.updateRowLyric`, que clona la estructura, conserva IDs y acordes, reajusta offsets con el algoritmo de diferencias y valida el resultado.
+- Cuando `serializeLegacy` puede representar la estructura sin pérdida, se actualiza el texto heredado de respaldo. Si la serialización no es segura, no se reemplaza `rawText`; la estructura válida permanece como fuente principal.
+- El editor global de texto se mantiene disponible durante esta fase. No se elimina hasta probar canciones heredadas, formatos ambiguos y guardado/reapertura.
+- La prueba de regresión añadida edita una canción con acordes alineados en el texto copiado, serializa el resultado y vuelve a importarlo para comparar letra, símbolos y offsets.
+
+**Alcance deliberadamente limitado:** no se cambia todavía el algoritmo de importación, el renderizador de lectura, el modelo de bloques, la transposición, Mi Set ni Director/Músico.

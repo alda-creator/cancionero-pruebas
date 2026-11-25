@@ -161,6 +161,22 @@ test('actualiza una línea con caracteres Unicode sin perder validez', () => {
   assert.equal(ChordModel.validateStructuredContent(edited.structuredContent).valid, true);
 });
 
+test('edición de letra integrada conserva acordes y offsets al serializar y volver a importar', () => {
+  const raw = '[CORO]\n      G              A         F#m    Bm\nLevantemos nuestras manos y adoremos,';
+  const original = ChordModel.convertLegacy(raw).structuredContent;
+  const row = original.blocks[0].rows[0];
+  const edited = ChordModel.updateRowLyric(original, row.id, 'Levantemos nuestras manos y adoremos con gozo');
+  assert.equal(edited.ok, true);
+  const saved = ChordModel.serializeLegacy(edited.structuredContent);
+  assert.equal(saved.ok, true);
+  const reopened = ChordModel.convertLegacy(saved.rawText);
+  assert.equal(reopened.ok, true);
+  const reopenedRow = reopened.structuredContent.blocks[0].rows[0];
+  assert.equal(reopenedRow.lyric, 'Levantemos nuestras manos y adoremos con gozo');
+  assert.deepEqual(reopenedRow.chords.map(chord => [chord.root, chord.quality, chord.position.offset]),
+    edited.structuredContent.blocks[0].rows[0].chords.map(chord => [chord.root, chord.quality, chord.position.offset]));
+});
+
 test('reconcilia cambios de letra y conserva acordes en filas intactas y editadas', () => {
   const original = ChordModel.convertLegacy('[CORO]\nC       G\nAbba Padre, Abba Padre\nD\nEstar contigo').structuredContent;
   const result = ChordModel.reconcileLyrics(original, '[CORO]\nAbba Padre, Abba Padre por siempre\nEstar contigo\nNueva línea');

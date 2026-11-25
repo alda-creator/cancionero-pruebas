@@ -348,6 +348,11 @@
     .structured-editor-actions { display:flex; gap:4px; flex-wrap:nowrap; margin:0; }
     .structured-editor-actions .btn-action { min-width:34px; padding:7px 9px; }
     .structured-editor-help { line-height:1.4; margin:5px 0 0; }
+    .structured-row-edit-toggle { margin:4px 0 0; padding:5px 9px; border:1px solid var(--card-border); border-radius:7px; background:var(--card); color:var(--text-muted); font-size:12px; cursor:pointer; }
+    .structured-row-lyric-editor { display:grid; gap:7px; margin-top:8px; }
+    .structured-row-lyric-editor textarea { box-sizing:border-box; width:100%; min-height:68px; padding:9px 10px; border:1px solid var(--accent); border-radius:8px; background:var(--bg); color:var(--text); font:16px/1.45 'Courier New',Courier,monospace; resize:vertical; }
+    .structured-row-lyric-actions { display:flex; gap:7px; justify-content:flex-end; }
+    .structured-row-lyric-actions button { min-height:36px; padding:7px 12px; }
     .editor-container {
       position: relative;
       width: 100%;
@@ -451,7 +456,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.3.2 · Reinicio de lectura al cambiar canción · (PRUEBAS)</div>
+        <div class="app-version">v1.3.3 · Edición de letra por línea · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -789,7 +794,8 @@
   let structuredDraftDirty = false;
   let structuredDraftSyncError = null;
   let selectedDraftRowId = null;
-  let selectedDraftChordId = null;  
+  let selectedDraftChordId = null;
+  let editingDraftRowId = null;  
   let currentTransposeSteps = 0;
   const SET_TONE_STORAGE_KEY = 'church_song_set_transpose_v1';
   const SET_SEQUENCE_STORAGE_KEY = 'church_song_set_sequences_v1';
@@ -1752,6 +1758,7 @@
   
     if (!currentSong) return;  
     editingSongId = currentSong.id;  
+    editingDraftRowId = null;
     document.getElementById('editor-heading').innerText = "Editar Canción";  
     document.getElementById('edit-title').value = currentSong.title || '';  
     document.getElementById('edit-author').value = currentSong.author || '';  
@@ -1958,6 +1965,55 @@
         });
         preview.appendChild(lyric);
         card.appendChild(preview);
+
+        const editLyricButton = document.createElement('button');
+        editLyricButton.type = 'button';
+        editLyricButton.className = 'structured-row-edit-toggle';
+        editLyricButton.textContent = editingDraftRowId === row.id ? 'Cerrar edición de letra' : (row.lyric ? '✎ Editar letra' : '+ Agregar letra');
+        editLyricButton.addEventListener('click', event => {
+          event.stopPropagation();
+          editingDraftRowId = editingDraftRowId === row.id ? null : row.id;
+          renderStructuredEditor();
+          if (editingDraftRowId === row.id) {
+            const editor = rowsHost.querySelector('.structured-row-lyric-editor');
+            if (editor) {
+              const field = editor.querySelector('textarea');
+              if (field) field.focus({ preventScroll: true });
+            }
+          }
+        });
+        card.appendChild(editLyricButton);
+
+        if (editingDraftRowId === row.id) {
+          const editor = document.createElement('div');
+          editor.className = 'structured-row-lyric-editor';
+          editor.setAttribute('data-row-lyric-editor', row.id);
+          const field = document.createElement('textarea');
+          field.value = row.lyric;
+          field.rows = 2;
+          field.setAttribute('aria-label', 'Editar letra de ' + block.label);
+          field.placeholder = 'Escribe la letra de esta línea…';
+          editor.appendChild(field);
+
+          const actions = document.createElement('div');
+          actions.className = 'structured-row-lyric-actions';
+          const cancel = document.createElement('button');
+          cancel.type = 'button';
+          cancel.className = 'btn-action';
+          cancel.textContent = 'Cancelar';
+          cancel.addEventListener('click', () => {
+            editingDraftRowId = null;
+            renderStructuredEditor();
+          });
+          const apply = document.createElement('button');
+          apply.type = 'button';
+          apply.className = 'btn-action primary';
+          apply.textContent = 'Aplicar letra';
+          apply.addEventListener('click', () => applyStructuredRowLyric(row.id, field.value));
+          actions.append(cancel, apply);
+          editor.appendChild(actions);
+          card.appendChild(editor);
+        }
         rowsHost.appendChild(card);
       });
     });
@@ -2075,20 +2131,44 @@
     renderStructuredEditor();
   }
 
-  function handleEditorInput() {
+  function renderRawEditorPreview() {
     const raw = document.getElementById('edit-raw').value;
     const preview = document.getElementById('edit-preview');
     const lines = raw.split('\n');
-
-    let html = lines.map(line => {
-      if (isTagLine(line)) return `<span class="highlight-tag">${escapeHtml(line)}</span>`;
-      if (isChordLine(line)) return `<span class="highlight-chord">${escapeHtml(line)}</span>`;
+    const html = lines.map(line => {
+      if (isTagLine(line)) return '<span class="highlight-tag">' + escapeHtml(line) + '</span>';
+      if (isChordLine(line)) return '<span class="highlight-chord">' + escapeHtml(line) + '</span>';
       return escapeHtml(line);
     }).join('\n');
-
     preview.innerHTML = html + '\n\n\n';
     syncEditorScroll();
+  }
 
+  function applyStructuredRowLyric(rowId, nextLyric) {
+    if (!structuredDraft || !window.ChordModel || typeof window.ChordModel.updateRowLyric !== 'function') return;
+    const singleLineLyric = String(nextLyric).replace(/\r\n?/g, '\n').replace(/\n+/g, ' ');
+    const result = window.ChordModel.updateRowLyric(structuredDraft, rowId, singleLineLyric);
+    if (!result.ok) {
+      alert('No se pudo aplicar la letra para proteger los acordes: ' + result.warnings.join(' '));
+      return;
+    }
+    structuredDraft = result.structuredContent;
+    structuredDraftDirty = true;
+    structuredDraftSyncError = null;
+    editingDraftRowId = null;
+    selectedDraftRowId = rowId;
+    selectedDraftChordId = null;
+    const serialized = window.ChordModel.serializeLegacy(structuredDraft);
+    if (serialized.ok) {
+      document.getElementById('edit-raw').value = serialized.rawText;
+      renderRawEditorPreview();
+    }
+    renderStructuredEditor();
+  }
+
+  function handleEditorInput() {
+    const raw = document.getElementById('edit-raw').value;
+    renderRawEditorPreview();
     if (structuredDraft && window.ChordModel &&
         window.ChordModel.validateStructuredContent(structuredDraft).valid) {
       const reconciled = window.ChordModel.reconcileLyrics(structuredDraft, raw);
@@ -2108,6 +2188,7 @@
     }
     selectedDraftRowId = null;
     selectedDraftChordId = null;
+    editingDraftRowId = null;
     renderStructuredEditor();
   }
 
