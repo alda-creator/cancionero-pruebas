@@ -2302,7 +2302,14 @@
   }
 
   function addStructuredDraftBlock() {
-    const draft = ensureStructuredDraft();
+    let draft = ensureStructuredDraft();
+    // En una canción nueva todavía vacía no existe texto que convertir.
+    // Permitimos iniciar el documento estructurado desde la primera sección.
+    if (!draft && !document.getElementById('edit-raw').value.trim()) {
+      draft = { version: 2, blocks: [] };
+      structuredDraft = draft;
+      structuredDraftSource = 'structured';
+    }
     if (!draft || !window.ChordModel || typeof window.ChordModel.addBlock !== 'function') return;
     const result = window.ChordModel.addBlock(draft, 'NUEVA SECCIÓN');
     if (!result.ok) {
