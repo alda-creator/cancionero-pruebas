@@ -788,3 +788,49 @@ test('calcula auto-desplazamiento progresivo al acercar el arrastre a los bordes
   assert.equal(delta(20, 0), 0);
   assert.equal(delta(NaN, 800), 0);
 });
+
+
+test('unifica encabezados conocidos con y sin corchetes', () => {
+  const cases = [
+    ['[ESTROFA 1]', 'ESTROFA 1'], ['[CORO]', 'CORO'], ['[PUENTE]', 'PUENTE'],
+    ['Estrofa 1', 'Estrofa 1'], ['Coro', 'Coro'], ['Puente', 'Puente'],
+    ['Intro', 'Intro'], ['Interludio', 'Interludio'], ['Instrumental', 'Instrumental'],
+    ['Pre-coro', 'Pre-coro'], ['Tag', 'Tag']
+  ];
+  for (const [source, expected] of cases) {
+    assert.equal(ChordModel.parseSectionHeaderLine(source), expected, source);
+    const converted = ChordModel.convertLegacy(source + '\\nLetra de prueba');
+    assert.equal(converted.ok, true, source + ': ' + JSON.stringify(converted.warnings));
+    assert.equal(converted.structuredContent.blocks[0].label, expected);
+  }
+});
+
+test('conserva etiquetas personalizadas entre corchetes y bloques repetidos', () => {
+  const raw = '[PUENTE FINAL]\\nPrimera parte\\n[CORO ESPECIAL]\\nCanto\\n[CORO ESPECIAL]\\nRepetición';
+  const converted = ChordModel.convertLegacy(raw);
+  assert.equal(converted.ok, true, JSON.stringify(converted.warnings));
+  const blocks = converted.structuredContent.blocks;
+  assert.deepEqual(blocks.map(block => block.label), ['PUENTE FINAL', 'CORO ESPECIAL', 'CORO ESPECIAL']);
+  assert.equal(new Set(blocks.map(block => block.id)).size, 3);
+  const serialized = ChordModel.serializeLegacy(converted.structuredContent);
+  assert.equal(serialized.ok, true);
+  const restored = ChordModel.convertLegacy(serialized.rawText);
+  assert.equal(restored.ok, true, JSON.stringify(restored.warnings));
+  assert.deepEqual(restored.structuredContent.blocks.map(block => block.label), blocks.map(block => block.label));
+  assert.equal(new Set(restored.structuredContent.blocks.map(block => block.id)).size, 3);
+});
+
+test('no convierte etiquetas entre corchetes dentro de una línea de letra', () => {
+  const raw = '[CORO]\\nAlabemos [con gozo] al Señor\\n[ESTROFA 2]';
+  const converted = ChordModel.convertLegacy(raw);
+  assert.equal(converted.ok, true, JSON.stringify(converted.warnings));
+  assert.deepEqual(converted.structuredContent.blocks.map(block => block.label), ['CORO', 'ESTROFA 2']);
+  assert.equal(converted.structuredContent.blocks[0].rows[0].lyric, 'Alabemos [con gozo] al Señor');
+});
+
+test('una etiqueta completa entre corchetes conserva la convención heredada', () => {
+  assert.equal(ChordModel.parseSectionHeaderLine('[Sección personalizada]'), 'Sección personalizada');
+  assert.equal(ChordModel.parseSectionHeaderLine('Sección personalizada'), null);
+  assert.equal(ChordModel.parseSectionHeaderLine('REPITEN CORO 1'), null);
+  assert.equal(ChordModel.parseSectionHeaderLine(''), null);
+});
