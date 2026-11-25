@@ -1921,7 +1921,7 @@
         });
         const lyric = document.createElement('span');
         lyric.className = 'structured-editor-preview-lyric';
-        const editableTailColumns = row.lyric ? 12 : 0;
+        const editableTailColumns = row.lyric ? 20 : 0;
         lyric.textContent = (editorLayout.lyric || ' ') + ' '.repeat(editableTailColumns);
         lyric.style.width = Math.max(
           editorLayout.lyric.length + editableTailColumns,
@@ -2040,13 +2040,17 @@
     return true;
   }
 
+  function structuredRowMaxChordOffset(row) {
+    return row && row.lyric ? Array.from(row.lyric).length + 20 : 10000;
+  }
+
   function moveSelectedDraftChord(delta) {
     const row = draftRowById();
     if (!row || !selectedDraftChordId) return;
     const chord = row.chords.find(item => item.id === selectedDraftChordId);
     if (!chord) return;
     const nextOffset = chord.position.offset + delta;
-    const max = row.lyric.length ? Array.from(row.lyric).length : 10000;
+    const max = structuredRowMaxChordOffset(row);
     if (nextOffset < 0 || nextOffset > max) return;
     if (row.chords.some(item => item.id !== chord.id && item.position.offset === nextOffset)) {
       alert('Ya hay otro acorde en esa posición.');
@@ -2072,7 +2076,7 @@
       return;
     }
     const offset = Number(document.getElementById('structured-chord-offset').value);
-    const max = row.lyric.length ? Array.from(row.lyric).length : 10000;
+    const max = structuredRowMaxChordOffset(row);
     if (!Number.isInteger(offset) || offset < 0 || offset > max) {
       alert(row.lyric.length ? 'La posición debe estar entre 0 y ' + max + '.' : 'La posición instrumental debe ser un número entre 0 y 10000.');
       return;
