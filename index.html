@@ -332,6 +332,7 @@
     .structured-editor-heading { display:flex; flex-direction:row; align-items:center; gap:8px; margin:0 0 6px; }
     .structured-editor-heading strong { font-size:13px; }
     .structured-editor-heading span, .structured-editor-help { color:var(--text-muted); font-size:11px; }
+    .structured-add-block-button { margin-left:auto; white-space:nowrap; font-size:11px; padding:6px 9px; }
     .structured-editor-rows { display:flex; flex-direction:column; gap:5px; margin-bottom:8px; }
     .structured-editor-row { padding:5px 7px; border:1px solid transparent; border-radius:8px; background:transparent; }
     .structured-editor-row.selected { border-color:var(--accent); background:var(--card); }
@@ -462,7 +463,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.3.7 · Edición de nombres de sección · (PRUEBAS)</div>
+        <div class="app-version">v1.3.8 · Agregar secciones desde el editor · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -623,8 +624,9 @@
 
     <section id="structured-editor-panel" class="structured-editor-panel" aria-label="Editor visual de acordes">
       <div class="structured-editor-heading">
-        <strong>Edición de acordes</strong>
+        <strong>Editor unificado</strong>
         <span id="structured-editor-status" role="status" aria-live="polite">Toca una línea para editarla.</span>
+        <button type="button" class="btn-action structured-add-block-button" id="structured-add-block">＋ Sección</button>
       </div>
       <div id="structured-editor-rows" class="structured-editor-rows"></div>
       <div class="structured-editor-controls">
@@ -1906,6 +1908,8 @@
     const draft = ensureStructuredDraft();
     panel.style.display = 'block';
     rowsHost.innerHTML = '';
+    const addBlockButton = document.getElementById('structured-add-block');
+    if (addBlockButton) addBlockButton.disabled = !draft;
     if (!draft) {
       panel.classList.remove('has-selection');
       status.textContent = 'Este formato antiguo no se pudo convertir automáticamente. El texto original permanece intacto.';
@@ -2121,6 +2125,7 @@
         editLyricButton.addEventListener('click', event => {
           event.stopPropagation();
           editingDraftRowId = editingDraftRowId === row.id ? null : row.id;
+          editingDraftBlockId = null;
           renderStructuredEditor();
           if (editingDraftRowId === row.id) {
             const editor = rowsHost.querySelector('.structured-row-lyric-editor');
@@ -2296,6 +2301,31 @@
     syncEditorScroll();
   }
 
+  function addStructuredDraftBlock() {
+    const draft = ensureStructuredDraft();
+    if (!draft || !window.ChordModel || typeof window.ChordModel.addBlock !== 'function') return;
+    const result = window.ChordModel.addBlock(draft, 'NUEVA SECCIÓN');
+    if (!result.ok) {
+      alert('No se pudo agregar la sección: ' + result.warnings.join(' '));
+      return;
+    }
+    structuredDraft = result.structuredContent;
+    structuredDraftDirty = true;
+    structuredDraftSyncError = null;
+    selectedDraftRowId = null;
+    selectedDraftChordId = null;
+    editingDraftRowId = null;
+    editingDraftBlockId = result.blockId;
+    const serialized = window.ChordModel.serializeLegacy(structuredDraft);
+    if (serialized.ok) {
+      document.getElementById('edit-raw').value = serialized.rawText;
+      renderRawEditorPreview();
+    }
+    renderStructuredEditor();
+    const field = document.querySelector('#structured-editor-rows .structured-block-label-editor input');
+    if (field) { field.focus({ preventScroll: true }); field.select(); }
+  }
+
   function applyStructuredBlockLabel(blockId, nextLabel) {
     if (!structuredDraft || !window.ChordModel ||
         typeof window.ChordModel.updateBlockLabel !== 'function') return;
@@ -2368,6 +2398,8 @@
     const addButton = document.getElementById('structured-chord-save');
     const deleteButton = document.getElementById('structured-chord-delete');
     if (addButton) addButton.addEventListener('click', saveStructuredDraftChord);
+    const addBlockButton = document.getElementById('structured-add-block');
+    if (addBlockButton) addBlockButton.addEventListener('click', addStructuredDraftBlock);
     if (deleteButton) deleteButton.addEventListener('click', deleteStructuredDraftChord);
     const leftButton = document.getElementById('structured-chord-left');
     const rightButton = document.getElementById('structured-chord-right');
