@@ -162,3 +162,12 @@ No se cambia Firebase ni sus reglas en esta iniciativa.
 - La prueba de regresión añadida edita una canción con acordes alineados en el texto copiado, serializa el resultado y vuelve a importarlo para comparar letra, símbolos y offsets.
 
 **Alcance deliberadamente limitado:** no se cambia todavía el algoritmo de importación, el renderizador de lectura, el modelo de bloques, la transposición, Mi Set ni Director/Músico.
+
+
+## 10. Preservación de posiciones en filas instrumentales y cola musical
+
+La edición de letra no debe reinterpretar los offsets de una fila instrumental como posiciones relativas al texto recién escrito. Si la letra anterior o la nueva está vacía, `updateRowLyric` conserva los offsets absolutos. En ediciones de letra con contenido, los offsets se ajustan por diferencias, pero nunca se recortan al largo del texto; así se conservan acordes de cola.
+
+La interfaz ofrece 20 columnas de cola editable y permite crear/desplazar acordes hasta `longitud de letra + 20`, de acuerdo con el límite que ya acepta el validador del modelo.
+
+Las pruebas cubren el ciclo instrumental vacío → letra agregada → letra eliminada, y un acorde situado al final de la cola musical.
