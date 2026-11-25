@@ -227,3 +227,14 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 - **Regla:** ningún caso ambiguo debe provocar pérdida o sobrescritura silenciosa.
 - **Documentos relacionados:** `docs/ESTRATEGIA_MIGRACION_FORMATO.md`, `docs/EDITOR_ACORDES_ESTRUCTURADOS.md`, `docs/ADAPTADOR_CANCIONES.md`, `docs/DIAGNOSTICO_FORMATOS.md`.
 - **No autorizado sin aprobación explícita:** cambios a producción, Firebase de producción, reglas o migración masiva de la biblioteca.
+
+
+## 11. Corrección de edición de letra instrumental y cola musical (candidata v1.3.4)
+
+- Al añadir la primera letra a una fila instrumental, conservar los offsets absolutos de todos sus acordes.
+- Al vaciar una fila, conservar sus offsets para que no se compriman ni se agrupen en la posición cero.
+- En ediciones normales, no recortar los acordes que permanecen después de la última palabra.
+- La interfaz permite crear y desplazar acordes hasta 20 posiciones después del final de la letra, en concordancia con el validador estructurado.
+- La superficie visual reserva 20 columnas editables después de la letra.
+- Pruebas añadidas para agregar/quitar letra en una fila instrumental y para validar un acorde nuevo al final de la cola musical.
+- **Pendiente:** CI, despliegue en Pages y validación manual del usuario en iPhone. No tocar producción.

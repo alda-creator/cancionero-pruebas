@@ -522,6 +522,41 @@ test('permite posiciones musicales después de la última palabra y del último 
   assert.deepEqual(chords.map(chord => chord.position.offset), [0, 22]);
 });
 
+test('al agregar y quitar letra a una fila instrumental conserva offsets absolutos', () => {
+  const imported = ChordModel.convertLegacy('[INTRO]\nDb       Ab       Gb       Db');
+  assert.equal(imported.ok, true, JSON.stringify(imported.warnings));
+  const original = imported.structuredContent.blocks[0].rows[0];
+  assert.equal(original.lyric, '');
+  const originalOffsets = original.chords.map(chord => chord.position.offset);
+  const withLyric = ChordModel.updateRowLyric(imported.structuredContent, original.id, 'Abba padre');
+  assert.equal(withLyric.ok, true, JSON.stringify(withLyric.warnings));
+  assert.deepEqual(withLyric.structuredContent.blocks[0].rows[0].chords.map(chord => chord.position.offset), originalOffsets);
+  const cleared = ChordModel.updateRowLyric(withLyric.structuredContent, original.id, '');
+  assert.equal(cleared.ok, true, JSON.stringify(cleared.warnings));
+  assert.deepEqual(cleared.structuredContent.blocks[0].rows[0].chords.map(chord => chord.position.offset), originalOffsets);
+});
+
+test('permite acordes nuevos hasta 20 posiciones después del final de la letra', () => {
+  const lyric = 'Abba padre';
+  const content = {
+    version: 2,
+    blocks: [{
+      id: 'intro-1', label: 'INTRO',
+      rows: [{
+        id: 'intro-1-row-1', lyric,
+        chords: [{
+          id: 'tail-chord', root: 'Db', quality: '', bass: null,
+          position: { offset: Array.from(lyric).length + 20, affinity: 'before' }
+        }]
+      }]
+    }]
+  };
+  const validation = ChordModel.validateStructuredContent(content);
+  assert.equal(validation.valid, true, JSON.stringify(validation.errors));
+  const layout = ChordModel.layoutChordRow(lyric, content.blocks[0].rows[0].chords, chord => chord.root);
+  assert.equal(layout.placements[0].sourceOffset, lyric.length + 20);
+});
+
 test('distribuye grupos densos y acordes largos de forma acumulativa', () => {
   const chords = Array.from({ length: 12 }, (_, index) => ({
     id: String(index), root: 'C', quality: '', position: { offset: index * 2, affinity: 'before' }
