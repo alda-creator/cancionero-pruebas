@@ -6,7 +6,7 @@
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Versión de laboratorio validada por el usuario:** v1.3.13 (PR #89), incluido auto-desplazamiento durante arrastre
+**Última versión candidata en laboratorio:** v1.3.14 (PR #91), unificación de etiquetas heredadas; pendiente de despliegue y validación manual. Última versión validada por el usuario: v1.3.13 (PR #89).
 
 ## 1. Reglas permanentes de trabajo
 
@@ -361,3 +361,6 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 **Estado:** completado y validado por el usuario en iPhone en v1.3.13 (PR #89). El usuario confirmó que el auto-desplazamiento funciona con fluidez en ambas direcciones, incluso al pasar secciones largas. Las flechas conservan el movimiento de una posición por pulsación; el arrastre libre permite saltar varias posiciones y el auto-scroll facilita continuar el gesto sin soltar. CI y GitHub Pages exitosos. Producción y Firebase de producción permanecen intactas.
 
 - **25-nov-2026:** el usuario validó v1.3.13 en iPhone y confirmó que el auto-desplazamiento durante el arrastre es fluido; se cierra la etapa de reordenamiento de secciones. Siguiente fase acordada: auditoría y unificación de etiquetas heredadas en el editor, preservando la compatibilidad con texto pegado desde Internet.
+
+
+- **25-nov-2026:** PR #91 prepara v1.3.14: reconocimiento unificado de encabezados heredados, compatibilidad con etiquetas personalizadas entre corchetes y pruebas de regresión para bloques repetidos, IDs, serialización y letra con corchetes. Pendiente confirmar CI, integración, Pages y validación manual en iPhone. Producción y Firebase de producción permanecen intactas.
