@@ -216,4 +216,4 @@ La operación de reordenamiento identifica la sección mediante su ID estable y 
 
 ## Arrastre libre entre posiciones
 
-El asa de arrastre calcula el índice final de inserción comparando la coordenada vertical del puntero con los puntos medios de todas las secciones restantes. Así puede saltar varias posiciones en un solo gesto. Las flechas de subir y bajar siguen moviendo una sola posición por pulsación. El seguimiento del puntero se mantiene durante todo el gesto y una cancelación no modifica el documento.
+El asa de arrastre calcula el índice final de inserción comparando la coordenada vertical del puntero con los puntos medios de todas las secciones restantes. Así puede saltar varias posiciones en un solo gesto. Las flechas de subir y bajar siguen moviendo una sola posición por pulsación. El seguimiento se registra en la fase de captura de `document` para mayor compatibilidad con Safari en iOS; una cancelación no modifica el documento.
