@@ -337,7 +337,13 @@
     .structured-editor-row { padding:5px 7px; border:1px solid transparent; border-radius:8px; background:transparent; }
     .structured-editor-row.selected { border-color:var(--accent); background:var(--card); }
     .structured-editor-row-label { display:block; font-size:10px; color:var(--text-muted); margin-bottom:2px; }
-    .structured-editor-block-card { padding:3px 0 7px; border-bottom:1px solid var(--card-border); border-radius:7px; }\n    .structured-editor-block-card.drop-target { outline:2px dashed var(--accent); outline-offset:2px; }\n    .structured-editor-block-heading { display:flex; align-items:center; gap:6px; margin:8px 0 3px; min-height:30px; }\n    .structured-block-drag-handle { border:0; background:transparent; color:var(--text-muted); padding:5px 7px; font-size:17px; line-height:1; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; }\n    .structured-block-drag-handle:active { cursor:grabbing; }\n    .structured-block-order-button { border:0; background:transparent; color:var(--text-muted); padding:5px 6px; font-size:14px; cursor:pointer; }\n    .structured-block-order-button:disabled { opacity:.3; cursor:default; }
+    .structured-editor-block-card { padding:3px 0 7px; border-bottom:1px solid var(--card-border); border-radius:7px; }
+    .structured-editor-block-card.drop-target { outline:2px dashed var(--accent); outline-offset:2px; }
+    .structured-editor-block-heading { display:flex; align-items:center; gap:6px; margin:8px 0 3px; min-height:30px; }
+    .structured-block-drag-handle { border:0; background:transparent; color:var(--text-muted); padding:5px 7px; font-size:17px; line-height:1; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; }
+    .structured-block-drag-handle:active { cursor:grabbing; }
+    .structured-block-order-button { border:0; background:transparent; color:var(--text-muted); padding:5px 6px; font-size:14px; cursor:pointer; }
+    .structured-block-order-button:disabled { opacity:.3; cursor:default; }
     .structured-editor-block-heading strong { font-size:11px; color:var(--text-muted); }
     .structured-block-edit-button { border:0; background:transparent; color:var(--text-muted); padding:2px 5px; font-size:12px; cursor:pointer; }
     .structured-block-label-editor { display:flex; gap:6px; align-items:center; margin:4px 0 6px; }
@@ -1955,17 +1961,17 @@
           dropTarget = siblings[Math.min(targetIndex, Math.max(0, siblings.length - 1))] || blockCard;
           if (dropTarget) dropTarget.classList.add('drop-target');
         };
-        const finish = finishEvent => {
+        const finish = (finishEvent, cancelled) => {
           if (finishEvent.pointerId !== pointerId) return;
           dragHandle.removeEventListener('pointermove', onMove);
           dragHandle.removeEventListener('pointerup', onUp);
           dragHandle.removeEventListener('pointercancel', onCancel);
           try { if (dragHandle.hasPointerCapture(pointerId)) dragHandle.releasePointerCapture(pointerId); } catch (_) {}
           if (dropTarget) dropTarget.classList.remove('drop-target');
-          if (moved) reorderStructuredDraftBlock(block.id, targetIndex);
+          if (moved && !cancelled) reorderStructuredDraftBlock(block.id, targetIndex);
         };
-        const onUp = finishEvent => finish(finishEvent);
-        const onCancel = finishEvent => finish(finishEvent);
+        const onUp = finishEvent => finish(finishEvent, false);
+        const onCancel = finishEvent => finish(finishEvent, true);
         dragHandle.addEventListener('pointermove', onMove);
         dragHandle.addEventListener('pointerup', onUp);
         dragHandle.addEventListener('pointercancel', onCancel);
