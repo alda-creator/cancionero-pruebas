@@ -1975,7 +1975,7 @@
           editingDraftRowId = editingDraftRowId === row.id ? null : row.id;
           renderStructuredEditor();
           if (editingDraftRowId === row.id) {
-            const editor = rowsHost.querySelector('[data-row-lyric-editor="' + row.id + '"]');
+            const editor = rowsHost.querySelector('.structured-row-lyric-editor');
             if (editor) {
               const field = editor.querySelector('textarea');
               if (field) field.focus({ preventScroll: true });
@@ -2153,6 +2153,7 @@
     }
     structuredDraft = result.structuredContent;
     structuredDraftDirty = true;
+    structuredDraftSyncError = null;
     editingDraftRowId = null;
     selectedDraftRowId = rowId;
     selectedDraftChordId = null;
