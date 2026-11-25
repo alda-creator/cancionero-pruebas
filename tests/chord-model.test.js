@@ -523,7 +523,7 @@ test('permite posiciones musicales después de la última palabra y del último 
 });
 
 test('al agregar y quitar letra a una fila instrumental conserva offsets absolutos', () => {
-  const imported = ChordModel.convertLegacy('[INTRO]\\nDb       Ab       Gb       Db');
+  const imported = ChordModel.convertLegacy('[INTRO]\nDb       Ab       Gb       Db');
   assert.equal(imported.ok, true, JSON.stringify(imported.warnings));
   const original = imported.structuredContent.blocks[0].rows[0];
   assert.equal(original.lyric, '');
