@@ -138,6 +138,29 @@ test('no serializa una afinidad que el formato heredado no puede representar', (
   assert.equal(result.rawText, null);
 });
 
+test('actualiza una línea de forma aislada y conserva offsets de acordes al final', () => {
+  const original = ChordModel.convertLegacy('C        G\nHola mundo').structuredContent;
+  const row = original.blocks[0].rows[0];
+  row.chords[1].position.offset = Array.from(row.lyric).length + 5;
+  const same = ChordModel.updateRowLyric(original, row.id, row.lyric);
+  assert.equal(same.ok, true);
+  assert.equal(same.structuredContent.blocks[0].rows[0].chords[1].position.offset, Array.from(row.lyric).length + 5);
+  const edited = ChordModel.updateRowLyric(original, row.id, 'Hola querido mundo');
+  assert.equal(edited.ok, true);
+  assert.equal(edited.structuredContent.blocks[0].rows[0].lyric, 'Hola querido mundo');
+  assert.equal(edited.structuredContent.blocks[0].rows[0].chords[0].position.offset, 0);
+  assert.equal(original.blocks[0].rows[0].lyric, 'Hola mundo', 'no debe mutar la estructura original');
+  assert.equal(ChordModel.validateStructuredContent(edited.structuredContent).valid, true);
+});
+
+test('actualiza una línea con caracteres Unicode sin perder validez', () => {
+  const original = ChordModel.convertLegacy('C       G\nCántico de adoración').structuredContent;
+  const row = original.blocks[0].rows[0];
+  const edited = ChordModel.updateRowLyric(original, row.id, 'Cántico nuevo de adoración');
+  assert.equal(edited.ok, true);
+  assert.equal(ChordModel.validateStructuredContent(edited.structuredContent).valid, true);
+});
+
 test('reconcilia cambios de letra y conserva acordes en filas intactas y editadas', () => {
   const original = ChordModel.convertLegacy('[CORO]\nC       G\nAbba Padre, Abba Padre\nD\nEstar contigo').structuredContent;
   const result = ChordModel.reconcileLyrics(original, '[CORO]\nAbba Padre, Abba Padre por siempre\nEstar contigo\nNueva línea');
