@@ -6,7 +6,7 @@
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Versión de laboratorio validada por el usuario:** v1.3.6 (PR #77); v1.3.7 en desarrollo
+**Versión de laboratorio validada por el usuario:** v1.3.8 (PR #82)
 
 ## 1. Reglas permanentes de trabajo
 
@@ -38,7 +38,7 @@
 | Notación anglosajona/latina | Implementada | Preferencia local por dispositivo: C-D-E / Do-Re-Mi. |
 | Motor de reconocimiento y transposición de acordes | Implementado y probado | Incluye acordes básicos, extendidos, alterados e inversiones dentro de los casos ya validados. |
 | Selector manual de tonalidad original | Implementado y probado | Independiente de la sugerencia basada en el primer acorde. |
-| Editor unificado — edición contextual de letra y acordes | Implementado por etapas y validado en laboratorio hasta v1.3.6 | Edición por fila, preservación de offsets instrumentales/cola musical, arrastre táctil, rechazo seguro de destinos ocupados y desplazamiento horizontal independiente. Se conserva el respaldo heredado. |
+| Editor unificado — edición contextual de letra, acordes y bloques | Implementado por etapas y validado en laboratorio hasta v1.3.8 | Edición por fila, preservación de offsets instrumentales/cola musical, arrastre táctil, renombrado y creación de secciones. Se conserva el respaldo heredado. |
 | Distribución visual y ajuste de línea | Implementados y probados en v1.3.0 | Se recuperó el ajuste natural por palabras; sin desplazamiento horizontal global ni espacio lateral sobrante. |
 | Visualización móvil y modo Director | Corregidos y probados en v1.3.0 | El usuario confirmó que el tamaño y encuadre regresaron a lo esperado. |
 | Compatibilidad con posiciones después de la última palabra | Implementada y probada a nivel de modelo | Mantener pruebas de regresión para acordes al final de la frase. |
@@ -84,7 +84,7 @@ Observación del usuario: símbolos como `Mib/Sol` y `Fam` no se empalman, pero 
 
 ## 4. Siguiente proyecto principal — Editor unificado
 
-**Estado:** etapa actual validada por el usuario en v1.3.6 (PR #74–#77). Se completó la validación manual del arrastre, protección de la letra al rechazar destinos ocupados, toque normal para insertar acordes y desplazamiento horizontal de filas. La unificación continúa por etapas; no se considera terminado todo el proyecto del editor. Siguiente iteración en desarrollo: renombrar secciones desde el encabezado del editor, sin cambiar IDs ni contenido musical.
+**Estado:** etapas validadas por el usuario hasta v1.3.8 (PR #74–#77 y #79–#82). Se validaron edición de letra, acordes, filas instrumentales, arrastre táctil, renombrado y creación de secciones. La unificación continúa por etapas; no se considera terminado todo el proyecto del editor. Siguiente iteración propuesta: eliminar secciones con confirmación y protección de contenido.
 
 Objetivo: integrar las superficies superior e inferior actuales en una sola experiencia coherente. La letra, los acordes y los bloques deben sentirse como elementos del mismo editor, sin obligar al usuario a cambiar de panel para completar operaciones relacionadas.
 
@@ -219,6 +219,8 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 - **24-nov-2026:** se registra observación de zoom automático al enfocar búsqueda y clave del Director en iPhone; se investigará como mejora móvil posterior, sin bloquear el editor unificado.
 - **24-nov-2026:** siguiente proyecto principal acordado: editor unificado.
 - **24-nov-2026:** PR #77 integrada en el laboratorio como v1.3.6; protección contra click sintético residual después de un arrastre rechazado. CI aprobada y GitHub Pages desplegada.
+- **25-nov-2026:** el usuario validó v1.3.7: renombrar secciones conserva contenido, IDs y secuencias de Mi Set; Director/Músico sigue funcionando.
+- **25-nov-2026:** el usuario validó v1.3.8: agregar secciones desde el editor unificado funciona en canciones existentes y nuevas; se conserva el contenido previo. Se registra como mejora futura unificar también la representación/gestión de etiquetas heredadas como `[Estrofa 1]`, `[Coro]` y `[Puente]`, sin cambiar ahora la compatibilidad de importación.
 - **24-nov-2026:** el usuario completó las pruebas manuales de v1.3.6 en iPhone: destino ocupado rechazado sin desplazar la letra, destino libre aceptado, inserción normal por toque y desplazamiento horizontal de fila. Se cierra esta etapa; producción y Firebase de producción permanecen intactas.
 
 ## 10. Arquitectura y migración al formato estructurado
@@ -281,7 +283,7 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 - No altera la composición de las secuencias personalizadas de Mi Set ni la navegación Director/Músico.
 - Pruebas de modelo: renombrado, no mutación del original, preservación de IDs/contenido, serialización y validación de entradas inválidas.
 
-**Estado:** implementación en rama de laboratorio; pendiente revisión, CI, despliegue y prueba manual en iPhone.
+**Estado:** completado y validado manualmente por el usuario en iPhone en v1.3.7 (PR #79 y corrección de IDs en PR #81).
 
 
 ## 15. Edición de bloques — agregar secciones (candidata v1.3.8)
@@ -297,4 +299,29 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 - No altera la lógica de Mi Set ni Director/Músico; los nuevos IDs se integran al mismo documento estructurado.
 - Pruebas cubren orden al final, fila vacía inicial, IDs únicos, no mutación y rechazo de etiquetas inválidas.
 
-**Estado:** implementación en rama de laboratorio; pendiente revisión, CI, despliegue y prueba manual en iPhone.
+**Estado:** completado y validado manualmente por el usuario en iPhone en v1.3.8 (PR #82).
+
+
+## 16. Mi Set — actualizar contenido de canciones sin perder personalización
+
+**Estado:** mejora registrada; pendiente de auditoría técnica y diseño antes de implementar. Detectada por el usuario al probar v1.3.8.
+
+**Comportamiento actual observado:** cuando se corrige y guarda una canción en la biblioteca, la copia que ya está agregada a Mi Set no refleja necesariamente esa corrección. Para verla, el usuario debe quitar y volver a agregar la canción. Esto puede dejar a un usuario leyendo una letra o acordes desactualizados.
+
+**Comportamiento deseado:**
+- Mi Set debe recibir las correcciones de contenido de la canción fuente (letra, acordes, bloques/etiquetas y demás datos editoriales) sin exigir quitar y volver a agregarla.
+- La actualización del contenido fuente no debe sobrescribir la personalización de Mi Set: tono/transposición individual, orden de canciones y secuencia personalizada de bloques.
+- La transposición debe aplicarse sobre los acordes ya corregidos de la fuente. Ejemplo: si un acorde fuente cambia de G a A y la canción está transportada dos semitonos arriba, Mi Set debe mostrar B; si está un tono abajo, debe mostrar G.
+- Si se modifica la estructura de bloques, conservar las referencias de secuencia que todavía correspondan; definir un comportamiento seguro y comprensible para bloques eliminados o sustituidos, sin saltos silenciosos ni pérdida de personalización.
+- La biblioteca original debe seguir siendo la fuente de verdad del contenido; Mi Set debe guardar solo la personalización y las referencias necesarias, o sincronizar una instantánea de forma controlada.
+
+**Auditoría previa obligatoria:**
+1. Revisar cómo Mi Set guarda actualmente canciones: copia completa, referencia por ID, instantánea local o combinación.
+2. Identificar cómo se calculan y persisten tono, orden y secuencia personalizada, y cómo se resuelven los IDs de bloques.
+3. Comprobar efectos en Director/Músico, modo offline, caché local y reconexión.
+4. Diseñar una estrategia de actualización/versionado que no sobrescriba cambios locales pendientes ni convierta una canción antigua de forma destructiva.
+5. Añadir pruebas de regresión para cambio de letra, cambio de acorde, transposición positiva/negativa, bloques renombrados/agregados/eliminados y persistencia offline.
+
+**Criterio de aceptación:** una corrección guardada en la canción fuente aparece en Mi Set al volver a abrir/actualizar la canción, mientras que el tono elegido, orden y secuencia personalizada permanecen intactos. La transposición se recalcula usando los acordes corregidos de la fuente.
+
+**Regla de seguridad:** no implementar una actualización que simplemente reemplace la canción completa dentro de Mi Set, porque podría borrar la transposición o la secuencia personalizada. Primero auditar y separar explícitamente contenido fuente de personalización del usuario.
