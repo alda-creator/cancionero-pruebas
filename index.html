@@ -859,8 +859,8 @@
   }
   function getCurrentSequenceSnapshot() {
     if (!currentSong) return [];
-    const parsed = parseRawSongWithBlocks(getSongRawText(currentSong));
-    return getEffectiveBlockSequence(parsed.blocks).map(item => ({ ...item }));
+    const blocks = getCurrentSongSequenceBlocks();
+    return getEffectiveBlockSequence(blocks).map(item => ({ ...item }));
   }
 
   function readSetTonePreferences() {
@@ -1437,6 +1437,17 @@
     };
   }
 
+  // Mi Set debe usar los mismos IDs que el documento normalizado del lector.
+  // Renombrar una etiqueta no cambia el ID estructurado del bloque; derivarlo
+  // otra vez desde rawText haría que las secuencias guardadas dejaran de coincidir.
+  function getCurrentSongSequenceBlocks() {
+    if (!currentSong) return [];
+    return getSongDisplayModel(currentSong).blocks.map(block => ({
+      id: block.id,
+      label: block.label
+    }));
+  }
+
   function buildBlocksHTML(targetContainer) {
     if (!currentSong || !targetContainer) return;
     targetContainer.innerHTML = '';
@@ -1518,7 +1529,7 @@
       if(sequenceSortableInstance){sequenceSortableInstance.destroy();sequenceSortableInstance=null;}
       return;
     }
-    const parsed=parseRawSongWithBlocks(getSongRawText(currentSong));
+    const parsed = { blocks: getCurrentSongSequenceBlocks() };
     const byId=new Map(parsed.blocks.map(block=>[block.id,block]));
     const sequence=getEffectiveBlockSequence(parsed.blocks);
     list.innerHTML='';
@@ -1561,7 +1572,7 @@
   }
   function persistCurrentSequence(sequence) {
     if(!canEditCurrentSetSequence())return;
-    const parsed=parseRawSongWithBlocks(getSongRawText(currentSong));
+    const parsed = { blocks: getCurrentSongSequenceBlocks() };
     const normalized=normalizeBlockSequence(sequence,parsed.blocks);
     saveSetSongSequence(currentSong.id,normalized);
     renderTransposedContent();
@@ -1578,14 +1589,14 @@
   function addSequenceBlock() {
     if(!canEditCurrentSetSequence())return;
     const id=document.getElementById('sequence-add-select').value;if(!id)return;
-    const parsed=parseRawSongWithBlocks(getSongRawText(currentSong));
+    const parsed = { blocks: getCurrentSongSequenceBlocks() };
     const sequence=getEffectiveBlockSequence(parsed.blocks);
     sequence.push({instanceId:createSequenceInstanceId(),blockId:id});
     persistCurrentSequence(sequence);
   }
   function moveSequenceBlock(instanceId, direction) {
     if(!canEditCurrentSetSequence())return;
-    const parsed=parseRawSongWithBlocks(getSongRawText(currentSong));
+    const parsed = { blocks: getCurrentSongSequenceBlocks() };
     const sequence=getEffectiveBlockSequence(parsed.blocks);
     const index=sequence.findIndex(item=>item.instanceId===instanceId);
     const target=index+direction;
@@ -1595,7 +1606,7 @@
   }
   function removeSequenceBlock(instanceId) {
     if(!canEditCurrentSetSequence())return;
-    const parsed=parseRawSongWithBlocks(getSongRawText(currentSong));
+    const parsed = { blocks: getCurrentSongSequenceBlocks() };
     const sequence=getEffectiveBlockSequence(parsed.blocks).filter(item=>item.instanceId!==instanceId);
     if(!sequence.length){alert('La secuencia debe conservar al menos un bloque.');return;}
     persistCurrentSequence(sequence);
