@@ -139,7 +139,7 @@ test('no serializa una afinidad que el formato heredado no puede representar', (
 });
 
 test('renombra un bloque conservando IDs, filas, acordes y la estructura original', () => {
-  const original = ChordModel.convertLegacy('[CORO]\\nC       G\\nSublime gracia').structuredContent;
+  const original = ChordModel.convertLegacy('[CORO]\nC       G\nSublime gracia').structuredContent;
   const block = original.blocks[0];
   const before = JSON.stringify(original);
   const renamed = ChordModel.updateBlockLabel(original, block.id, 'PRE-CORO');
@@ -155,9 +155,9 @@ test('renombra un bloque conservando IDs, filas, acordes y la estructura origina
 });
 
 test('rechaza nombres de bloque vacíos, multilínea o con corchetes', () => {
-  const original = ChordModel.convertLegacy('[CORO]\\nLetra').structuredContent;
+  const original = ChordModel.convertLegacy('[CORO]\nLetra').structuredContent;
   const id = original.blocks[0].id;
-  for (const label of ['', '   ', 'DOS\\nLINEAS', '[CORO]', 'x'.repeat(61)]) {
+  for (const label of ['', '   ', 'DOS\nLINEAS', '[CORO]', 'x'.repeat(61)]) {
     const result = ChordModel.updateBlockLabel(original, id, label);
     assert.equal(result.ok, false, JSON.stringify(label));
     assert.equal(result.structuredContent, null);
