@@ -469,7 +469,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.3.11 · Arrastre libre entre secciones · (PRUEBAS)</div>
+        <div class="app-version">v1.3.12 · Recuperación del arrastre táctil · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -1966,9 +1966,9 @@
         };
         const finish = (finishEvent, cancelled) => {
           if (finishEvent.pointerId !== pointerId) return;
-          window.removeEventListener('pointermove', onMove);
-          window.removeEventListener('pointerup', onUp);
-          window.removeEventListener('pointercancel', onCancel);
+          document.removeEventListener('pointermove', onMove, true);
+          document.removeEventListener('pointerup', onUp, true);
+          document.removeEventListener('pointercancel', onCancel, true);
           try { if (dragHandle.hasPointerCapture(pointerId)) dragHandle.releasePointerCapture(pointerId); } catch (_) {}
           if (dropTarget) dropTarget.classList.remove('drop-target');
           if (moved && !cancelled) reorderStructuredDraftBlock(block.id, targetIndex);
@@ -1976,9 +1976,11 @@
         const onUp = finishEvent => finish(finishEvent, false);
         const onCancel = finishEvent => finish(finishEvent, true);
         try { dragHandle.setPointerCapture(pointerId); } catch (_) {}
-        window.addEventListener('pointermove', onMove, { passive: false });
-        window.addEventListener('pointerup', onUp);
-        window.addEventListener('pointercancel', onCancel);
+        // Capturar en la fase de captura del documento: Safari iOS puede no
+        // propagar de forma consistente estos eventos hasta window durante el gesto táctil.
+        document.addEventListener('pointermove', onMove, { capture: true, passive: false });
+        document.addEventListener('pointerup', onUp, true);
+        document.addEventListener('pointercancel', onCancel, true);
       });
       blockHeading.appendChild(dragHandle);
 
