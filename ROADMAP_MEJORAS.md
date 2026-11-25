@@ -2,11 +2,11 @@
 
 **Documento vivo y fuente de referencia del proyecto.** Actualizarlo al cerrar cada mejora, prueba o decisión. No volver a proponer como pendiente una función marcada como implementada y validada. No borrar elementos históricos: cambiar su estado y anotar el motivo.
 
-**Última actualización:** 24 de noviembre de 2026  
+**Última actualización:** 25 de noviembre de 2026  
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Versión de laboratorio validada por el usuario:** v1.3.2 (PR #71)
+**Versión de laboratorio validada por el usuario:** v1.3.4 (PR #75)
 
 ## 1. Reglas permanentes de trabajo
 
@@ -84,7 +84,7 @@ Observación del usuario: símbolos como `Mib/Sol` y `Fam` no se empalman, pero 
 
 ## 4. Siguiente proyecto principal — Editor unificado
 
-**Estado:** en desarrollo por etapas. Primera iteración de edición contextual de letra implementada en la rama `feature/editor-unificado-edicion-letra-por-fila`; pendiente de CI, revisión y prueba manual en iPhone. No integrada aún en `main`.
+**Estado:** en desarrollo por etapas. La edición contextual de letra por fila y la preservación de offsets instrumentales/cola musical ya están integradas y validadas por el usuario en v1.3.4 (PR #74 y #75). La siguiente iteración implementa el arrastre táctil directo de acordes; pendiente de CI, despliegue y prueba manual en iPhone.
 
 Objetivo: integrar las superficies superior e inferior actuales en una sola experiencia coherente. La letra, los acordes y los bloques deben sentirse como elementos del mismo editor, sin obligar al usuario a cambiar de panel para completar operaciones relacionadas.
 
@@ -104,7 +104,7 @@ Alcance acordado:
 - Si la estructura puede serializarse sin pérdida, se actualiza también `rawText`; si no, se conserva el respaldo heredado original y `structuredContent` sigue siendo la fuente principal.
 - Se mantiene el editor de texto anterior como respaldo durante esta fase; no se elimina ni se oculta hasta validar importación, edición y guardado.
 - Prueba añadida: editar letra de una canción pegada de internet, serializar y volver a importar, comparando letra, símbolos y offsets de acordes.
-- **Pendiente:** CI, inspección del diff, despliegue Pages y prueba del usuario en iPhone. No declarar lista para probar antes de verificar el despliegue.
+- **Validado por el usuario:** edición de letra por fila y corrección del ciclo agregar/borrar/volver a agregar letra en filas instrumentales; las posiciones originales de los acordes se conservan. PR #74 y PR #75 integrados en laboratorio.
 
 **Criterios de seguridad:**
 - No modificar automáticamente canciones existentes por abrirlas.
@@ -237,4 +237,19 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 - La interfaz permite crear y desplazar acordes hasta 20 posiciones después del final de la letra, en concordancia con el validador estructurado.
 - La superficie visual reserva 20 columnas editables después de la letra.
 - Pruebas añadidas para agregar/quitar letra en una fila instrumental y para validar un acorde nuevo al final de la cola musical.
-- **Pendiente:** CI, despliegue en Pages y validación manual del usuario en iPhone. No tocar producción.
+- **Completado y validado por el usuario:** PR #75, v1.3.4. CI y GitHub Pages exitosos; el usuario confirmó que los problemas de posiciones instrumentales y acordes al final de la letra quedaron corregidos. Producción intacta.
+
+
+## 12. Movimiento táctil directo de acordes (candidata v1.3.5)
+
+**Estado:** implementado en rama de trabajo; pendiente de CI, revisión de diff, despliegue en Pages y validación manual en iPhone.
+
+- Se puede arrastrar un símbolo de acorde directamente sobre el renglón para cambiar su posición musical.
+- El mapeo de posición visual a offset de origen conserva la ubicación musical real incluso cuando el render añade espacios para evitar colisiones.
+- En filas instrumentales, el desplazamiento horizontal representa posiciones musicales absolutas.
+- Un destino ocupado por otro acorde o fuera del límite permitido se rechaza sin mover el acorde.
+- Se mantienen los controles actuales de desplazamiento fino y edición del símbolo.
+- El gesto de arrastre solo se activa al comenzar sobre un acorde; la superficie restante mantiene su desplazamiento horizontal.
+- Se agregó una prueba para verificar el mapeo visual/original de los offsets.
+
+**Criterio de aceptación:** arrastrar acordes con el dedo en iPhone, sin mover accidentalmente otros acordes, sin cambiar la letra y sin interferir con el desplazamiento horizontal de la línea. Probar también mouse/trackpad y filas instrumentales. No retirar el editor heredado ni modificar producción.
