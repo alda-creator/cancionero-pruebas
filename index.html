@@ -2165,6 +2165,7 @@
   }
 
   function handleEditorInput() {
+    const raw = document.getElementById('edit-raw').value;
     renderRawEditorPreview();
     if (structuredDraft && window.ChordModel &&
         window.ChordModel.validateStructuredContent(structuredDraft).valid) {
