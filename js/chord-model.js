@@ -381,10 +381,9 @@
     if (String(oldLyric || '') === String(newLyric || '')) return offset;
     const oldChars = Array.from(oldLyric || '');
     const newChars = Array.from(newLyric || '');
-    // Si la fila era instrumental y ahora recibe su primera letra, la
-    // posición del acorde ya era explícita. No debe desplazarse al final
-    // del texto recién escrito por interpretarlo como una inserción previa.
-    if (oldChars.length === 0) return Math.max(0, Math.min(newChars.length, offset));
+    // Las posiciones de una fila instrumental ya representan espacio musical
+    // explícito. Añadir o quitar letra no debe comprimirlas ni moverlas.
+    if (oldChars.length === 0 || newChars.length === 0) return Math.max(0, offset);
     let prefix = 0;
     while (prefix < oldChars.length && prefix < newChars.length &&
            oldChars[prefix] === newChars[prefix]) prefix++;
@@ -399,7 +398,9 @@
     } else if (offset > prefix && offset < oldChangedEnd) {
       next = newChangedEnd;
     }
-    return Math.max(0, Math.min(newChars.length, next));
+    // Los acordes pueden quedar después de la última palabra. No recortarlos
+    // al largo del texto: el editor reserva una cola musical para colocarlos.
+    return Math.max(0, next);
   }
 
   // Reconcilia el texto editado con la estructura anterior sin volver a
