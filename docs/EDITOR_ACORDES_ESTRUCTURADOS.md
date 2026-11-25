@@ -171,3 +171,16 @@ La edición de letra no debe reinterpretar los offsets de una fila instrumental 
 La interfaz ofrece 20 columnas de cola editable y permite crear/desplazar acordes hasta `longitud de letra + 20`, de acuerdo con el límite que ya acepta el validador del modelo.
 
 Las pruebas cubren el ciclo instrumental vacío → letra agregada → letra eliminada, y un acorde situado al final de la cola musical.
+
+
+## 11. Movimiento táctil directo de acordes — candidata v1.3.5
+
+La vista musical del editor permite arrastrar un acorde directamente sobre el renglón para cambiar su posición, tanto en letras como en filas instrumentales.
+
+- El arrastre modifica únicamente el offset del acorde seleccionado; no altera el texto ni las posiciones de los demás acordes.
+- En filas con letra, la posición visual se traduce de vuelta al offset musical de origen mediante el mapa de layoutChordRow, incluyendo los espacios visuales que se agregan para evitar colisiones de símbolos.
+- En filas instrumentales, la posición horizontal se interpreta como offset musical absoluto.
+- Si el destino está ocupado por otro acorde o rebasa el límite admitido, se rechaza el movimiento y se conserva la posición anterior.
+- Los controles existentes de desplazamiento fino siguen disponibles como alternativa accesible y precisa.
+- El arrastre captura el gesto únicamente al comenzar sobre un símbolo; tocar o desplazar el resto de la superficie conserva el desplazamiento horizontal normal.
+- Se agregó una prueba del mapeo entre posición visual y offset musical original. La interacción táctil requiere validación manual en iPhone antes de considerarse terminada.

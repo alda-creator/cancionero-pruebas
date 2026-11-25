@@ -337,7 +337,8 @@
     .structured-editor-row.selected { border-color:var(--accent); background:var(--card); }
     .structured-editor-row-label { display:block; font-size:10px; color:var(--text-muted); margin-bottom:2px; }
     .structured-editor-preview { position:relative; box-sizing:border-box; width:100%; max-width:100%; padding:1.35em 0 3px; margin:0; font:14px/1.5 "Courier New",Courier,monospace; white-space:nowrap; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:thin; overscroll-behavior-x:contain; }
-    .structured-editor-preview-chord { position:absolute; top:0; color:var(--chord); font-weight:700; white-space:nowrap; cursor:pointer; }
+    .structured-editor-preview-chord { position:absolute; top:0; color:var(--chord); font-weight:700; white-space:nowrap; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; }
+    .structured-editor-preview-chord:active { cursor:grabbing; }
     .structured-editor-preview-chord.selected { background:var(--accent); color:#fff; border-radius:4px; padding:0 2px; }
     .structured-editor-preview-lyric { display:block; width:max-content; min-width:100%; white-space:pre; color:var(--text); cursor:text; }
     .structured-editor-controls { display:none; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:7px; padding:8px; border:1px solid var(--card-border); border-radius:10px; background:var(--card); }
@@ -456,7 +457,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.3.4 · Preservación de acordes instrumentales y cola musical · (PRUEBAS)</div>
+        <div class="app-version">v1.3.5 · Ajuste táctil directo de acordes · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -1913,6 +1914,73 @@
             document.getElementById('structured-chord-offset').value = String(chord.position.offset);
             renderStructuredEditor();
           };
+          // Arrastrar el símbolo permite ajustar su posición musical directamente
+          // sin depender de los controles de incremento/decremento.
+          positionedChord.addEventListener('pointerdown', event => {
+            if (event.pointerType === 'mouse' && event.button !== 0) return;
+            event.stopPropagation();
+            selectedDraftRowId = row.id;
+            selectedDraftChordId = chord.id;
+            document.getElementById('structured-chord-symbol').value = structuredChordSymbol(chord);
+            document.getElementById('structured-chord-offset').value = String(chord.position.offset);
+
+            const pointerId = event.pointerId;
+            const startX = event.clientX;
+            const startVisualOffset = placement ? placement.offset : chord.position.offset;
+            const fontSize = parseFloat(getComputedStyle(preview).fontSize) || 14;
+            const characterWidth = Math.max(1, fontSize * 0.6);
+            let moved = false;
+            let nextVisualOffset = startVisualOffset;
+
+            try { positionedChord.setPointerCapture(pointerId); } catch (_) {}
+
+            const onPointerMove = moveEvent => {
+              if (moveEvent.pointerId !== pointerId) return;
+              moveEvent.preventDefault();
+              const deltaX = moveEvent.clientX - startX;
+              if (Math.abs(deltaX) >= 4) moved = true;
+              if (!moved) return;
+              nextVisualOffset = Math.max(0, Math.round(startVisualOffset + deltaX / characterWidth));
+              positionedChord.style.left = nextVisualOffset + 'ch';
+            };
+
+            const finishDrag = (finishEvent, cancelled) => {
+              if (finishEvent.pointerId !== pointerId) return;
+              positionedChord.removeEventListener('pointermove', onPointerMove);
+              positionedChord.removeEventListener('pointerup', onPointerUp);
+              positionedChord.removeEventListener('pointercancel', onPointerCancel);
+              try {
+                if (positionedChord.hasPointerCapture(pointerId)) positionedChord.releasePointerCapture(pointerId);
+              } catch (_) {}
+              if (!moved || cancelled) return;
+
+              const nextOffset = row.lyric
+                ? editorLayout.sourceOffsetAtVisual(nextVisualOffset)
+                : nextVisualOffset;
+              const maxOffset = structuredRowMaxChordOffset(row);
+              const collision = row.chords.some(item =>
+                item.id !== chord.id && item.position.offset === nextOffset
+              );
+              if (nextOffset < 0 || nextOffset > maxOffset || collision) {
+                status.textContent = collision
+                  ? 'Ese punto ya contiene otro acorde. El acorde conserva su posición anterior.'
+                  : 'La posición está fuera del límite musical permitido.';
+                renderStructuredEditor();
+                return;
+              }
+              chord.position.offset = nextOffset;
+              row.chords.sort((left, right) => left.position.offset - right.position.offset);
+              structuredDraftDirty = true;
+              document.getElementById('structured-chord-offset').value = String(nextOffset);
+              renderStructuredEditor();
+            };
+
+            const onPointerUp = finishEvent => finishDrag(finishEvent, false);
+            const onPointerCancel = finishEvent => finishDrag(finishEvent, true);
+            positionedChord.addEventListener('pointermove', onPointerMove);
+            positionedChord.addEventListener('pointerup', onPointerUp);
+            positionedChord.addEventListener('pointercancel', onPointerCancel);
+          });
           positionedChord.addEventListener('click', selectChord);
           positionedChord.addEventListener('keydown', event => {
             if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectChord(event); }
