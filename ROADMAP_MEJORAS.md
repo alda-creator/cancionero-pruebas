@@ -6,7 +6,7 @@
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Versión de laboratorio validada por el usuario:** v1.3.9 (PR #82 y #84)
+**Versión de laboratorio validada por el usuario:** v1.3.8 (PR #82); v1.3.9 pendiente de validación
 
 ## 1. Reglas permanentes de trabajo
 
