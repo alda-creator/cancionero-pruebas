@@ -242,3 +242,13 @@ El conversor utiliza una única función para interpretar encabezados de secció
 - Los corchetes dentro de una línea de letra permanecen como texto. Una línea aislada entre corchetes se interpreta como etiqueta por convención del formato heredado; el formato actual no permite distinguir automáticamente una línea literal aislada de una etiqueta personalizada.
 
 Las pruebas cubren etiquetas comunes con/sin corchetes, etiquetas personalizadas, bloques repetidos e IDs únicos, serialización y texto entre corchetes dentro de una línea. La compatibilidad con canciones pegadas de Internet sigue protegida por la conversión conservadora y el respaldo heredado.
+
+
+### Validación manual de v1.3.14
+
+El usuario probó la versión publicada en la PWA de laboratorio y confirmó:
+- Las etiquetas habituales se convierten en secciones independientes.
+- Una etiqueta personalizada como `[Coro Especial]` se agrega como sección independiente.
+- El texto entre corchetes dentro de una frase, como `[con gozo]`, permanece dentro de la letra.
+
+**Estado:** reconocimiento e importación de etiquetas heredadas validados por el usuario. Pendiente la etapa complementaria de edición/renombrado desde el editor unificado, guardado/reapertura y comprobación de Mi Set.

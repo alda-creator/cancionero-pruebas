@@ -6,7 +6,7 @@
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Última versión candidata en laboratorio:** v1.3.14 (PR #91), unificación de etiquetas heredadas; pendiente de despliegue y validación manual. Última versión validada por el usuario: v1.3.13 (PR #89).
+**Versión de laboratorio validada por el usuario:** v1.3.14 (PR #91), reconocimiento unificado de etiquetas heredadas.
 
 ## 1. Reglas permanentes de trabajo
 
@@ -363,4 +363,4 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 - **25-nov-2026:** el usuario validó v1.3.13 en iPhone y confirmó que el auto-desplazamiento durante el arrastre es fluido; se cierra la etapa de reordenamiento de secciones. Siguiente fase acordada: auditoría y unificación de etiquetas heredadas en el editor, preservando la compatibilidad con texto pegado desde Internet.
 
 
-- **25-nov-2026:** PR #91 prepara v1.3.14: reconocimiento unificado de encabezados heredados, compatibilidad con etiquetas personalizadas entre corchetes y pruebas de regresión para bloques repetidos, IDs, serialización y letra con corchetes. Pendiente confirmar CI, integración, Pages y validación manual en iPhone. Producción y Firebase de producción permanecen intactas.
+- **25-nov-2026:** PR #91 integró v1.3.14; CI y GitHub Pages finalizaron correctamente. El usuario validó en iPhone etiquetas habituales, `[Coro Especial]` como sección independiente y `[con gozo]` como texto dentro de la letra. La fase de reconocimiento/importación queda validada. Siguiente paso: probar edición y renombrado de etiquetas desde el editor unificado, guardado/reapertura y coherencia con Mi Set. Producción y Firebase de producción permanecen intactas.
