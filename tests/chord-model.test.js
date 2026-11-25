@@ -725,3 +725,37 @@ test('no permite eliminar la última sección ni un ID inexistente', () => {
   };
   assert.equal(ChordModel.removeBlock(multiple, 'missing').ok, false);
 });
+
+
+test('reordena secciones por ID y conserva intactos contenido e identificadores', () => {
+  const original = {
+    version: 2,
+    blocks: [
+      { id: 'verse-1', label: 'ESTROFA 1', rows: [{ id: 'r1', lyric: 'Primera', chords: [{ id: 'c1', root: 'C', quality: '', bass: null, position: { offset: 0, affinity: 'before' } }] }] },
+      { id: 'chorus', label: 'CORO', rows: [{ id: 'r2', lyric: 'Coro', chords: [{ id: 'c2', root: 'G', quality: '', bass: null, position: { offset: 2, affinity: 'before' } }] }] },
+      { id: 'verse-2', label: 'ESTROFA 2', rows: [{ id: 'r3', lyric: 'Segunda', chords: [] }] },
+      { id: 'bridge', label: 'PUENTE', rows: [{ id: 'r4', lyric: 'Puente', chords: [] }] }
+    ]
+  };
+  const result = ChordModel.moveBlock(original, 'bridge', 2);
+  assert.equal(result.ok, true, JSON.stringify(result.warnings));
+  assert.deepEqual(result.structuredContent.blocks.map(block => block.id), ['verse-1', 'chorus', 'bridge', 'verse-2']);
+  assert.equal(result.structuredContent.blocks[2].rows[0].lyric, 'Puente');
+  assert.equal(result.structuredContent.blocks[0].rows[0].chords[0].id, 'c1');
+  assert.equal(result.structuredContent.blocks[1].rows[0].chords[0].position.offset, 2);
+  assert.deepEqual(original.blocks.map(block => block.id), ['verse-1', 'chorus', 'verse-2', 'bridge']);
+  assert.equal(ChordModel.validateStructuredContent(result.structuredContent).valid, true);
+});
+
+test('reordena al inicio y al final, y rechaza IDs o destinos inválidos', () => {
+  const original = ChordModel.convertLegacy('[ESTROFA 1]\nUno\n[CORO]\nDos\n[PUENTE]\nTres').structuredContent;
+  const first = ChordModel.moveBlock(original, original.blocks[2].id, 0);
+  assert.equal(first.ok, true);
+  assert.deepEqual(first.structuredContent.blocks.map(block => block.label), ['PUENTE', 'ESTROFA 1', 'CORO']);
+  const last = ChordModel.moveBlock(first.structuredContent, first.structuredContent.blocks[0].id, 2);
+  assert.equal(last.ok, true);
+  assert.deepEqual(last.structuredContent.blocks.map(block => block.label), ['ESTROFA 1', 'CORO', 'PUENTE']);
+  assert.equal(ChordModel.moveBlock(original, 'missing', 0).ok, false);
+  assert.equal(ChordModel.moveBlock(original, original.blocks[0].id, 9).ok, false);
+  assert.equal(ChordModel.moveBlock(original, original.blocks[0].id, 1.5).ok, false);
+});
