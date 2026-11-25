@@ -457,7 +457,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.3.5 · Ajuste táctil directo de acordes · (PRUEBAS)</div>
+        <div class="app-version">v1.3.6 · Protección de letra al rechazar arrastre · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -1870,6 +1870,20 @@
     const saveButton = document.getElementById('structured-chord-save');
     const deleteButton = document.getElementById('structured-chord-delete');
     if (!panel || !rowsHost) return;
+    // Evita que el click sintético posterior a un arrastre llegue a la letra
+    // cuando el render reemplazó el acorde que capturó el gesto.
+    if (!rowsHost.dataset.dragClickGuard) {
+      rowsHost.dataset.dragClickGuard = 'true';
+      rowsHost.addEventListener('click', event => {
+        const suppressUntil = Number(rowsHost.dataset.suppressLyricClickUntil || 0);
+        if (Date.now() <= suppressUntil && event.target.closest('.structured-editor-preview-lyric')) {
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          rowsHost.dataset.suppressLyricClickUntil = '0';
+        }
+      }, true);
+    }
     const draft = ensureStructuredDraft();
     panel.style.display = 'block';
     rowsHost.innerHTML = '';
@@ -1953,6 +1967,11 @@
                 if (positionedChord.hasPointerCapture(pointerId)) positionedChord.releasePointerCapture(pointerId);
               } catch (_) {}
               if (!moved || cancelled) return;
+
+              // El navegador puede sintetizar un click al terminar pointerup.
+              // Como el render de rechazo reemplaza los nodos, ese click podría
+              // caer sobre la letra y colocar allí un acorde accidentalmente.
+              rowsHost.dataset.suppressLyricClickUntil = String(Date.now() + 700);
 
               const nextOffset = row.lyric
                 ? editorLayout.sourceOffsetAtVisual(nextVisualOffset)
