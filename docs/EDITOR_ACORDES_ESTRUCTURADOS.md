@@ -193,4 +193,4 @@ En iOS y otros navegadores, al finalizar un gesto de puntero puede generarse un 
 
 ## 13. Edición de nombres de sección — candidata v1.3.7
 
-El encabezado de cada bloque estructurado ofrece una acción contextual para renombrarlo. La edición se valida y aplica sobre una copia del documento; mantiene el ID del bloque y todas sus filas/acordes. Los nombres vacíos, multilínea, con corchetes o de más de 60 caracteres se rechazan. La serialización heredada se actualiza solo cuando puede representar la estructura sin pérdida. Esta iteración no agrega, elimina ni reordena bloques.
+El encabezado de cada bloque estructurado ofrece una acción contextual para renombrarlo. La edición se valida y aplica sobre una copia del documento; mantiene el ID del bloque y todas sus filas/acordes. Los nombres vacíos, multilínea, con corchetes o de más de 60 caracteres se rechazan. La serialización heredada se actualiza solo cuando puede representar la estructura sin pérdida. Mi Set obtiene las etiquetas e IDs desde el documento normalizado para que los cambios de nombre no rompan las secuencias guardadas. Esta iteración no agrega, elimina ni reordena bloques.
