@@ -376,6 +376,9 @@
   }
 
   function adjustChordOffset(oldLyric, newLyric, offset, affinity) {
+    // Una edición que no cambia la letra no debe recortar offsets musicales
+    // que legítimamente rebasan el último carácter (acordes de cola).
+    if (String(oldLyric || '') === String(newLyric || '')) return offset;
     const oldChars = Array.from(oldLyric || '');
     const newChars = Array.from(newLyric || '');
     // Si la fila era instrumental y ahora recibe su primera letra, la
@@ -548,6 +551,41 @@
     return { ok: true, rawText: output.join('\n'), warnings: [] };
   }
 
+  // Actualiza una sola línea desde el editor integrado. Trabaja sobre una
+  // copia, conserva IDs/acordes y ajusta posiciones solo cuando cambia la letra.
+  function updateRowLyric(existingContent, rowId, nextLyric) {
+    const validation = validateStructuredContent(existingContent);
+    if (!validation.valid) {
+      return { ok: false, structuredContent: null, warnings: validation.errors };
+    }
+    if (typeof nextLyric !== 'string') {
+      return { ok: false, structuredContent: null, warnings: ['La letra debe ser texto.'] };
+    }
+    const nextContent = JSON.parse(JSON.stringify(existingContent));
+    let target = null;
+    nextContent.blocks.some(block => {
+      target = block.rows.find(row => row.id === rowId) || null;
+      return !!target;
+    });
+    if (!target) {
+      return { ok: false, structuredContent: null, warnings: ['No se encontró la línea que se desea editar.'] };
+    }
+    const previousLyric = target.lyric;
+    target.lyric = nextLyric;
+    target.chords = target.chords.map(chord => ({
+      ...chord,
+      position: {
+        ...chord.position,
+        offset: adjustChordOffset(previousLyric, nextLyric, chord.position.offset, chord.position.affinity)
+      }
+    }));
+    const nextValidation = validateStructuredContent(nextContent);
+    if (!nextValidation.valid) {
+      return { ok: false, structuredContent: null, warnings: nextValidation.errors };
+    }
+    return { ok: true, structuredContent: nextContent, warnings: [] };
+  }
+
   return {
     version: 2,
     parseChordSymbol,
@@ -556,6 +594,7 @@
     validateStructuredContent,
     convertLegacy,
     reconcileLyrics,
+    updateRowLyric,
     serializeLegacy,
     isChordLine
   };
