@@ -336,6 +336,11 @@
     .structured-editor-row { padding:5px 7px; border:1px solid transparent; border-radius:8px; background:transparent; }
     .structured-editor-row.selected { border-color:var(--accent); background:var(--card); }
     .structured-editor-row-label { display:block; font-size:10px; color:var(--text-muted); margin-bottom:2px; }
+    .structured-editor-block-heading { display:flex; align-items:center; gap:6px; margin:8px 0 3px; }
+    .structured-editor-block-heading strong { font-size:11px; color:var(--text-muted); }
+    .structured-block-edit-button { border:0; background:transparent; color:var(--text-muted); padding:2px 5px; font-size:12px; cursor:pointer; }
+    .structured-block-label-editor { display:flex; gap:6px; align-items:center; margin:4px 0 6px; }
+    .structured-block-label-editor input { flex:1; min-width:0; box-sizing:border-box; padding:7px 9px; border:1px solid var(--accent); border-radius:7px; background:var(--bg); color:var(--text); font:16px/1.3 inherit; }
     .structured-editor-preview { position:relative; box-sizing:border-box; width:100%; max-width:100%; padding:1.35em 0 3px; margin:0; font:14px/1.5 "Courier New",Courier,monospace; white-space:nowrap; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:thin; overscroll-behavior-x:contain; }
     .structured-editor-preview-chord { position:absolute; top:0; color:var(--chord); font-weight:700; white-space:nowrap; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; }
     .structured-editor-preview-chord:active { cursor:grabbing; }
@@ -457,7 +462,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.3.6 · Protección de letra al rechazar arrastre · (PRUEBAS)</div>
+        <div class="app-version">v1.3.7 · Edición de nombres de sección · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -1756,6 +1761,7 @@
     structuredDraftSource = editorAdapted && editorAdapted.ok ? editorAdapted.source : null;
     selectedDraftRowId = null;
     selectedDraftChordId = null;
+    editingDraftBlockId = null;
   
     if (!currentSong) return;  
     editingSongId = currentSong.id;  
@@ -1899,9 +1905,51 @@
     let rowCount = 0;
     draft.blocks.forEach(block => {
       const blockHeading = document.createElement('div');
-      blockHeading.className = 'structured-editor-row-label';
-      blockHeading.textContent = block.label;
+      blockHeading.className = 'structured-editor-block-heading';
+      const blockTitle = document.createElement('strong');
+      blockTitle.textContent = block.label;
+      blockHeading.appendChild(blockTitle);
+      const editBlockButton = document.createElement('button');
+      editBlockButton.type = 'button';
+      editBlockButton.className = 'structured-block-edit-button';
+      editBlockButton.textContent = '✎';
+      editBlockButton.setAttribute('aria-label', 'Renombrar sección ' + block.label);
+      editBlockButton.addEventListener('click', () => {
+        editingDraftBlockId = editingDraftBlockId === block.id ? null : block.id;
+        editingDraftRowId = null;
+        renderStructuredEditor();
+        if (editingDraftBlockId === block.id) {
+          const field = rowsHost.querySelector('.structured-block-label-editor input');
+          if (field) { field.focus(); field.select(); }
+        }
+      });
+      blockHeading.appendChild(editBlockButton);
       rowsHost.appendChild(blockHeading);
+      if (editingDraftBlockId === block.id) {
+        const editor = document.createElement('div');
+        editor.className = 'structured-block-label-editor';
+        const field = document.createElement('input');
+        field.type = 'text';
+        field.maxLength = 60;
+        field.value = block.label;
+        field.setAttribute('aria-label', 'Nombre de la sección');
+        field.addEventListener('keydown', event => {
+          if (event.key === 'Enter') { event.preventDefault(); applyStructuredBlockLabel(block.id, field.value); }
+          if (event.key === 'Escape') { editingDraftBlockId = null; renderStructuredEditor(); }
+        });
+        const cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.className = 'btn-action';
+        cancel.textContent = 'Cancelar';
+        cancel.addEventListener('click', () => { editingDraftBlockId = null; renderStructuredEditor(); });
+        const apply = document.createElement('button');
+        apply.type = 'button';
+        apply.className = 'btn-action primary';
+        apply.textContent = 'Aplicar';
+        apply.addEventListener('click', () => applyStructuredBlockLabel(block.id, field.value));
+        editor.append(field, cancel, apply);
+        rowsHost.appendChild(editor);
+      }
       block.rows.forEach(row => {
         rowCount++;
         const card = document.createElement('div');
@@ -2233,6 +2281,25 @@
     }).join('\n');
     preview.innerHTML = html + '\n\n\n';
     syncEditorScroll();
+  }
+
+  function applyStructuredBlockLabel(blockId, nextLabel) {
+    if (!structuredDraft || !window.ChordModel ||
+        typeof window.ChordModel.updateBlockLabel !== 'function') return;
+    const result = window.ChordModel.updateBlockLabel(structuredDraft, blockId, nextLabel);
+    if (!result.ok) {
+      alert('No se pudo cambiar el nombre de la sección: ' + result.warnings.join(' '));
+      return;
+    }
+    structuredDraft = result.structuredContent;
+    structuredDraftDirty = true;
+    editingDraftBlockId = null;
+    const serialized = window.ChordModel.serializeLegacy(structuredDraft);
+    if (serialized.ok) {
+      document.getElementById('edit-raw').value = serialized.rawText;
+      renderRawEditorPreview();
+    }
+    renderStructuredEditor();
   }
 
   function applyStructuredRowLyric(rowId, nextLyric) {
