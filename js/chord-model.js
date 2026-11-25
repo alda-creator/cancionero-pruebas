@@ -668,6 +668,17 @@
     }, 0);
   }
 
+  // Velocidad vertical para auto-desplazar la página mientras se arrastra una sección.
+  // Devuelve 0 fuera de la zona de borde y una velocidad progresiva dentro de ella.
+  function blockDragAutoScrollDelta(pointerY, viewportHeight, edgeSize = 72, maxSpeed = 18) {
+    if (!Number.isFinite(pointerY) || !Number.isFinite(viewportHeight) || viewportHeight <= 0 ||
+        !Number.isFinite(edgeSize) || edgeSize <= 0 || !Number.isFinite(maxSpeed) || maxSpeed <= 0) return 0;
+    if (pointerY < edgeSize) return -maxSpeed * Math.min(1, Math.max(0, (edgeSize - pointerY) / edgeSize));
+    const distanceFromBottom = viewportHeight - pointerY;
+    if (distanceFromBottom < edgeSize) return maxSpeed * Math.min(1, Math.max(0, (edgeSize - distanceFromBottom) / edgeSize));
+    return 0;
+  }
+
   // Reordena una sección por su ID y su índice final, conservando todo su contenido e identidad.
   function moveBlock(existingContent, blockId, targetIndex) {
     const validation = validateStructuredContent(existingContent);
@@ -733,6 +744,7 @@
     removeBlock,
     moveBlock,
     blockInsertionIndex,
+    blockDragAutoScrollDelta,
     serializeLegacy,
     isChordLine
   };

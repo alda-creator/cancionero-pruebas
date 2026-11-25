@@ -774,3 +774,17 @@ test('calcula posiciones de inserción para arrastrar una sección a cualquier l
   assert.equal(ChordModel.blockInsertionIndex([], 200), 0);
   assert.equal(ChordModel.blockInsertionIndex(cards, NaN), -1);
 });
+
+
+test('calcula auto-desplazamiento progresivo al acercar el arrastre a los bordes', () => {
+  const delta = ChordModel.blockDragAutoScrollDelta;
+  assert.equal(delta(120, 800), 0);
+  assert.equal(delta(72, 800), 0);
+  assert.equal(delta(36, 800), -9);
+  assert.equal(delta(0, 800), -18);
+  assert.equal(delta(764, 800), 9);
+  assert.equal(delta(800, 800), 18);
+  assert.equal(delta(-10, 800), -18);
+  assert.equal(delta(20, 0), 0);
+  assert.equal(delta(NaN, 800), 0);
+});

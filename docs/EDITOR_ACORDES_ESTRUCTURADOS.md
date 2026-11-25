@@ -222,3 +222,10 @@ El asa de arrastre calcula el índice final de inserción comparando la coordena
 ### Estado de arrastre y mejora futura
 
 En v1.3.12 se validó en iPhone el reordenamiento libre de secciones: el asa permite saltar varias posiciones y las flechas suben o bajan una posición por pulsación. Queda registrada como mejora de experiencia la auto-desplazamiento vertical del contenedor durante el arrastre: cuando una sección vecina es muy alta, el usuario actualmente debe soltar y continuar el gesto para avanzar más allá de ella. Esta limitación no impide reordenar y no invalida la funcionalidad actual.
+
+
+## Auto-desplazamiento durante el reordenamiento — candidata v1.3.13
+
+Durante el arrastre libre, al mantener el puntero cerca del borde superior o inferior de la ventana, la página se desplaza automáticamente de forma progresiva. El índice de destino se recalcula durante cada fotograma de desplazamiento, incluso si el dedo permanece quieto junto al borde. El ciclo se cancela al salir de la zona de borde, soltar o cancelar el gesto. Las flechas conservan su movimiento de una posición por pulsación y el modelo sigue moviendo bloques completos por ID estable.
+
+La validación manual en Safari/PWA de iPhone debe cubrir secciones vecinas muy largas, desplazamiento hacia ambos extremos, detención inmediata al soltar/cancelar y conservación de letras, acordes, offsets e IDs.
