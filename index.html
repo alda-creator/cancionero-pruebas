@@ -2146,7 +2146,8 @@
 
   function applyStructuredRowLyric(rowId, nextLyric) {
     if (!structuredDraft || !window.ChordModel || typeof window.ChordModel.updateRowLyric !== 'function') return;
-    const result = window.ChordModel.updateRowLyric(structuredDraft, rowId, nextLyric);
+    const singleLineLyric = String(nextLyric).replace(/\r\n?/g, '\n').replace(/\n+/g, ' ');
+    const result = window.ChordModel.updateRowLyric(structuredDraft, rowId, singleLineLyric);
     if (!result.ok) {
       alert('No se pudo aplicar la letra para proteger los acordes: ' + result.warnings.join(' '));
       return;
