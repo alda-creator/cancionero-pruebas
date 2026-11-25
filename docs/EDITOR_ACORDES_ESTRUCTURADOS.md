@@ -231,3 +231,14 @@ CI y GitHub Pages exitosos en PR #89. Producción y Firebase de producción perm
 Durante el arrastre libre, al mantener el puntero cerca del borde superior o inferior de la ventana, la página se desplaza automáticamente de forma progresiva. El índice de destino se recalcula durante cada fotograma de desplazamiento, incluso si el dedo permanece quieto junto al borde. El ciclo se cancela al salir de la zona de borde, soltar o cancelar el gesto. Las flechas conservan su movimiento de una posición por pulsación y el modelo sigue moviendo bloques completos por ID estable.
 
 El usuario validó en Safari/PWA de iPhone secciones largas, desplazamiento en ambas direcciones y la fluidez general. Se conserva como criterio de regresión comprobar la detención al soltar/cancelar y la integridad de letras, acordes, offsets e IDs.
+
+
+## Unificación del reconocimiento de etiquetas heredadas — v1.3.14
+
+El conversor utiliza una única función para interpretar encabezados de sección:
+- Las etiquetas completas entre corchetes se aceptan, incluidas las personalizadas, por compatibilidad con canciones heredadas.
+- Las etiquetas sin corchetes se reconocen únicamente cuando coinciden con el vocabulario conocido (Intro, Estrofa/Verso, Coro/Estribillo, Puente, Pre-coro, Interludio, Instrumental, entre otras).
+- La misma regla se aplica al decidir si una línea posterior a una línea de acordes es letra o un nuevo encabezado.
+- Los corchetes dentro de una línea de letra permanecen como texto. Una línea aislada entre corchetes se interpreta como etiqueta por convención del formato heredado; el formato actual no permite distinguir automáticamente una línea literal aislada de una etiqueta personalizada.
+
+Las pruebas cubren etiquetas comunes con/sin corchetes, etiquetas personalizadas, bloques repetidos e IDs únicos, serialización y texto entre corchetes dentro de una línea. La compatibilidad con canciones pegadas de Internet sigue protegida por la conversión conservadora y el respaldo heredado.
