@@ -6,7 +6,7 @@
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Versión de laboratorio validada por el usuario:** v1.3.14 (PR #91), reconocimiento unificado de etiquetas heredadas.
+**Versión de laboratorio validada por el usuario:** v1.3.14 (PR #91), reconocimiento unificado de etiquetas heredadas y edición/renombrado de secciones, guardado/reapertura e integridad de referencias de Mi Set.
 
 ## 1. Reglas permanentes de trabajo
 
