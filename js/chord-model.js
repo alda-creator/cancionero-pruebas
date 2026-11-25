@@ -587,6 +587,33 @@
     return { ok: true, structuredContent: nextContent, warnings: [] };
   }
 
+  // Renombra un bloque sin cambiar su identidad, filas ni acordes.
+  // El nombre debe poder representarse como una etiqueta heredada [NOMBRE].
+  function updateBlockLabel(existingContent, blockId, nextLabel) {
+    const validation = validateStructuredContent(existingContent);
+    if (!validation.valid) {
+      return { ok: false, structuredContent: null, warnings: validation.errors };
+    }
+    if (typeof nextLabel !== 'string') {
+      return { ok: false, structuredContent: null, warnings: ['El nombre de la sección debe ser texto.'] };
+    }
+    const label = nextLabel.trim();
+    if (!label || label.length > 60 || /[\\[\\]\\r\\n]/.test(label)) {
+      return { ok: false, structuredContent: null, warnings: ['Usa un nombre de 1 a 60 caracteres, sin corchetes ni saltos de línea.'] };
+    }
+    const nextContent = JSON.parse(JSON.stringify(existingContent));
+    const target = nextContent.blocks.find(block => block.id === blockId);
+    if (!target) {
+      return { ok: false, structuredContent: null, warnings: ['No se encontró la sección que se desea renombrar.'] };
+    }
+    target.label = label;
+    const nextValidation = validateStructuredContent(nextContent);
+    if (!nextValidation.valid) {
+      return { ok: false, structuredContent: null, warnings: nextValidation.errors };
+    }
+    return { ok: true, structuredContent: nextContent, warnings: [] };
+  }
+
   return {
     version: 2,
     parseChordSymbol,
@@ -596,6 +623,7 @@
     convertLegacy,
     reconcileLyrics,
     updateRowLyric,
+    updateBlockLabel,
     serializeLegacy,
     isChordLine
   };
