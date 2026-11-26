@@ -593,6 +593,92 @@
     return { ok: true, structuredContent: nextContent, warnings: [] };
   }
 
+  // Sustituye una fila por un fragmento pegado con formato heredado.
+  // Reutiliza el mismo conversor de canciones completas y mantiene la identidad
+  // de la fila original para que la edición no rompa referencias internas.
+  function replaceRowWithLegacyFragment(existingContent, blockId, rowId, rawText) {
+    const validation = validateStructuredContent(existingContent);
+    if (!validation.valid) {
+      return { ok: false, structuredContent: null, warnings: validation.errors };
+    }
+    const converted = convertLegacy(rawText);
+    if (!converted.ok) {
+      return { ok: false, structuredContent: null, warnings: converted.warnings };
+    }
+    if (converted.structuredContent.blocks.length !== 1) {
+      return {
+        ok: false,
+        structuredContent: null,
+        warnings: ['El fragmento contiene varias secciones. Usa la opción para pegar una canción completa.']
+      };
+    }
+
+    const nextContent = JSON.parse(JSON.stringify(existingContent));
+    const targetBlock = nextContent.blocks.find(block => block.id === blockId);
+    if (!targetBlock) {
+      return { ok: false, structuredContent: null, warnings: ['No se encontró la sección que recibirá el fragmento.'] };
+    }
+    const targetIndex = targetBlock.rows.findIndex(row => row.id === rowId);
+    if (targetIndex < 0) {
+      return { ok: false, structuredContent: null, warnings: ['No se encontró la fila que se desea reemplazar.'] };
+    }
+
+    const originalRow = targetBlock.rows[targetIndex];
+    const importedRows = converted.structuredContent.blocks[0].rows.map(row =>
+      JSON.parse(JSON.stringify(row))
+    );
+    if (!importedRows.length) {
+      return { ok: false, structuredContent: null, warnings: ['El fragmento no contiene líneas editables.'] };
+    }
+
+    // Si el usuario pegó solo letra multilínea, conservar los acordes que ya
+    // pertenecían a la fila y ajustar sus offsets respecto de la primera línea.
+    if (importedRows.every(row => row.chords.length === 0) && originalRow.chords.length) {
+      const adjusted = updateRowLyric(
+        { version: 2, blocks: [{ id: targetBlock.id, label: targetBlock.label, rows: [originalRow] }] },
+        originalRow.id,
+        importedRows[0].lyric
+      );
+      if (!adjusted.ok) {
+        return { ok: false, structuredContent: null, warnings: adjusted.warnings };
+      }
+      importedRows[0].chords = adjusted.structuredContent.blocks[0].rows[0].chords;
+    }
+
+    const usedIds = new Set();
+    nextContent.blocks.forEach(block => {
+      usedIds.add(block.id);
+      block.rows.forEach(row => {
+        usedIds.add(row.id);
+        row.chords.forEach(chord => usedIds.add(chord.id));
+      });
+    });
+    const makeUniqueId = prefix => {
+      let sequence = 1;
+      let candidate = prefix + '-' + sequence;
+      while (usedIds.has(candidate)) candidate = prefix + '-' + (++sequence);
+      usedIds.add(candidate);
+      return candidate;
+    };
+
+    importedRows.forEach((row, index) => {
+      row.id = index === 0 ? originalRow.id : makeUniqueId('row-import');
+      row.chords.forEach(chord => { chord.id = makeUniqueId('chord-import'); });
+    });
+    targetBlock.rows.splice(targetIndex, 1, ...importedRows);
+
+    const nextValidation = validateStructuredContent(nextContent);
+    if (!nextValidation.valid) {
+      return { ok: false, structuredContent: null, warnings: nextValidation.errors };
+    }
+    return {
+      ok: true,
+      structuredContent: nextContent,
+      insertedRows: importedRows.length,
+      warnings: []
+    };
+  }
+
   // Renombra un bloque sin cambiar su identidad, filas ni acordes.
   // El nombre debe poder representarse como una etiqueta heredada [NOMBRE].
   function updateBlockLabel(existingContent, blockId, nextLabel) {
@@ -746,6 +832,7 @@
     convertLegacy,
     reconcileLyrics,
     updateRowLyric,
+    replaceRowWithLegacyFragment,
     updateBlockLabel,
     addBlock,
     removeBlock,
