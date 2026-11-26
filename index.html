@@ -2301,7 +2301,6 @@
           editor.setAttribute('data-row-lyric-editor', row.id);
           const field = document.createElement('textarea');
           field.value = row.lyric;
-          field.rows = 2;
           field.setAttribute('aria-label', 'Editar letra de ' + block.label);
           field.placeholder = 'Escribe o pega letra. Si pegas varias líneas con acordes, se reconocerán al aplicar…';
           field.rows = 4;
@@ -2594,7 +2593,7 @@
     renderStructuredEditor();
     if (result.insertedRows) {
       document.getElementById('structured-editor-status').textContent =
-        result.insertedRows + ' renglones importados y distribuidos en la sección.';
+        result.insertedRows + (result.insertedRows === 1 ? ' renglón importado y distribuido en la sección.' : ' renglones importados y distribuidos en la sección.');
     }
   }
 
