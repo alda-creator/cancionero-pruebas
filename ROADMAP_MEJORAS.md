@@ -6,7 +6,7 @@
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Última versión validada manualmente por el usuario:** v1.3.15 (PR #94), editor estructurado prioritario con el editor heredado como respaldo. **En desarrollo:** v1.3.16, pegado inteligente de canciones y fragmentos desde el editor unificado; CI aprobado, pendiente de integración, despliegue y validación manual.
+**Última versión validada manualmente por el usuario:** v1.3.15 (PR #94), editor estructurado prioritario con el editor heredado como respaldo. **Versión desplegada en laboratorio:** v1.3.16, pegado inteligente de canciones y fragmentos desde el editor unificado; CI y GitHub Pages exitosos. Pendiente de validación manual del usuario.
 
 ## 1. Reglas permanentes de trabajo
 
@@ -386,4 +386,4 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 5. Guardar, salir y reabrir; comparar texto, acordes, offsets, filas y etiquetas.
 6. Confirmar que las importaciones ambiguas no sustituyen el contenido existente y que las canciones heredadas siguen abriéndose con el respaldo.
 
-**Estado:** implementación inicial en rama `feat/entrada-inteligente-editor-unificado`; CI automatizado completado correctamente (incluidos modelo de acordes, navegación, diagnósticos, adaptador, documento y sintaxis inline); revisión del diff completada. PR #95 listo para integrar en laboratorio. Pendiente de despliegue y validación manual del usuario. Producción y Firebase de producción permanecen intactas.
+**Estado:** implementación inicial en rama `feat/entrada-inteligente-editor-unificado`; CI automatizado completado correctamente (incluidos modelo de acordes, navegación, diagnósticos, adaptador, documento y sintaxis inline); revisión del diff completada. PR #95 integrado en main mediante squash (commit 16c7a03827e4d3c6612e886170b92dd7a7bf88cf); CI de main y GitHub Pages completados correctamente. Pendiente de validación manual del usuario en iPhone. Producción y Firebase de producción permanecen intactas.
