@@ -2,11 +2,11 @@
 
 **Documento vivo y fuente de referencia del proyecto.** Actualizarlo al cerrar cada mejora, prueba o decisión. No volver a proponer como pendiente una función marcada como implementada y validada. No borrar elementos históricos: cambiar su estado y anotar el motivo.
 
-**Última actualización:** 25 de noviembre de 2026  
+**Última actualización:** 26 de noviembre de 2026  
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Versión de laboratorio validada por el usuario:** v1.3.14 (PR #91), reconocimiento unificado de etiquetas heredadas y edición/renombrado de secciones, guardado/reapertura e integridad de referencias de Mi Set.
+**Última versión validada manualmente por el usuario:** v1.3.15 (PR #94), editor estructurado prioritario con el editor heredado como respaldo. **En desarrollo:** v1.3.16, pegado inteligente de canciones y fragmentos desde el editor unificado; CI aprobado, pendiente de integración, despliegue y validación manual.
 
 ## 1. Reglas permanentes de trabajo
 
@@ -84,7 +84,7 @@ Observación del usuario: símbolos como `Mib/Sol` y `Fam` no se empalman, pero 
 
 ## 4. Siguiente proyecto principal — Editor unificado
 
-**Estado:** etapas validadas por el usuario hasta v1.3.8 (PR #74–#77 y #79–#82). Se validaron edición de letra, acordes, filas instrumentales, arrastre táctil, renombrado y creación de secciones. La unificación continúa por etapas; no se considera terminado todo el proyecto del editor. Siguiente iteración: eliminación de secciones con confirmación y protección de contenido (v1.3.9), pendiente de validación manual.
+**Estado:** edición estructurada, filas instrumentales, arrastre táctil, renombrado, creación y reordenamiento de secciones validados por etapas hasta v1.3.15. La unificación de entrada continúa: el editor estructurado aún debe aceptar canciones completas y fragmentos pegados con acordes, sin depender del editor alternativo.
 
 Objetivo: integrar las superficies superior e inferior actuales en una sola experiencia coherente. La letra, los acordes y los bloques deben sentirse como elementos del mismo editor, sin obligar al usuario a cambiar de panel para completar operaciones relacionadas.
 
@@ -118,7 +118,7 @@ Alcance acordado:
 | Prioridad | Trabajo | Estado | Criterio de aceptación |
 |---|---|---|---|
 | P0 | Corregir GO_TO_BLOCK para instancias repetidas | Completado y validado | PR #69; el segundo Coro lleva al músico a su segunda instancia. |
-| P0 | Editor unificado | Siguiente desarrollo | Edición integrada sin perder funciones ya validadas. |
+| P0 | Editor unificado: entrada inteligente de canciones y fragmentos | En desarrollo (v1.3.16) | Pegar desde la superficie principal, reconocer acordes/letra/secciones y distribuir renglones sin perder contenido. |
 | P2 | Evitar zoom automático en campos al abrir teclado en iPhone | Anotado; auditoría posterior | Buscar y clave del Director no deben provocar ampliación automática molesta. Véase sección 3.3. |
 | P0 | Compatibilidad de canciones antiguas y nuevas | Auditoría continua | Ninguna canción pierde texto, acordes ni posiciones; conversiones ambiguas permanecen intactas. |
 | P0 | Director/Músico y modo offline | Auditoría final | Tono, orden, secuencia, notación local y seguimiento correctos tras conexión, desconexión y reconexión. |
@@ -364,3 +364,26 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 
 
 - **25-nov-2026:** PR #91 integró v1.3.14; CI y GitHub Pages finalizaron correctamente. El usuario validó en iPhone etiquetas habituales, `[Coro Especial]` como sección independiente y `[con gozo]` como texto dentro de la letra. La fase de reconocimiento/importación queda validada. Siguiente paso: probar edición y renombrado de etiquetas desde el editor unificado, guardado/reapertura y coherencia con Mi Set. Producción y Firebase de producción permanecen intactas.
+
+
+## 20. Entrada inteligente y unificación del pegado (v1.3.16)
+
+**Auditoría del 26 de noviembre de 2026:** la conversión heredada ya estaba implementada en `ChordModel.convertLegacy()`, pero la superficie estructurada no la invocaba al pegar dentro de una fila. Además, `applyStructuredRowLyric()` convertía los saltos de línea en espacios, por lo que varios renglones se aplanaban antes de guardarse. El modelo estructurado sí admite múltiples filas por sección; no es necesario cambiar el formato de datos.
+
+**Alcance de la primera iteración:**
+- Añadir una opción de importación dentro del editor estructurado para pegar una canción completa, reconocer encabezados, acordes y letra, y reemplazar el borrador únicamente después de confirmar cuando ya existe contenido.
+- Permitir pegar o escribir varias líneas en el editor de letra de una fila; si el fragmento se puede convertir de forma segura, reemplazar esa fila por varias filas estructuradas dentro de la misma sección.
+- Reutilizar `ChordModel.convertLegacy()` y conservar la identidad de la fila inicial, IDs únicos, acordes, offsets y texto original de respaldo.
+- Si el fragmento contiene varias secciones, dirigir al importador de canción completa en lugar de aplanar o interpretar parcialmente el contenido.
+- Si la conversión es ambigua, conservar intacto el borrador actual y explicar el motivo.
+- Mantener el editor de texto heredado como respaldo hasta que el usuario valide todos los escenarios.
+
+**Criterios de aceptación manual:**
+1. Crear una canción y pegar una canción completa desde la opción del editor unificado; deben reconocerse secciones, acordes, letra y filas instrumentales.
+2. Crear una sección, pegar una estrofa multilínea con acordes dentro del editor de letra y comprobar que se distribuye en filas separadas.
+3. Pegar varias líneas de letra sin acordes; no deben aplanarse y los acordes ya existentes de la primera fila deben conservarse.
+4. Probar inversiones como `D/F#`, acordes al final de línea y espacios amplios.
+5. Guardar, salir y reabrir; comparar texto, acordes, offsets, filas y etiquetas.
+6. Confirmar que las importaciones ambiguas no sustituyen el contenido existente y que las canciones heredadas siguen abriéndose con el respaldo.
+
+**Estado:** implementación inicial en rama `feat/entrada-inteligente-editor-unificado`; CI automatizado completado correctamente (incluidos modelo de acordes, navegación, diagnósticos, adaptador, documento y sintaxis inline); revisión del diff completada. PR #95 listo para integrar en laboratorio. Pendiente de despliegue y validación manual del usuario. Producción y Firebase de producción permanecen intactas.
