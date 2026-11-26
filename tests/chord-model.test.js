@@ -92,6 +92,7 @@ test('pegar texto multilínea sin acordes crea filas y protege los acordes exist
   const original = ChordModel.convertLegacy('C       G\nPrimera letra').structuredContent;
   const block = original.blocks[0];
   const row = block.rows[0];
+  const originalChordIds = row.chords.map(chord => chord.id);
   const result = ChordModel.replaceRowWithLegacyFragment(
     original, block.id, row.id, 'Primera línea nueva\nSegunda línea nueva'
   );
@@ -101,6 +102,11 @@ test('pegar texto multilínea sin acordes crea filas y protege los acordes exist
   assert.deepEqual(
     result.structuredContent.blocks[0].rows[0].chords.map(chord => chord.root),
     ['C', 'G']
+  );
+  assert.deepEqual(
+    result.structuredContent.blocks[0].rows[0].chords.map(chord => chord.id),
+    originalChordIds,
+    'los acordes preexistentes conservan su identidad'
   );
 });
 
