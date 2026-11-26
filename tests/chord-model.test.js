@@ -71,7 +71,7 @@ test('pegar un fragmento con acordes reemplaza una fila por varias filas estruct
   const original = ChordModel.addBlock({ version: 2, blocks: [] }, 'PUENTE').structuredContent;
   const blockId = original.blocks[0].id;
   const rowId = original.blocks[0].rows[0].id;
-  const pasted = 'Bm       G\\nTu amor permanece\\nD/F#     A\\nY me sostendrás';
+  const pasted = 'Bm       G\nTu amor permanece\nD/F#     A\nY me sostendrás';
   const result = ChordModel.replaceRowWithLegacyFragment(original, blockId, rowId, pasted);
   assert.equal(result.ok, true, JSON.stringify(result.warnings));
   assert.equal(result.insertedRows, 2);
@@ -87,11 +87,11 @@ test('pegar un fragmento con acordes reemplaza una fila por varias filas estruct
 });
 
 test('pegar texto multilínea sin acordes crea filas y protege los acordes existentes', () => {
-  const original = ChordModel.convertLegacy('C       G\\nPrimera letra').structuredContent;
+  const original = ChordModel.convertLegacy('C       G\nPrimera letra').structuredContent;
   const block = original.blocks[0];
   const row = block.rows[0];
   const result = ChordModel.replaceRowWithLegacyFragment(
-    original, block.id, row.id, 'Primera línea nueva\\nSegunda línea nueva'
+    original, block.id, row.id, 'Primera línea nueva\nSegunda línea nueva'
   );
   assert.equal(result.ok, true);
   assert.equal(result.structuredContent.blocks[0].rows.length, 2);
@@ -106,7 +106,7 @@ test('un fragmento con varias secciones se dirige al importador de canción comp
   const original = ChordModel.addBlock({ version: 2, blocks: [] }, 'PUENTE').structuredContent;
   const block = original.blocks[0];
   const result = ChordModel.replaceRowWithLegacyFragment(
-    original, block.id, block.rows[0].id, '[VERSO]\\nC\\nLetra\\n[CORO]\\nG\\nCanto'
+    original, block.id, block.rows[0].id, '[VERSO]\nC\nLetra\n[CORO]\nG\nCanto'
   );
   assert.equal(result.ok, false);
   assert.ok(result.warnings.some(message => message.includes('canción completa')));
