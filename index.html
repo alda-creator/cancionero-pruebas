@@ -330,6 +330,11 @@
 
     .structured-editor-panel { display:none; margin:0 0 14px; padding:8px 0; border:0; background:transparent; }
     .structured-editor-heading { display:flex; flex-direction:row; align-items:center; gap:8px; margin:0 0 6px; }
+    .structured-import-panel { margin:7px 0 10px; border:1px solid var(--card-border); border-radius:9px; background:var(--card); }
+    .structured-import-panel > summary { padding:9px 11px; color:var(--accent); font-size:12px; font-weight:700; cursor:pointer; }
+    .structured-import-content { display:grid; gap:8px; padding:0 10px 10px; }
+    .structured-import-content textarea { box-sizing:border-box; width:100%; min-height:130px; padding:9px 10px; border:1px solid var(--card-border); border-radius:8px; background:var(--bg); color:var(--text); font:16px/1.45 'Courier New',Courier,monospace; resize:vertical; }
+    .structured-import-content p { margin:0; color:var(--text-muted); font-size:11px; line-height:1.4; }
     .structured-editor-heading strong { font-size:13px; }
     .structured-editor-heading span, .structured-editor-help { color:var(--text-muted); font-size:11px; }
     .structured-add-block-button { margin-left:auto; white-space:nowrap; font-size:11px; padding:6px 9px; }
@@ -490,7 +495,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.3.15 · Editor unificado prioritario · (PRUEBAS)</div>
+        <div class="app-version">v1.3.16 · Pegado inteligente en editor unificado · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -647,6 +652,14 @@
         <span id="structured-editor-status" role="status" aria-live="polite">Toca una línea para editarla.</span>
         <button type="button" class="btn-action structured-add-block-button" id="structured-add-block">＋ Sección</button>
       </div>
+      <details id="structured-import-panel" class="structured-import-panel">
+        <summary>＋ Pegar canción completa de Internet</summary>
+        <div class="structured-import-content">
+          <textarea id="structured-import-text" rows="7" aria-label="Pegar canción completa" placeholder="Pega aquí la canción con sus acordes, letra y secciones tal como la copiaste…"></textarea>
+          <button type="button" class="btn-action primary" id="structured-import-apply">Reconocer e importar</button>
+          <p>La canción importada reemplazará el contenido actual. Se conservará el texto original como respaldo.</p>
+        </div>
+      </details>
       <div id="structured-editor-rows" class="structured-editor-rows"></div>
       <div class="structured-editor-controls">
         <input id="structured-chord-symbol" type="text" placeholder="Acorde (ej. G, Am7)" autocomplete="off" aria-label="Símbolo del acorde">
@@ -2290,7 +2303,8 @@
           field.value = row.lyric;
           field.rows = 2;
           field.setAttribute('aria-label', 'Editar letra de ' + block.label);
-          field.placeholder = 'Escribe la letra de esta línea…';
+          field.placeholder = 'Escribe o pega letra. Si pegas varias líneas con acordes, se reconocerán al aplicar…';
+          field.rows = 4;
           editor.appendChild(field);
 
           const actions = document.createElement('div');
@@ -2545,11 +2559,26 @@
 
   function applyStructuredRowLyric(rowId, nextLyric) {
     if (!structuredDraft || !window.ChordModel || typeof window.ChordModel.updateRowLyric !== 'function') return;
-    const singleLineLyric = String(nextLyric).replace(/\r\n?/g, '\n').replace(/\n+/g, ' ');
-    const result = window.ChordModel.updateRowLyric(structuredDraft, rowId, singleLineLyric);
-    if (!result.ok) {
-      alert('No se pudo aplicar la letra para proteger los acordes: ' + result.warnings.join(' '));
-      return;
+    const normalizedText = String(nextLyric).replace(/\r\n?/g, '\n');
+    let result;
+    if (normalizedText.includes('\n')) {
+      const targetBlock = structuredDraft.blocks.find(block =>
+        block.rows.some(row => row.id === rowId)
+      );
+      if (!targetBlock || typeof window.ChordModel.replaceRowWithLegacyFragment !== 'function') return;
+      result = window.ChordModel.replaceRowWithLegacyFragment(
+        structuredDraft, targetBlock.id, rowId, normalizedText
+      );
+      if (!result.ok) {
+        alert('No se pudo importar el fragmento. ' + result.warnings.join(' '));
+        return;
+      }
+    } else {
+      result = window.ChordModel.updateRowLyric(structuredDraft, rowId, normalizedText);
+      if (!result.ok) {
+        alert('No se pudo aplicar la letra para proteger los acordes: ' + result.warnings.join(' '));
+        return;
+      }
     }
     structuredDraft = result.structuredContent;
     structuredDraftDirty = true;
@@ -2563,6 +2592,51 @@
       renderRawEditorPreview();
     }
     renderStructuredEditor();
+    if (result.insertedRows) {
+      document.getElementById('structured-editor-status').textContent =
+        result.insertedRows + ' renglones importados y distribuidos en la sección.';
+    }
+  }
+
+  function importStructuredSongFromText() {
+    const field = document.getElementById('structured-import-text');
+    const rawText = field ? field.value : '';
+    if (!rawText.trim()) {
+      alert('Pega primero el contenido de la canción.');
+      return;
+    }
+    const conversion = window.ChordModel && window.ChordModel.convertLegacy(rawText);
+    if (!conversion || !conversion.ok) {
+      const warnings = conversion && conversion.warnings ? conversion.warnings.join(' ') : 'No fue posible iniciar el reconocimiento.';
+      alert('No se pudo reconocer la canción de forma segura. El contenido actual permanece intacto. ' + warnings);
+      return;
+    }
+    const validation = window.ChordModel.validateStructuredContent(conversion.structuredContent);
+    if (!validation.valid) {
+      alert('La conversión produjo una estructura no válida. El contenido actual permanece intacto. ' + validation.errors.join(' '));
+      return;
+    }
+    const currentRaw = document.getElementById('edit-raw').value;
+    if ((currentRaw.trim() || (structuredDraft && structuredDraft.blocks.length)) &&
+        !confirm('¿Reemplazar todo el contenido actual por la canción pegada? Esta acción sustituirá las secciones, letras y acordes del borrador actual.')) {
+      return;
+    }
+    structuredDraft = JSON.parse(JSON.stringify(conversion.structuredContent));
+    structuredDraftSource = 'legacy';
+    structuredDraftDirty = true;
+    structuredDraftSyncError = null;
+    selectedDraftRowId = null;
+    selectedDraftChordId = null;
+    editingDraftRowId = null;
+    editingDraftBlockId = null;
+    document.getElementById('edit-raw').value = rawText;
+    renderRawEditorPreview();
+    const importPanel = document.getElementById('structured-import-panel');
+    if (importPanel) importPanel.open = false;
+    renderStructuredEditor();
+    const rowCount = structuredDraft.blocks.reduce((total, block) => total + block.rows.length, 0);
+    document.getElementById('structured-editor-status').textContent =
+      conversion.structuredContent.blocks.length + ' secciones y ' + rowCount + ' renglones reconocidos.';
   }
 
   function handleEditorInput() {
@@ -2598,6 +2672,8 @@
     if (addButton) addButton.addEventListener('click', saveStructuredDraftChord);
     const addBlockButton = document.getElementById('structured-add-block');
     if (addBlockButton) addBlockButton.addEventListener('click', addStructuredDraftBlock);
+    const importButton = document.getElementById('structured-import-apply');
+    if (importButton) importButton.addEventListener('click', importStructuredSongFromText);
     if (deleteButton) deleteButton.addEventListener('click', deleteStructuredDraftChord);
     const leftButton = document.getElementById('structured-chord-left');
     const rightButton = document.getElementById('structured-chord-right');
