@@ -67,6 +67,51 @@ test('conserva el offset del acorde dentro del margen y sigue rechazando tabulac
   assert.equal(tabs.reason, 'ambiguous');
 });
 
+test('pegar un fragmento con acordes reemplaza una fila por varias filas estructuradas', () => {
+  const original = ChordModel.addBlock({ version: 2, blocks: [] }, 'PUENTE').structuredContent;
+  const blockId = original.blocks[0].id;
+  const rowId = original.blocks[0].rows[0].id;
+  const pasted = 'Bm       G\\nTu amor permanece\\nD/F#     A\\nY me sostendrás';
+  const result = ChordModel.replaceRowWithLegacyFragment(original, blockId, rowId, pasted);
+  assert.equal(result.ok, true, JSON.stringify(result.warnings));
+  assert.equal(result.insertedRows, 2);
+  const rows = result.structuredContent.blocks[0].rows;
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].id, rowId, 'la primera fila conserva la identidad original');
+  assert.equal(rows[0].lyric, 'Tu amor permanece');
+  assert.deepEqual(rows[0].chords.map(chord => chord.root), ['B', 'G']);
+  assert.equal(rows[1].lyric, 'Y me sostendrás');
+  assert.equal(rows[1].chords[0].bass, 'F#');
+  assert.equal(ChordModel.validateStructuredContent(result.structuredContent).valid, true);
+  assert.equal(original.blocks[0].rows.length, 1, 'no debe mutar el documento original');
+});
+
+test('pegar texto multilínea sin acordes crea filas y protege los acordes existentes', () => {
+  const original = ChordModel.convertLegacy('C       G\\nPrimera letra').structuredContent;
+  const block = original.blocks[0];
+  const row = block.rows[0];
+  const result = ChordModel.replaceRowWithLegacyFragment(
+    original, block.id, row.id, 'Primera línea nueva\\nSegunda línea nueva'
+  );
+  assert.equal(result.ok, true);
+  assert.equal(result.structuredContent.blocks[0].rows.length, 2);
+  assert.equal(result.structuredContent.blocks[0].rows[0].lyric, 'Primera línea nueva');
+  assert.deepEqual(
+    result.structuredContent.blocks[0].rows[0].chords.map(chord => chord.root),
+    ['C', 'G']
+  );
+});
+
+test('un fragmento con varias secciones se dirige al importador de canción completa', () => {
+  const original = ChordModel.addBlock({ version: 2, blocks: [] }, 'PUENTE').structuredContent;
+  const block = original.blocks[0];
+  const result = ChordModel.replaceRowWithLegacyFragment(
+    original, block.id, block.rows[0].id, '[VERSO]\\nC\\nLetra\\n[CORO]\\nG\\nCanto'
+  );
+  assert.equal(result.ok, false);
+  assert.ok(result.warnings.some(message => message.includes('canción completa')));
+});
+
 test('valida IDs, raíces y límites de posición', () => {
   const content = {
     version: 2,
