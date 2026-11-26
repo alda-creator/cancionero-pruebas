@@ -410,4 +410,4 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 
 **Protecciones obligatorias:** conservar `rawText` como respaldo; no descartar ni reordenar acordes, offsets, IDs o filas instrumentales; no alterar canciones existentes al abrirlas; no quitar el camino de recuperación para canciones no convertibles; no modificar producción ni Firebase de producción.
 
-**Estado de esta fase:** diseño funcional acordado; auditoría técnica iniciada en la rama `feat/editor-visual-unificado`. Sin cambios de código aplicados todavía.
+**Estado de esta fase:** diseño funcional acordado, incluido el menú de secciones predefinidas y etiqueta personalizada; auditoría técnica iniciada en la rama `feat/editor-visual-unificado`. Sin cambios de código aplicados todavía.
