@@ -633,7 +633,9 @@
 
     // Si el usuario pegó solo letra multilínea, conservar los acordes que ya
     // pertenecían a la fila y ajustar sus offsets respecto de la primera línea.
-    if (importedRows.every(row => row.chords.length === 0) && originalRow.chords.length) {
+    const preserveOriginalChords = importedRows.every(row => row.chords.length === 0) &&
+      originalRow.chords.length > 0;
+    if (preserveOriginalChords) {
       const adjusted = updateRowLyric(
         { version: 2, blocks: [{ id: targetBlock.id, label: targetBlock.label, rows: [originalRow] }] },
         originalRow.id,
@@ -663,7 +665,9 @@
 
     importedRows.forEach((row, index) => {
       row.id = index === 0 ? originalRow.id : makeUniqueId('row-import');
-      row.chords.forEach(chord => { chord.id = makeUniqueId('chord-import'); });
+      if (!(preserveOriginalChords && index === 0)) {
+        row.chords.forEach(chord => { chord.id = makeUniqueId('chord-import'); });
+      }
     });
     targetBlock.rows.splice(targetIndex, 1, ...importedRows);
 
