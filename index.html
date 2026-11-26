@@ -1800,6 +1800,10 @@
     document.getElementById('edit-raw').value = '';  
     document.getElementById('edit-original-key').value = 'C';
     handleEditorInput();
+    const importPanel = document.getElementById('structured-import-panel');
+    if (importPanel) importPanel.open = false;
+    const importField = document.getElementById('structured-import-text');
+    if (importField) importField.value = '';
     const legacyPanel = document.getElementById('legacy-editor-panel');
     if (legacyPanel) legacyPanel.open = false;
   }  
@@ -1861,6 +1865,10 @@
     document.getElementById('song-viewer').style.display = 'none';  
     document.getElementById('song-editor').style.display = 'block';  
     handleEditorInput();
+    const importPanel = document.getElementById('structured-import-panel');
+    if (importPanel) importPanel.open = false;
+    const importField = document.getElementById('structured-import-text');
+    if (importField) importField.value = '';
     // handleEditorInput reconstruye el borrador desde rawText; después
     // restauramos la estructura existente para no perder posiciones precisas.
     if (currentSong.editorVersion === 2 && currentSong.structuredContent &&
@@ -2616,7 +2624,11 @@
       return;
     }
     const currentRaw = document.getElementById('edit-raw').value;
-    if ((currentRaw.trim() || (structuredDraft && structuredDraft.blocks.length)) &&
+    const hasMeaningfulStructuredContent = !!(structuredDraft && structuredDraft.blocks.some(block =>
+      block.rows.some(row => row.lyric.trim() || row.chords.length)
+    ));
+    const hasUnstructuredRawContent = !structuredDraft && !!currentRaw.trim();
+    if ((hasMeaningfulStructuredContent || hasUnstructuredRawContent) &&
         !confirm('¿Reemplazar todo el contenido actual por la canción pegada? Esta acción sustituirá las secciones, letras y acordes del borrador actual.')) {
       return;
     }
@@ -2630,6 +2642,7 @@
     editingDraftBlockId = null;
     document.getElementById('edit-raw').value = rawText;
     renderRawEditorPreview();
+    if (field) field.value = '';
     const importPanel = document.getElementById('structured-import-panel');
     if (importPanel) importPanel.open = false;
     renderStructuredEditor();
