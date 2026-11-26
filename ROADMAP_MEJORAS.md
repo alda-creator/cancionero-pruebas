@@ -386,4 +386,4 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 5. Guardar, salir y reabrir; comparar texto, acordes, offsets, filas y etiquetas.
 6. Confirmar que las importaciones ambiguas no sustituyen el contenido existente y que las canciones heredadas siguen abriéndose con el respaldo.
 
-**Estado:** implementación inicial en rama `feat/entrada-inteligente-editor-unificado`; pendiente de ejecutar CI, revisar el diff, desplegar en laboratorio y recibir validación manual del usuario. Producción y Firebase de producción permanecen intactas.
+**Estado:** implementación inicial en rama `feat/entrada-inteligente-editor-unificado`; CI automatizado completado correctamente (incluidos modelo de acordes, navegación, diagnósticos, adaptador, documento y sintaxis inline). Revisión final y despliegue en laboratorio pendientes; todavía no validado manualmente por el usuario. Producción y Firebase de producción permanecen intactas.
