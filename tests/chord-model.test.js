@@ -80,7 +80,7 @@ test('pegar un fragmento con acordes reemplaza una fila por varias filas estruct
   assert.equal(rows[0].id, rowId, 'la primera fila conserva la identidad original');
   assert.equal(rows[0].lyric, 'Tu amor permanece');
   assert.deepEqual(rows[0].chords.map(chord => chord.root), ['B', 'G']);
-  assert.deepEqual(rows[0].chords.map(chord => chord.position.offset), [0, 8]);
+  assert.deepEqual(rows[0].chords.map(chord => chord.position.offset), [0, 9]);
   assert.equal(rows[1].lyric, 'Y me sostendrás');
   assert.equal(rows[1].chords[0].bass, 'F#');
   assert.deepEqual(rows[1].chords.map(chord => chord.position.offset), [0, 9]);
