@@ -337,7 +337,14 @@
     .structured-import-content p { margin:0; color:var(--text-muted); font-size:11px; line-height:1.4; }
     .structured-editor-heading strong { font-size:13px; }
     .structured-editor-heading span, .structured-editor-help { color:var(--text-muted); font-size:11px; }
-    .structured-add-block-button { margin-left:auto; white-space:nowrap; font-size:11px; padding:6px 9px; }
+    .structured-add-menu-wrap { position:relative; margin-left:auto; }
+    .structured-add-block-button { white-space:nowrap; font-size:11px; padding:6px 9px; }
+    .structured-add-menu { position:absolute; z-index:30; top:calc(100% + 6px); right:0; min-width:168px; padding:5px; border:1px solid var(--card-border); border-radius:10px; background:var(--card); box-shadow:0 8px 24px rgba(0,0,0,.24); }
+    .structured-add-menu[hidden], .structured-add-custom-fields[hidden] { display:none; }
+    .structured-add-menu > button { display:block; width:100%; border:0; border-radius:7px; padding:10px 11px; background:transparent; color:var(--text); text-align:left; font:600 13px inherit; cursor:pointer; }
+    .structured-add-menu > button:active { background:var(--bg); }
+    .structured-add-custom-fields { display:flex; gap:6px; padding:7px 4px 4px; border-top:1px solid var(--card-border); }
+    .structured-add-custom-fields input { min-width:0; width:100%; padding:8px; border:1px solid var(--card-border); border-radius:7px; background:var(--bg); color:var(--text); font-size:16px; }
     .structured-editor-rows { display:flex; flex-direction:column; gap:5px; margin-bottom:8px; }
     .structured-editor-row { padding:5px 7px; border:1px solid transparent; border-radius:8px; background:transparent; }
     .structured-editor-row.selected { border-color:var(--accent); background:var(--card); }
@@ -650,7 +657,20 @@
       <div class="structured-editor-heading">
         <strong>Editor unificado</strong>
         <span id="structured-editor-status" role="status" aria-live="polite">Toca una línea para editarla.</span>
-        <button type="button" class="btn-action structured-add-block-button" id="structured-add-block">＋ Sección</button>
+        <div class="structured-add-menu-wrap">
+          <button type="button" class="btn-action structured-add-block-button" id="structured-add-block" aria-expanded="false" aria-controls="structured-add-menu">＋ Sección</button>
+          <div class="structured-add-menu" id="structured-add-menu" hidden>
+            <button type="button" data-section-label="ESTROFA 1">＋ Estrofa 1</button>
+            <button type="button" data-section-label="ESTROFA 2">＋ Estrofa 2</button>
+            <button type="button" data-section-label="CORO">＋ Coro</button>
+            <button type="button" data-section-label="PUENTE">＋ Puente</button>
+            <button type="button" id="structured-add-custom">＋ Otro…</button>
+            <div class="structured-add-custom-fields" id="structured-add-custom-fields" hidden>
+              <input type="text" id="structured-add-custom-name" maxlength="60" placeholder="Nombre de la sección" aria-label="Nombre de la sección">
+              <button type="button" class="btn-action primary" id="structured-add-custom-confirm">Agregar</button>
+            </div>
+          </div>
+        </div>
       </div>
       <details id="structured-import-panel" class="structured-import-panel">
         <summary>＋ Pegar canción completa de Internet</summary>
@@ -2468,7 +2488,7 @@
     syncEditorScroll();
   }
 
-  function addStructuredDraftBlock() {
+  function addStructuredDraftBlock(sectionLabel = 'NUEVA SECCIÓN') {
     let draft = ensureStructuredDraft();
     // En una canción nueva todavía vacía no existe texto que convertir.
     // Permitimos iniciar el documento estructurado desde la primera sección.
@@ -2478,7 +2498,7 @@
       structuredDraftSource = 'structured';
     }
     if (!draft || !window.ChordModel || typeof window.ChordModel.addBlock !== 'function') return;
-    const result = window.ChordModel.addBlock(draft, 'NUEVA SECCIÓN');
+    const result = window.ChordModel.addBlock(draft, sectionLabel);
     if (!result.ok) {
       alert('No se pudo agregar la sección: ' + result.warnings.join(' '));
       return;
@@ -2683,7 +2703,47 @@
     const deleteButton = document.getElementById('structured-chord-delete');
     if (addButton) addButton.addEventListener('click', saveStructuredDraftChord);
     const addBlockButton = document.getElementById('structured-add-block');
-    if (addBlockButton) addBlockButton.addEventListener('click', addStructuredDraftBlock);
+    const addMenu = document.getElementById('structured-add-menu');
+    const customFields = document.getElementById('structured-add-custom-fields');
+    const customName = document.getElementById('structured-add-custom-name');
+    const closeAddMenu = () => {
+      if (addMenu) addMenu.hidden = true;
+      if (addBlockButton) addBlockButton.setAttribute('aria-expanded', 'false');
+      if (customFields) customFields.hidden = true;
+      if (customName) customName.value = '';
+    };
+    if (addBlockButton && addMenu) addBlockButton.addEventListener('click', () => {
+      addMenu.hidden = !addMenu.hidden;
+      addBlockButton.setAttribute('aria-expanded', String(!addMenu.hidden));
+    });
+    if (addMenu) addMenu.addEventListener('click', event => {
+      const option = event.target.closest('[data-section-label]');
+      if (!option) return;
+      closeAddMenu();
+      addStructuredDraftBlock(option.dataset.sectionLabel);
+    });
+    const customButton = document.getElementById('structured-add-custom');
+    if (customButton && customFields) customButton.addEventListener('click', () => {
+      customFields.hidden = false;
+      if (customName) customName.focus();
+    });
+    const confirmCustom = document.getElementById('structured-add-custom-confirm');
+    if (confirmCustom) confirmCustom.addEventListener('click', () => {
+      const label = customName ? customName.value.trim() : '';
+      if (!label) { if (customName) customName.focus(); return; }
+      closeAddMenu();
+      addStructuredDraftBlock(label);
+    });
+    if (customName) customName.addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        confirmCustom && confirmCustom.click();
+      }
+      if (event.key === 'Escape') closeAddMenu();
+    });
+    document.addEventListener('click', event => {
+      if (!event.target.closest('.structured-add-menu-wrap')) closeAddMenu();
+    });
     const importButton = document.getElementById('structured-import-apply');
     if (importButton) importButton.addEventListener('click', importStructuredSongFromText);
     if (deleteButton) deleteButton.addEventListener('click', deleteStructuredDraftChord);
