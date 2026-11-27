@@ -1,4 +1,5 @@
-const CACHE_NAME = 'cancionero-cache-v65';
+const CACHE_NAME = 'cancionero-lab-cache-v66';
+const LEGACY_CACHE_NAMES = ['cancionero-cache-v65'];
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -61,6 +62,10 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => Promise.all(
       cacheNames
+        .filter((cacheName) =>
+          cacheName.startsWith('cancionero-lab-cache-') ||
+          LEGACY_CACHE_NAMES.includes(cacheName)
+        )
         .filter((cacheName) => cacheName !== CACHE_NAME)
         .map((cacheName) => caches.delete(cacheName))
     ))
