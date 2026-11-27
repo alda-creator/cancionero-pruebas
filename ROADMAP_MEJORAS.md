@@ -105,6 +105,7 @@ La regla es conservadora: primero se valida el token completo y solo si falla se
 **Criterio de aceptación:** ninguna canción de la muestra pierde texto, acordes, bloques ni posiciones al abrirse, editarse, guardarse y reabrirse. No realizar migración masiva ni modificar registros existentes automáticamente.
 
 **Límites:** solo repositorio y Firebase de pruebas cuando sea imprescindible; no tocar producción ni Firebase de producción. Mantener intactos el renderizador y la geometría musical salvo que una regresión concreta justifique un cambio aislado.
+
 ## 4. Editor unificado — cierre de etapa
 
 **Estado:** completado y validado manualmente en laboratorio hasta v1.3.26. Incluye edición estructurada, importación de canciones completas y fragmentos, panel contextual adaptable al teclado, pulido visual, selector mayor/menor, sugerencia automática de tonalidad y corrección de secuencias de acordes separadas por guion. La compatibilidad con formatos heredados continúa como auditoría transversal; no queda pendiente otra función del editor ya acordada.
@@ -236,6 +237,8 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 - **v1.3.1 (PR #69):** preservación de `instanceId` en GO_TO_BLOCK para navegar a la instancia correcta de bloques repetidos; validada manualmente por el usuario.
 - **v1.3.2 (PR #71):** reinicio de `#live-screen` al cambiar canciones y al abrir En Vivo; pruebas automatizadas aprobadas y validación manual satisfactoria del usuario en iPhone.
 - **v1.3.13 (PR #89):** auto-desplazamiento vertical progresivo durante el arrastre de secciones; CI, GitHub Pages y validación manual en iPhone exitosos. Reordenamiento de secciones cerrado.
+- **v1.3.25 (PR #107–#109):** detector automático de tonalidad integrado y validado; selector y sugerencias distinguen mayor/menor mediante `originalMode`, sin alterar el uso de `originalKey` para transposición.
+- **v1.3.26 (PR #110):** importación de acordes separados por guion validada en iPhone; conserva offsets originales y protege la notación `C-` de Do menor. CI y GitHub Pages exitosos.
 - **24-nov-2026:** usuario confirmó Director + Mi Set: el músico recibe tono, orden y secuencia personalizados, y mantiene su propia notación. Se detectó la incidencia GO_TO_BLOCK con segundo bloque repetido.
 - **24-nov-2026:** decisión de mantener v1.3.0 como referencia estable y aplazar la separación visual adicional para acordes latinos largos.
 - **24-nov-2026:** GO_TO_BLOCK con bloques repetidos validado por el usuario; incidencia cerrada.
@@ -524,5 +527,3 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 - La sugerencia automática aplica tanto la raíz como el modo. El modo no altera el cálculo de transposición.
 - Se mantiene la compatibilidad de letras, acordes, offsets, estructuras y texto heredado.
 
-
-- **26-nov-2026 — v1.3.26 (PR #110):** el usuario validó en iPhone la importación de secuencias de acordes separadas por guion. Confirmó que `F-G`, `F-C` y `G-C` se reconocen como acordes independientes, que `C-` conserva su significado de Do menor y que los acordes mantienen su posición original, incluso en la línea instrumental final. Guardado y reapertura también funcionaron. Se cierra la corrección. Siguiente etapa: auditoría integral de compatibilidad de canciones heredadas y nuevas (sección 3.5), sin migraciones masivas ni cambios en producción.
