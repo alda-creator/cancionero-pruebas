@@ -6,7 +6,7 @@
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Última versión validada manualmente por el usuario:** v1.3.24 (PR #108), con la sugerencia automática de tonalidad probada en iPhone. **Versión actual del laboratorio:** v1.3.25 (PR #109), pendiente de validación manual en iPhone. Producción permanece sin cambios.
+**Última versión validada manualmente por el usuario:** v1.3.24 (PR #108), con la sugerencia automática de tonalidad probada en iPhone. **Versión actual del laboratorio:** v1.3.26 (corrección de acordes unidos por guion), pendiente de revisión automatizada y validación manual en iPhone. Producción permanece sin cambios.
 
 ## 1. Reglas permanentes de trabajo
 
@@ -81,6 +81,14 @@ Observación del usuario: símbolos como `Mib/Sol` y `Fam` no se empalman, pero 
 **Siguiente paso:** auditar los estilos efectivos (incluidos estilos responsivos y estados de foco) de los campos de búsqueda y clave del Director. Si alguno usa menos de 16 px, probar un ajuste a 16 px o más sin alterar la composición visual. Verificar también que no haya reglas de zoom/viewport que introduzcan efectos secundarios. Probar en PWA instalada y Safari, en orientación vertical y con teclado visible.
 
 **Criterio de aceptación:** al enfocar ambos campos, el teclado aparece sin ampliación automática molesta; el tamaño del campo, la búsqueda, el ingreso de clave y el resto de la interfaz siguen funcionando correctamente. Mantenerlo como mejora de experiencia móvil de baja prioridad, separada del trabajo del editor unificado.
+
+### 3.4 — Importación de acordes unidos por guion
+
+**Estado:** corrección implementada en rama de laboratorio; pendiente de CI, revisión, despliegue y validación manual.
+
+Se amplía el reconocimiento de líneas heredadas para interpretar secuencias compactas como `F-G`, `F-C`, `G-C`, `Am-G`, `Dm-G-C`, `C#m-F#-G#` y combinaciones con inversiones como `C/E-G/B`. Cada símbolo se convierte en un acorde estructurado independiente y conserva su columna de origen; el renderizador existente se encarga de evitar empalmes visuales.
+
+La regla es conservadora: primero se valida el token completo y solo si falla se intenta dividir por guiones, con todos los fragmentos validados como acordes. Esto preserva la notación heredada `C-` para Do menor. También se cubren líneas instrumentales sin letra, como `G-C`, y el himno «Santo, Santo, Santo» como regresión real. No se modifican el editor visual, el motor de transposición ni la estructura de acordes guardados.
 
 ## 4. Siguiente proyecto principal — Editor unificado
 
