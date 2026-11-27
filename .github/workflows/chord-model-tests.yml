@@ -39,6 +39,8 @@ jobs:
         run: node tests/chord-model.test.js
       - name: Test automatic key detection
         run: node tests/key-detector.test.js
+      - name: Test major and minor key UI integration
+        run: node tests/key-mode-ui.test.js
       - name: Test Director repeated block navigation
         run: node tests/director-navigation.test.js
       - name: Test live song navigation scroll reset
