@@ -78,6 +78,8 @@ test('rechaza estructuras inválidas sin intentar inferir una tonalidad', () => 
 
 test('reconoce la calidad de acordes extendidos sin perder su función básica', () => {
   assert.equal(KeyDetector.qualityKind('maj7'), 'major');
+  assert.equal(KeyDetector.qualityKind('M7'), 'major');
+  assert.equal(KeyDetector.qualityKind('m7b5'), 'diminished');
   assert.equal(KeyDetector.qualityKind('m7b5'), 'minor');
   assert.equal(KeyDetector.qualityKind('dim7'), 'diminished');
   assert.equal(KeyDetector.qualityKind('sus4'), 'suspended');
