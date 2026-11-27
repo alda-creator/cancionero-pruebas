@@ -26,10 +26,11 @@
 
   function qualityKind(quality) {
     const q = String(quality || '');
-    if (/^(?:dim|°|ø)/i.test(q)) return 'diminished';
+    if (/^(?:dim|°|ø|m7b5|m7-5)/i.test(q)) return 'diminished';
+    if (/^(?:maj|M)/.test(q)) return 'major';
     if (/^(?:aug|\+)/i.test(q)) return 'augmented';
     if (/^(?:sus)/i.test(q)) return 'suspended';
-    if (/^(?:min|m(?!aj)|-)/i.test(q)) return 'minor';
+    if (/^(?:min|m|-)/i.test(q)) return 'minor';
     return 'major';
   }
 
