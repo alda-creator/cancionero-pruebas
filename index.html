@@ -664,7 +664,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.3.26 · Acordes unidos por guion · (PRUEBAS)</div>
+        <div class="app-version">v1.3.27 · Cancelación por gesto · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -795,7 +795,7 @@
   </div>  
 
   <div id="song-editor" class="editor">  
-    <button class="btn-action" onclick="showList()" style="margin-bottom: 12px;">← Cancelar</button>  
+    <button class="btn-action" onclick="cancelEditor()" style="margin-bottom: 12px;">← Cancelar</button>  
     <h2 id="editor-heading" style="margin-top:0;">Agregar Nueva Canción</h2>  
 
     <input type="text" class="search-bar" id="edit-title" placeholder="Título de la canción">  
@@ -2056,6 +2056,35 @@
     // cuando la conversión no es segura.
     const legacyPanel = document.getElementById('legacy-editor-panel');
     if (legacyPanel) legacyPanel.open = !structuredDraft;
+  }
+
+  // Salir del editor descarta el borrador. Si se estaba editando una canción,
+  // se restaura el visor que quedó abierto detrás; si era una canción nueva,
+  // se vuelve a la lista sin crear ni guardar nada.
+  function cancelEditor() {
+    const wasEditingExistingSong = Boolean(editingSongId && currentSong && editingSongId === currentSong.id);
+    stopAutoScroll();
+
+    document.getElementById('song-editor').style.display = 'none';
+    document.getElementById('field-selector-container').style.display = 'none';
+
+    structuredDraft = null;
+    structuredDraftSource = null;
+    structuredDraftDirty = false;
+    structuredDraftSyncError = null;
+    selectedDraftRowId = null;
+    selectedDraftChordId = null;
+    editingDraftRowId = null;
+    editingDraftBlockId = null;
+    editingSongId = null;
+
+    if (wasEditingExistingSong) {
+      document.getElementById('list-view').style.display = 'none';
+      document.getElementById('song-viewer').style.display = 'block';
+      return;
+    }
+
+    showList();
   }
 
   function insertTag(tag) {
@@ -3837,15 +3866,25 @@
     if (!horizontalSwipe) return;
 
     const target = event.target instanceof Element ? event.target : null;
-    if (target && target.closest('button, input, textarea, select, .drag-handle')) return;
-
     const listView = document.getElementById('list-view');
     const songViewer = document.getElementById('song-viewer');
     const liveScreen = document.getElementById('live-screen');
+    const songEditor = document.getElementById('song-editor');
     const isListVisible = listView && listView.style.display !== 'none';
     const isSongViewerVisible = songViewer && songViewer.style.display === 'block';
     const isLiveVisible = liveScreen && liveScreen.style.display !== 'none';
+    const isEditorVisible = songEditor && songEditor.style.display === 'block';
     const edgeBackSwipe = touchStartX <= 35 && deltaX >= 70;
+
+    // En el editor, el mismo gesto de regreso que usa el visor cancela
+    // el borrador. Se evalúa antes de excluir campos para permitir iniciar
+    // el gesto desde el borde aunque la letra ocupe toda la pantalla.
+    if (isEditorVisible && edgeBackSwipe) {
+      cancelEditor();
+      return;
+    }
+
+    if (target && target.closest('button, input, textarea, select, .drag-handle')) return;
 
     // 1) En Modo En Vivo:
     // - borde izquierdo -> salir de En Vivo y conservar la canción actual.
