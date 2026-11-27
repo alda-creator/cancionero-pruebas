@@ -6,7 +6,7 @@
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Última versión validada manualmente por el usuario:** v1.3.20 (PR #100), con primer pulido visual validado en iPhone. **Siguiente trabajo:** segunda iteración de pulido visual y cierre de la sugerencia automática de tonalidad, exclusivamente en laboratorio.
+**Última versión validada manualmente por el usuario:** v1.3.23 (PR #105), con la segunda iteración de pulido visual y el ocultamiento del selector técnico heredado validados en iPhone. **Siguiente trabajo:** auditoría y desarrollo de la sugerencia automática de tonalidad, exclusivamente en laboratorio.
 
 ## 1. Reglas permanentes de trabajo
 
@@ -419,13 +419,13 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 
 ### 4.3 — Cierre del editor: pulido visual superior y sugerencia automática de tonalidad
 
-**Estado:** plan acordado por el usuario el 26 de noviembre de 2026. Trabajo aún no implementado; exclusivamente en laboratorio.
+**Estado:** pulido visual superior cerrado y validado manualmente por el usuario en iPhone hasta v1.3.23 (PR #103–#105). Pendiente únicamente implementar y validar la sugerencia automática de tonalidad; exclusivamente en laboratorio.
 
-**Base ya cerrada:** la edición estructurada, el pegado directo, la conversión conservadora, el respaldo literal, la edición de acordes/letras/bloques, la preservación de offsets y el panel contextual adaptable al teclado fueron validados por el usuario. El primer pulido visual (v1.3.20, PR #100) también fue validado en iPhone y quedó registrado por PR #101.
+**Base ya cerrada:** la edición estructurada, el pegado directo, la conversión conservadora, el respaldo literal, la edición de acordes/letras/bloques, la preservación de offsets y el panel contextual adaptable al teclado fueron validados por el usuario. El pulido visual completo (v1.3.21–v1.3.23, PR #103–#105) también fue validado en iPhone; el selector técnico heredado quedó oculto sin eliminar su lógica de recuperación.
 
 **Orden de cierre acordado:**
-1. **Actualizar esta hoja de ruta:** corregir estados históricos que seguían presentando como pendientes funciones ya validadas y separar el trabajo restante del editor.
-2. **Pulido visual — iteración 2 (v1.3.21–v1.3.23):** validado manualmente por el usuario en iPhone. Incluye la jerarquía visual de título, autor, selector de tonalidad y área de pegado; el texto de ayuda se simplificó a «Ajusta la tonalidad aquí». Como último ajuste, se ocultó de la interfaz normal el recuadro técnico «Datos encontrados en la base de datos / Cargar rawText», conservando su lógica interna de recuperación para compatibilidad con registros heredados. No se alteran IDs, eventos, conversión, guardado, lógica musical, posiciones, offsets, métricas tipográficas ni geometría de la vista previa.
+1. **Actualizar esta hoja de ruta:** completado; se registra el cierre visual validado en v1.3.23.
+2. **Pulido visual — iteración 2 (v1.3.21–v1.3.23):** completado y validado manualmente por el usuario en iPhone. Incluye la jerarquía visual de título, autor, selector de tonalidad y área de pegado; el texto de ayuda se simplificó a «Ajusta la tonalidad aquí». Como último ajuste, se ocultó de la interfaz normal el recuadro técnico «Datos encontrados en la base de datos / Cargar rawText», conservando su lógica interna de recuperación para compatibilidad con registros heredados. No se alteran IDs, eventos, conversión, guardado, lógica musical, posiciones, offsets, métricas tipográficas ni geometría de la vista previa.
 3. **Sugerencia automática de tonalidad:** auditar primero el analizador y las capacidades existentes. No duplicar lógica ni asumir que el primer acorde determina la tonalidad. Diseñar una propuesta basada en el conjunto de acordes y contexto armónico disponible, contemplando inversiones, acordes de paso, tonalidades relativas y casos ambiguos. Mostrar una sugerencia solo cuando la confianza sea suficiente; explicar cuando no haya evidencia concluyente. La decisión final siempre corresponde al usuario.
 4. **Validación manual final en iPhone:** probar canciones nuevas, pegadas completas y por fragmentos, formatos antiguos/no convertibles, tonalidades claras y ambiguas, aceptación/rechazo/cambio manual de sugerencia, guardado y reapertura.
 
@@ -438,7 +438,7 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 - Añadir pruebas automatizadas con progresiones representativas, inversiones, acordes cromáticos/de paso, tonalidades relativas y casos ambiguos.
 - Mantener compatibilidad con canciones pegadas de Internet y formatos heredados.
 
-**Regla de cierre:** el editor no se declarará terminado hasta completar y validar ambas iteraciones restantes en laboratorio. No se modificará producción ni Firebase de producción.
+**Regla de cierre:** el editor no se declarará terminado hasta implementar y validar la sugerencia automática de tonalidad en laboratorio. No se modificará producción ni Firebase de producción.
 
 ### Etapa siguiente: panel flotante contextual de acordes
 
