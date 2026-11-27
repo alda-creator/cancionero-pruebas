@@ -423,26 +423,9 @@
     .highlight-chord { color: var(--chord); font-weight: bold; }
     .highlight-tag { color: var(--accent); font-weight: bold; background: rgba(59, 130, 246, 0.2); border-radius: 4px; padding: 0 4px; }
 
-    .legacy-editor-panel {
-      margin: 12px 0;
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
-      background: var(--card);
-      overflow: hidden;
-    }
-    .legacy-editor-panel > summary {
-      padding: 11px 12px;
-      color: var(--text-muted);
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      user-select: none;
-    }
-    .legacy-editor-panel[open] > summary {
-      border-bottom: 1px solid var(--card-border);
-      color: var(--text);
-    }
-    .legacy-editor-panel .legacy-editor-content { padding: 10px; }
+    .legacy-editor-panel { margin: 8px 0 12px; border:0; border-radius:0; background:transparent; overflow:visible; }
+    .legacy-editor-panel .legacy-editor-content { padding:0; }
+    .visually-hidden { position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important; overflow:hidden !important; clip:rect(0,0,0,0) !important; white-space:nowrap !important; border:0 !important; }
 
     .quick-tags {
       display: flex;
@@ -655,8 +638,7 @@
 
     <section id="structured-editor-panel" class="structured-editor-panel" aria-label="Editor visual de acordes">
       <div class="structured-editor-heading">
-        <strong>Editor unificado</strong>
-        <span id="structured-editor-status" role="status" aria-live="polite">Toca una línea para editarla.</span>
+        <span id="structured-editor-status" class="visually-hidden" role="status" aria-live="polite">Toca una línea para editarla.</span>
         <div class="structured-add-menu-wrap">
           <button type="button" class="btn-action structured-add-block-button" id="structured-add-block" aria-expanded="false" aria-controls="structured-add-menu">＋ Sección</button>
           <div class="structured-add-menu" id="structured-add-menu" hidden>
@@ -672,14 +654,6 @@
           </div>
         </div>
       </div>
-      <details id="structured-import-panel" class="structured-import-panel">
-        <summary>＋ Pegar canción completa de Internet</summary>
-        <div class="structured-import-content">
-          <textarea id="structured-import-text" rows="7" aria-label="Pegar canción completa" placeholder="Pega aquí la canción con sus acordes, letra y secciones tal como la copiaste…"></textarea>
-          <button type="button" class="btn-action primary" id="structured-import-apply">Reconocer e importar</button>
-          <p>La canción importada reemplazará el contenido actual. Se conservará el texto original como respaldo.</p>
-        </div>
-      </details>
       <div id="structured-editor-rows" class="structured-editor-rows"></div>
       <div class="structured-editor-controls">
         <input id="structured-chord-symbol" type="text" placeholder="Acorde (ej. G, Am7)" autocomplete="off" aria-label="Símbolo del acorde">
@@ -694,22 +668,12 @@
       <p class="structured-editor-help">Toca la letra para colocar un acorde; toca un acorde para editarlo.</p>
     </section>
 
-    <details id="legacy-editor-panel" class="legacy-editor-panel" open>
-      <summary>Editor de texto original (alternativo)</summary>
-      <div class="legacy-editor-content">
-        <div class="quick-tags">
-          <span style="font-size:12px; color:var(--text-muted); align-self:center;">Insertar Bloque:</span>
-          <button class="tag-btn" onclick="insertTag('[ESTROFA 1]')">+ Estrofa 1</button>
-          <button class="tag-btn" onclick="insertTag('[ESTROFA 2]')">+ Estrofa 2</button>
-          <button class="tag-btn" onclick="insertTag('[CORO]')">+ Coro</button>
-          <button class="tag-btn" onclick="insertTag('[PUENTE]')">+ Puente</button>
-        </div>
-        <div class="editor-container">  
-          <div id="edit-preview" class="editor-layer"></div>
-          <textarea id="edit-raw" class="editor-layer" placeholder="Ingresa los acordes y la letra..." oninput="handleEditorInput()"></textarea>  
-        </div>
+    <div id="legacy-editor-panel" class="legacy-editor-panel" aria-label="Área de texto de la canción">
+      <div class="editor-container">
+        <div id="edit-preview" class="editor-layer"></div>
+        <textarea id="edit-raw" class="editor-layer" placeholder="Pega o escribe aquí la canción..." oninput="handleEditorInput()"></textarea>
       </div>
-    </details>
+    </div>
 
     <button class="btn-action primary" style="width: 100%; padding: 14px;" onclick="saveSong()">Guardar Canción</button>  
   </div>  
