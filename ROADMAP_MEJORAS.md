@@ -443,7 +443,7 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 
 **Siguiente etapa acordada:** pulido visual del editor. Se limita a jerarquía visual, espaciado, alineación, consistencia de controles, estados y accesibilidad táctil. No modificar el modelo musical, offsets, conversión/importación, selección, validación, guardado, movimiento, eliminación, ni el comportamiento del panel contextual ya validado. Antes de tocar código, auditar la interfaz actual y definir cambios visuales pequeños y verificables; mantener compatibilidad con canciones pegadas desde Internet y formatos heredados.
 
-### 4.2 — Pulido visual del editor (iteración 1, candidata v1.3.20)
+### 4.2 — Pulido visual del editor (iteración 1, v1.3.20)
 
 **Objetivo:** mejorar la legibilidad y la comodidad táctil de la superficie estructurada, manteniendo una interfaz minimalista, sencilla y práctica.
 
@@ -456,6 +456,8 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 
 **Límites de seguridad:** no cambiar HTML funcional, JavaScript, modelo musical, offsets, conversión/importación, selección, validación, guardado, movimiento, eliminación ni secuencias de Mi Set. No modificar las métricas tipográficas, el ancho, el espaciado horizontal ni la geometría de la vista previa de acordes/letra, porque participan en la correspondencia entre posición visual y posición musical. No alterar el panel contextual adaptable al teclado ya validado.
 
-**Validación pendiente:** comprobar en iPhone que los encabezados se distinguen mejor, que los controles son cómodos de tocar, que las filas siguen siendo fáciles de leer y que no se produce desplazamiento horizontal ni cambios en la colocación/arrastre de acordes. Revisar tema claro y oscuro. Producción y Firebase de producción permanecen intactas.
+**Estado:** completado, integrado en laboratorio (PR #100, commit `90461369b8bfb23e97b5a67a75325091665480b1`) y validado manualmente por el usuario en iPhone. El usuario confirmó que la presentación se ve muy bien y que las pruebas fueron correctas. Se cierra la primera iteración visual. No se reportaron regresiones en edición o geometría musical. Producción y Firebase de producción permanecen intactas.
+
+**Siguiente revisión visual propuesta:** auditar la zona superior del editor (selector de tonalidad, indicaciones de ayuda y entrada de edición/pegado) y la consistencia visual entre editor estructurado y respaldo de texto antiguo. La siguiente iteración debe limitarse a la presentación y claridad de esos controles, conservando el pegado directo de canciones completas, la conversión automática segura y el respaldo literal cuando no se pueda convertir. Antes de implementarla, identificar selectores/estilos reales y evitar cambios funcionales o en la geometría de letra/acordes.
 
 - **v1.3.19 (PR #98):** panel contextual adaptable al teclado; validación manual satisfactoria en iPhone. PR #99 registra el cierre y delimita el pulido visual.
