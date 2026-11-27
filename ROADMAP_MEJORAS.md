@@ -6,7 +6,7 @@
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Última versión validada manualmente por el usuario:** v1.3.24 (PR #108), con la sugerencia automática de tonalidad probada en iPhone. **Versión actual del laboratorio:** v1.3.26 (corrección de acordes unidos por guion), pendiente de revisión automatizada y validación manual en iPhone. Producción permanece sin cambios.
+**Última versión validada manualmente por el usuario:** v1.3.26 (PR #110), con importación de acordes unidos por guion y conservación de posiciones comprobadas en iPhone. **Versión actual del laboratorio:** v1.3.26. Producción y Firebase de producción permanecen sin cambios.
 
 ## 1. Reglas permanentes de trabajo
 
@@ -42,6 +42,7 @@
 | Distribución visual y ajuste de línea | Implementados y probados en v1.3.0 | Se recuperó el ajuste natural por palabras; sin desplazamiento horizontal global ni espacio lateral sobrante. |
 | Visualización móvil y modo Director | Corregidos y probados en v1.3.0 | El usuario confirmó que el tamaño y encuadre regresaron a lo esperado. |
 | Compatibilidad con posiciones después de la última palabra | Implementada y probada a nivel de modelo | Mantener pruebas de regresión para acordes al final de la frase. |
+| Importación de secuencias de acordes separadas por guion | Implementada y validada manualmente en v1.3.26 (PR #110) | Reconoce cada acorde, conserva su columna original y protege `C-` como Do menor. |
 
 ## 3. Incidencias y mejoras activas
 
@@ -84,15 +85,30 @@ Observación del usuario: símbolos como `Mib/Sol` y `Fam` no se empalman, pero 
 
 ### 3.4 — Importación de acordes unidos por guion
 
-**Estado:** corrección implementada en rama de laboratorio; pendiente de CI, revisión, despliegue y validación manual.
+**Estado:** completada, integrada en laboratorio y validada manualmente por el usuario en iPhone (PR #110, v1.3.26; caché SW v64). CI de la rama y de `main` aprobados; GitHub Pages publicó la versión. El usuario confirmó que todos los casos probados funcionan y, especialmente, que los acordes conservan sus posiciones originales. Producción y Firebase de producción permanecen intactas.
 
 Se amplía el reconocimiento de líneas heredadas para interpretar secuencias compactas como `F-G`, `F-C`, `G-C`, `Am-G`, `Dm-G-C`, `C#m-F#-G#` y combinaciones con inversiones como `C/E-G/B`. Cada símbolo se convierte en un acorde estructurado independiente y conserva su columna de origen; el renderizador existente se encarga de evitar empalmes visuales.
 
 La regla es conservadora: primero se valida el token completo y solo si falla se intenta dividir por guiones, con todos los fragmentos validados como acordes. Esto preserva la notación heredada `C-` para Do menor. También se cubren líneas instrumentales sin letra, como `G-C`, y el himno «Santo, Santo, Santo» como regresión real. No se modifican el editor visual, el motor de transposición ni la estructura de acordes guardados.
 
-## 4. Siguiente proyecto principal — Editor unificado
+### 3.5 — P0: auditoría integral de compatibilidad de canciones heredadas y nuevas
 
-**Estado:** edición estructurada, importación de canciones completas y fragmentos, panel contextual adaptable al teclado y primer pulido visual completados e integrados en laboratorio. El usuario validó manualmente v1.3.20 en iPhone. El editor sigue abierto únicamente para la segunda iteración visual y la sugerencia automática de tonalidad; ambas deben validarse antes de cerrar el proyecto.
+**Siguiente etapa recomendada:** antes de añadir otra función visual, realizar una auditoría dirigida de canciones reales para confirmar que el formato estructurado, el respaldo heredado y la vista de lectura interpretan el mismo contenido sin pérdidas. Esta etapa no presupone que exista un fallo: busca detectar formatos históricos que todavía no estén cubiertos por las pruebas.
+
+**Alcance propuesto:**
+- Revisar una muestra representativa de canciones antiguas, canciones pegadas recientemente desde Internet y canciones creadas directamente en el editor.
+- Incluir formatos mixtos: encabezados entre corchetes, acordes sobre la letra, acordes al final de frase, filas instrumentales sin letra, tabulaciones/espacios amplios, inversiones, acordes menores, sostenidos/bemoles y secuencias separadas por guion.
+- Comparar editor, guardado/reapertura y vista normal; comprobar que letra, bloques, acordes y offsets coincidan.
+- Verificar que los formatos ambiguos o no convertibles conserven intacto el texto heredado de respaldo y no se sobrescriban silenciosamente.
+- Registrar cada caso reproducible como prueba de regresión; corregir solo los fallos demostrados y en PRs pequeños.
+
+**Criterio de aceptación:** ninguna canción de la muestra pierde texto, acordes, bloques ni posiciones al abrirse, editarse, guardarse y reabrirse. No realizar migración masiva ni modificar registros existentes automáticamente.
+
+**Límites:** solo repositorio y Firebase de pruebas cuando sea imprescindible; no tocar producción ni Firebase de producción. Mantener intactos el renderizador y la geometría musical salvo que una regresión concreta justifique un cambio aislado.
+
+## 4. Editor unificado — cierre de etapa
+
+**Estado:** completado y validado manualmente en laboratorio hasta v1.3.26. Incluye edición estructurada, importación de canciones completas y fragmentos, panel contextual adaptable al teclado, pulido visual, selector mayor/menor, sugerencia automática de tonalidad y corrección de secuencias de acordes separadas por guion. La compatibilidad con formatos heredados continúa como auditoría transversal; no queda pendiente otra función del editor ya acordada.
 
 Objetivo: integrar las superficies superior e inferior actuales en una sola experiencia coherente. La letra, los acordes y los bloques deben sentirse como elementos del mismo editor, sin obligar al usuario a cambiar de panel para completar operaciones relacionadas.
 
@@ -128,7 +144,7 @@ Alcance acordado:
 | P0 | Corregir GO_TO_BLOCK para instancias repetidas | Completado y validado | PR #69; el segundo Coro lleva al músico a su segunda instancia. |
 | P0 | Editor unificado: entrada inteligente y edición musical | Implementado y validado en laboratorio (v1.3.16–v1.3.20) | Pegado directo, conversión segura, respaldo literal, edición de filas y acordes, bloques, offsets y panel contextual; compatibilidad conservada. |
 | P2 | Evitar zoom automático en campos al abrir teclado en iPhone | Anotado; auditoría posterior | Buscar y clave del Director no deben provocar ampliación automática molesta. Véase sección 3.3. |
-| P0 | Compatibilidad de canciones antiguas y nuevas | Auditoría continua | Ninguna canción pierde texto, acordes ni posiciones; conversiones ambiguas permanecen intactas. |
+| P0 | Compatibilidad de canciones antiguas y nuevas | Siguiente etapa: auditoría integral dirigida (sección 3.5) | Ninguna canción pierde texto, acordes, bloques ni posiciones; conversiones ambiguas permanecen intactas. |
 | P0 | Director/Músico y modo offline | Auditoría final | Tono, orden, secuencia, notación local y seguimiento correctos tras conexión, desconexión y reconexión. |
 | P1 | Modo proyección/pantalla externa | Pendiente | Mostrar letra y acordes o solo letra; seguir la secuencia del Director. |
 | P1 | Estado de músicos conectados | Pendiente | El Director identifica de forma útil quién está conectado y su estado. |
@@ -200,7 +216,7 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 - [ ] Pruebas en iPhone y, si es posible, más de un dispositivo simultáneo.
 - [ ] Pruebas con conexión, offline y reconexión.
 - [ ] Cerrar y reabrir la PWA sin perder tonos, secuencias ni cambios.
-- [ ] Probar canciones nuevas y antiguas.
+- [ ] Completar la auditoría integral de canciones nuevas y antiguas (sección 3.5), incluyendo formatos mixtos y reapertura.
 - [ ] Probar transposición con acordes extendidos, inversiones y ambas nomenclaturas.
 - [ ] Probar el editor unificado y las filas instrumentales.
 - [ ] Probar modo proyección en el equipo real que se utilizará.
@@ -221,6 +237,8 @@ La promoción a producción no implica migrar masivamente canciones ni cambiar r
 - **v1.3.1 (PR #69):** preservación de `instanceId` en GO_TO_BLOCK para navegar a la instancia correcta de bloques repetidos; validada manualmente por el usuario.
 - **v1.3.2 (PR #71):** reinicio de `#live-screen` al cambiar canciones y al abrir En Vivo; pruebas automatizadas aprobadas y validación manual satisfactoria del usuario en iPhone.
 - **v1.3.13 (PR #89):** auto-desplazamiento vertical progresivo durante el arrastre de secciones; CI, GitHub Pages y validación manual en iPhone exitosos. Reordenamiento de secciones cerrado.
+- **v1.3.25 (PR #107–#109):** detector automático de tonalidad integrado y validado; selector y sugerencias distinguen mayor/menor mediante `originalMode`, sin alterar el uso de `originalKey` para transposición.
+- **v1.3.26 (PR #110):** importación de acordes separados por guion validada en iPhone; conserva offsets originales y protege la notación `C-` de Do menor. CI y GitHub Pages exitosos.
 - **24-nov-2026:** usuario confirmó Director + Mi Set: el músico recibe tono, orden y secuencia personalizados, y mantiene su propia notación. Se detectó la incidencia GO_TO_BLOCK con segundo bloque repetido.
 - **24-nov-2026:** decisión de mantener v1.3.0 como referencia estable y aplazar la separación visual adicional para acordes latinos largos.
 - **24-nov-2026:** GO_TO_BLOCK con bloques repetidos validado por el usuario; incidencia cerrada.
@@ -427,11 +445,11 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 
 ### 4.3 — Cierre del editor: pulido visual superior y sugerencia automática de tonalidad
 
-**Estado:** pulido visual superior cerrado y validado manualmente por el usuario en iPhone hasta v1.3.23 (PR #103–#105). Pendiente únicamente implementar y validar la sugerencia automática de tonalidad; exclusivamente en laboratorio.
+**Estado:** completado y validado manualmente por el usuario en iPhone en v1.3.25 (PR #107–#109). El detector, su integración en el editor y la representación de tonalidades mayores/menores quedaron cerrados en laboratorio.
 
-**Avance de la sugerencia automática — núcleo de análisis (PR #107):** implementado en un módulo independiente (`js/key-detector.js`), pendiente de integrar con la interfaz. Analiza todos los acordes de una estructura válida, considera raíz/calidad/inversiones, ajuste diatónico, perfiles de tonalidad y resolución; devuelve modo mayor/menor y confianza o se abstiene ante datos insuficientes/ambiguos. Pruebas automatizadas cubren Sol mayor, La menor, inversiones, cromatismos, ambigüedad relativa, calidades extendidas y contenido inválido. CI completa correctamente. Este módulo no cambia `originalKey`, no transpone ni reescribe canciones, offsets o secuencias.
+**Núcleo de análisis (PR #107):** implementado en un módulo independiente (`js/key-detector.js`). Analiza todos los acordes de una estructura válida, considera raíz/calidad/inversiones, ajuste diatónico, perfiles de tonalidad y resolución; devuelve modo mayor/menor y confianza o se abstiene ante datos insuficientes/ambiguos. Pruebas automatizadas cubren Sol mayor, La menor, inversiones, cromatismos, ambigüedad relativa, calidades extendidas y contenido inválido. CI completa correctamente. Este módulo no cambia `originalKey`, no transpone ni reescribe canciones, offsets o secuencias.
 
-**Integración en el editor (PR #108, en curso):** se añade una tarjeta contextual debajo del selector manual. La propuesta se puede aceptar o esconder; aceptar solo cambia el valor del selector, y el guardado existente sigue siendo el único que persiste `originalKey`. El análisis se actualiza al cambiar los acordes, se abstiene si el formato no se puede convertir o la tonalidad resulta ambigua, y no toca letra, acordes, offsets ni secuencias. La interfaz queda pendiente de CI, despliegue y validación manual en iPhone.
+**Integración en el editor (PR #108):** se añadió una tarjeta contextual debajo del selector manual. La propuesta se puede aceptar o esconder; aceptar solo cambia el valor del selector, y el guardado existente sigue siendo el único que persiste `originalKey`. El análisis se actualiza al cambiar los acordes, se abstiene si el formato no se puede convertir o la tonalidad resulta ambigua, y no toca letra, acordes, offsets ni secuencias. La integración quedó aprobada por CI, desplegada y validada manualmente por el usuario en iPhone. PR #109 completó la representación mayor/menor, manteniendo `originalKey` como raíz y guardando el modo por separado en `originalMode`.
 
 **Base ya cerrada:** la edición estructurada, el pegado directo, la conversión conservadora, el respaldo literal, la edición de acordes/letras/bloques, la preservación de offsets y el panel contextual adaptable al teclado fueron validados por el usuario. El pulido visual completo (v1.3.21–v1.3.23, PR #103–#105) también fue validado en iPhone; el selector técnico heredado quedó oculto sin eliminar su lógica de recuperación.
 
@@ -450,7 +468,7 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 - Añadir pruebas automatizadas con progresiones representativas, inversiones, acordes cromáticos/de paso, tonalidades relativas y casos ambiguos.
 - Mantener compatibilidad con canciones pegadas de Internet y formatos heredados.
 
-**Regla de cierre:** el editor no se declarará terminado hasta implementar y validar la sugerencia automática de tonalidad en laboratorio. No se modificará producción ni Firebase de producción.
+**Regla de cierre:** cumplida en laboratorio con v1.3.25; la validación de v1.3.26 añade una comprobación adicional de compatibilidad de importación. No se modificará producción ni Firebase de producción.
 
 ### Etapa siguiente: panel flotante contextual de acordes
 
@@ -500,7 +518,7 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 
 ### 4.1 — Tonalidades mayores y menores en el editor
 
-**Estado:** integrada en `main` del laboratorio mediante PR #109; CI aprobado. Pendiente de validación manual en iPhone.
+**Estado:** integrada en `main` del laboratorio mediante PR #109; CI aprobado y validada manualmente por el usuario en iPhone en v1.3.25.
 
 - El detector ya analiza y distingue modos mayor/menor. La interfaz ahora representa ambos modos de forma explícita.
 - El selector ofrece las 17 grafías de raíz que ya existían, cada una en mayor y menor (34 opciones; 12 clases de altura con equivalentes enarmónicos conservados).
@@ -508,3 +526,4 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 - Los registros antiguos sin `originalMode` se interpretan como mayores; no se migran ni modifican al abrirlos.
 - La sugerencia automática aplica tanto la raíz como el modo. El modo no altera el cálculo de transposición.
 - Se mantiene la compatibilidad de letras, acordes, offsets, estructuras y texto heredado.
+
