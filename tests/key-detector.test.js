@@ -92,3 +92,11 @@ test('no fuerza una tonalidad cuando la progresión relativa mayor/menor no resu
   assert.equal(result.reason, 'ambiguous');
   assert.equal(result.suggestion, null);
 });
+
+
+test('el análisis no modifica la estructura ni sus acordes originales', () => {
+  const content = song(['C', 'Am', 'F', 'G', 'C']);
+  const before = JSON.stringify(content);
+  KeyDetector.analyze(content);
+  assert.equal(JSON.stringify(content), before);
+});
