@@ -6,7 +6,7 @@
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Última versión validada manualmente por el usuario:** v1.3.15 (PR #94), editor estructurado prioritario con el editor heredado como respaldo. **Versión desplegada en laboratorio:** v1.3.16, pegado inteligente de canciones y fragmentos desde el editor unificado; CI y GitHub Pages exitosos. Pendiente de validación manual del usuario.
+**Última versión validada manualmente por el usuario:** v1.3.16 (PR #95), con pegado inteligente de canciones completas y fragmentos desde el editor; el usuario confirmó pruebas satisfactorias. **Siguiente trabajo:** rediseño visual y unificación real de la superficie de edición, exclusivamente en laboratorio.
 
 ## 1. Reglas permanentes de trabajo
 
@@ -84,7 +84,7 @@ Observación del usuario: símbolos como `Mib/Sol` y `Fam` no se empalman, pero 
 
 ## 4. Siguiente proyecto principal — Editor unificado
 
-**Estado:** edición estructurada, filas instrumentales, arrastre táctil, renombrado, creación y reordenamiento de secciones validados por etapas hasta v1.3.15. La unificación de entrada continúa: el editor estructurado aún debe aceptar canciones completas y fragmentos pegados con acordes, sin depender del editor alternativo.
+**Estado:** funciones de edición estructurada, importación de canciones completas y fragmentos validadas manualmente por el usuario en v1.3.16. Comienza una fase separada de unificación visual y de flujo; no se considera cerrada hasta probar el nuevo flujo en iPhone.
 
 Objetivo: integrar las superficies superior e inferior actuales en una sola experiencia coherente. La letra, los acordes y los bloques deben sentirse como elementos del mismo editor, sin obligar al usuario a cambiar de panel para completar operaciones relacionadas.
 
@@ -387,3 +387,31 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 6. Confirmar que las importaciones ambiguas no sustituyen el contenido existente y que las canciones heredadas siguen abriéndose con el respaldo.
 
 **Estado:** implementación inicial en rama `feat/entrada-inteligente-editor-unificado`; CI automatizado completado correctamente (incluidos modelo de acordes, navegación, diagnósticos, adaptador, documento y sintaxis inline); revisión del diff completada. PR #95 integrado en main mediante squash (commit 16c7a03827e4d3c6612e886170b92dd7a7bf88cf); CI de main y GitHub Pages completados correctamente. Pendiente de validación manual del usuario en iPhone. Producción y Firebase de producción permanecen intactas.
+
+
+### 4.1 — Rediseño visual y unificación real del editor (fase iniciada después de v1.3.16)
+
+**Objetivo acordado con el usuario:** una sola superficie de edición, sencilla para personas con poca experiencia tecnológica, que reúna el ingreso manual, el pegado desde Internet y las herramientas estructuradas.
+
+**Dirección de diseño acordada:**
+- Tomar como referencia visual la sencillez del editor de texto original, sin conservar dos editores visibles o dos apartados separados.
+- Permitir pegar la canción completa directamente en la superficie principal; el reconocimiento y la conversión estructurada deben ocurrir sin abrir un panel de importación independiente.
+- Mantener en esa misma experiencia la acción «＋ Sección», la creación/renombrado de secciones, el reordenamiento y la edición de letra y acordes.
+- Retirar de la interfaz los encabezados técnicos «Editor unificado» y «Editor de texto original (alternativo)», así como las etiquetas rápidas fijas de Estrofa 1, Estrofa 2, Coro y Puente. La acción genérica «＋ Sección» permitirá elegir o escribir el nombre de cualquier sección.
+- Simplificar la ayuda de tonalidad a una frase breve. Incorporar o verificar la sugerencia automática de tonalidad; el usuario debe poder confirmarla o cambiarla. No presentar una tonalidad como segura cuando el análisis sea ambiguo.
+- Convertir el panel de edición de acordes en un control flotante/contextual que aparezca al seleccionar un acorde o un punto de la letra y se oculte al aceptar o cancelar. Debe reposicionarse para no tapar el contenido ni quedar detrás del teclado del iPhone.
+- Eliminar textos técnicos de estado de la vista normal. Si una conversión no es segura, comunicarlo de forma breve y comprensible, conservar el texto original intacto y permitir seguir trabajando sin pérdida.
+
+**Orden de implementación propuesto:**
+1. Auditar y unificar primero la superficie de entrada/edición, incluyendo pegado directo y transición segura a la estructura editable.
+2. Implementar el panel flotante de acordes como una etapa independiente.
+3. Pulir jerarquía visual, espacios, controles y accesibilidad móvil.
+4. Validar en iPhone pegado, edición manual, canciones antiguas/ambiguas, acordes, offsets, secciones, guardado y reapertura.
+
+**Protecciones obligatorias:** conservar `rawText` como respaldo; no descartar ni reordenar acordes, offsets, IDs o filas instrumentales; no alterar canciones existentes al abrirlas; no quitar el camino de recuperación para canciones no convertibles; no modificar producción ni Firebase de producción.
+
+**Avance técnico inicial (PR #96, aún en revisión):** menú de secciones implementado; el área de texto original acepta pegado directo y, cuando `convertLegacy()` produce una estructura válida, importa al borrador estructurado. La superficie de texto se oculta mientras existe una estructura editable, evitando mostrar dos representaciones simultáneas; vuelve a mostrarse cuando no hay conversión segura, para conservar el respaldo literal. Se retiraron de la vista los encabezados «Editor unificado» y «Editor de texto original (alternativo)», el panel independiente de pegado y los botones rápidos de bloques. La importación se refactorizó en una función compartida para conservar validación y confirmación.
+
+**Verificación automatizada:** workflow «Chord model tests» #141 (run `45914937943`) completado con éxito: modelo de acordes, navegación repetida, scroll de lectura, diagnósticos, adaptador, documento y sintaxis JavaScript inline.
+
+**Estado de esta fase:** diseño funcional acordado, incluido el menú de secciones predefinidas y etiqueta personalizada; auditoría técnica iniciada en la rama `feat/editor-visual-unificado`. Sin cambios de código aplicados todavía.
