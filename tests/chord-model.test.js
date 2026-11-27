@@ -38,13 +38,13 @@ test('reconoce acordes anglosajones, latinos, extensiones e inversiones', () => 
 
 test('reconoce secuencias de acordes separadas por guion sin perder posiciones', () => {
   const cases = [
-    ['F-G\\nLetra', ['F','G'], [0,2]],
-    ['F-C\\nLetra', ['F','C'], [0,2]],
-    ['G-C\\nLetra', ['G','C'], [0,2]],
-    ['Am-G\\nLetra', ['A','G'], [0,3]],
-    ['Dm-G-C\\nLetra', ['D','G','C'], [0,3,5]],
-    ['C#m-F#-G#\\nLetra', ['C#','F#','G#'], [0,4,7]],
-    ['C/E-G/B\\nLetra', ['C','G'], [0,4]]
+    ['F-G\nLetra', ['F','G'], [0,2]],
+    ['F-C\nLetra', ['F','C'], [0,2]],
+    ['G-C\nLetra', ['G','C'], [0,2]],
+    ['Am-G\nLetra', ['A','G'], [0,3]],
+    ['Dm-G-C\nLetra', ['D','G','C'], [0,3,5]],
+    ['C#m-F#-G#\nLetra', ['C#','F#','G#'], [0,4,7]],
+    ['C/E-G/B\nLetra', ['C','G'], [0,4]]
   ];
   for (const [raw, roots, offsets] of cases) {
     const result = ChordModel.convertLegacy(raw);
@@ -58,14 +58,14 @@ test('reconoce secuencias de acordes separadas por guion sin perder posiciones',
 });
 
 test('reconoce secuencias con guion en filas instrumentales y conserva C- como acorde menor', () => {
-  const instrumental = ChordModel.convertLegacy('[INTRO]\\nG-C');
+  const instrumental = ChordModel.convertLegacy('[INTRO]\nG-C');
   assert.equal(instrumental.ok, true, JSON.stringify(instrumental.warnings));
   const row = instrumental.structuredContent.blocks[0].rows[0];
   assert.equal(row.lyric, '');
   assert.deepEqual(row.chords.map(chord => chord.root), ['G','C']);
   assert.deepEqual(row.chords.map(chord => chord.position.offset), [0,2]);
 
-  const minor = ChordModel.convertLegacy('C-\\nLetra');
+  const minor = ChordModel.convertLegacy('C-\nLetra');
   assert.equal(minor.ok, true, JSON.stringify(minor.warnings));
   assert.equal(minor.structuredContent.blocks[0].rows[0].chords.length, 1);
   assert.equal(minor.structuredContent.blocks[0].rows[0].chords[0].quality, '-');
@@ -80,7 +80,7 @@ test('importa un fragmento representativo del himno Santo Santo Santo con acorde
     'Am      G       F-C      Dm    G     C',
     'Dios en tres personas, bendita Trinidad.',
     'G-C'
-  ].join('\\n');
+  ].join('\n');
   const result = ChordModel.convertLegacy(raw);
   assert.equal(result.ok, true, JSON.stringify(result.warnings));
   const rows = result.structuredContent.blocks[0].rows;
