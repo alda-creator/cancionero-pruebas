@@ -6,7 +6,7 @@
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Última versión validada manualmente por el usuario:** v1.3.23 (PR #105), con la segunda iteración de pulido visual y el ocultamiento del selector técnico heredado validados en iPhone. **Siguiente trabajo:** validación manual en iPhone de la selección y persistencia de tonalidades mayores y menores, exclusivamente en laboratorio.
+**Última versión validada manualmente por el usuario:** v1.3.24 (PR #108), con la sugerencia automática de tonalidad probada en iPhone. **Versión actual del laboratorio:** v1.3.25 (PR #109), pendiente de validación manual en iPhone. Producción permanece sin cambios.
 
 ## 1. Reglas permanentes de trabajo
 
@@ -492,7 +492,7 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 
 ### 4.1 — Tonalidades mayores y menores en el editor
 
-**Estado:** implementación preparada en rama `feat/minor-key-signatures`; pendiente de CI, revisión e integración.
+**Estado:** integrada en `main` del laboratorio mediante PR #109; CI aprobado. Pendiente de validación manual en iPhone.
 
 - El detector ya analiza y distingue modos mayor/menor. La interfaz ahora representa ambos modos de forma explícita.
 - El selector ofrece las 17 grafías de raíz que ya existían, cada una en mayor y menor (34 opciones; 12 clases de altura con equivalentes enarmónicos conservados).
