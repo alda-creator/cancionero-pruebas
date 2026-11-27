@@ -6,7 +6,7 @@
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Última versión validada manualmente por el usuario:** v1.3.19 (PR #98), con panel contextual adaptable al teclado validado en iPhone. **Siguiente trabajo:** pulido visual del editor, exclusivamente en laboratorio y sin modificar la lógica musical estabilizada.
+**Última versión validada manualmente por el usuario:** v1.3.20 (PR #100), con primer pulido visual validado en iPhone. **Siguiente trabajo:** segunda iteración de pulido visual y cierre de la sugerencia automática de tonalidad, exclusivamente en laboratorio.
 
 ## 1. Reglas permanentes de trabajo
 
@@ -37,7 +37,7 @@
 | Navegación entre canciones y gestos | Implementados y probados | PR #71 corrigió el reinicio de lectura al cambiar de canción en En Vivo. Validado por el usuario en iPhone; no modificar salvo regresión. |
 | Notación anglosajona/latina | Implementada | Preferencia local por dispositivo: C-D-E / Do-Re-Mi. |
 | Motor de reconocimiento y transposición de acordes | Implementado y probado | Incluye acordes básicos, extendidos, alterados e inversiones dentro de los casos ya validados. |
-| Selector manual de tonalidad original | Implementado y probado | Independiente de la sugerencia basada en el primer acorde. |
+| Selector manual de tonalidad original | Implementado y probado | El usuario puede elegir la tonalidad original sin depender del primer acorde. La sugerencia automática queda como trabajo explícito de cierre del editor. |
 | Editor unificado — edición contextual de letra, acordes y bloques | Implementado por etapas y validado en laboratorio hasta v1.3.8 | Edición por fila, preservación de offsets instrumentales/cola musical, arrastre táctil, renombrado y creación de secciones. Se conserva el respaldo heredado. |
 | Distribución visual y ajuste de línea | Implementados y probados en v1.3.0 | Se recuperó el ajuste natural por palabras; sin desplazamiento horizontal global ni espacio lateral sobrante. |
 | Visualización móvil y modo Director | Corregidos y probados en v1.3.0 | El usuario confirmó que el tamaño y encuadre regresaron a lo esperado. |
@@ -84,7 +84,7 @@ Observación del usuario: símbolos como `Mib/Sol` y `Fam` no se empalman, pero 
 
 ## 4. Siguiente proyecto principal — Editor unificado
 
-**Estado:** funciones de edición estructurada, importación de canciones completas y fragmentos validadas manualmente por el usuario en v1.3.16. Comienza una fase separada de unificación visual y de flujo; no se considera cerrada hasta probar el nuevo flujo en iPhone.
+**Estado:** edición estructurada, importación de canciones completas y fragmentos, panel contextual adaptable al teclado y primer pulido visual completados e integrados en laboratorio. El usuario validó manualmente v1.3.20 en iPhone. El editor sigue abierto únicamente para la segunda iteración visual y la sugerencia automática de tonalidad; ambas deben validarse antes de cerrar el proyecto.
 
 Objetivo: integrar las superficies superior e inferior actuales en una sola experiencia coherente. La letra, los acordes y los bloques deben sentirse como elementos del mismo editor, sin obligar al usuario a cambiar de panel para completar operaciones relacionadas.
 
@@ -118,7 +118,7 @@ Alcance acordado:
 | Prioridad | Trabajo | Estado | Criterio de aceptación |
 |---|---|---|---|
 | P0 | Corregir GO_TO_BLOCK para instancias repetidas | Completado y validado | PR #69; el segundo Coro lleva al músico a su segunda instancia. |
-| P0 | Editor unificado: entrada inteligente de canciones y fragmentos | En desarrollo (v1.3.16) | Pegar desde la superficie principal, reconocer acordes/letra/secciones y distribuir renglones sin perder contenido. |
+| P0 | Editor unificado: entrada inteligente y edición musical | Implementado y validado en laboratorio (v1.3.16–v1.3.20) | Pegado directo, conversión segura, respaldo literal, edición de filas y acordes, bloques, offsets y panel contextual; compatibilidad conservada. |
 | P2 | Evitar zoom automático en campos al abrir teclado en iPhone | Anotado; auditoría posterior | Buscar y clave del Director no deben provocar ampliación automática molesta. Véase sección 3.3. |
 | P0 | Compatibilidad de canciones antiguas y nuevas | Auditoría continua | Ninguna canción pierde texto, acordes ni posiciones; conversiones ambiguas permanecen intactas. |
 | P0 | Director/Músico y modo offline | Auditoría final | Tono, orden, secuencia, notación local y seguimiento correctos tras conexión, desconexión y reconexión. |
@@ -147,7 +147,7 @@ Alcance acordado:
 | Preferencias de nomenclatura | Implementadas localmente; solo ampliar si hay necesidad real. |
 | Mejoras adicionales de gestos/navegación | Solo si pruebas identifican fricción real. |
 | Ajustes visuales de Mi Set | Pospuestos; no prioridad antes del evento. |
-| Detección/sugerencia automática de tonalidad | Pendiente de completar/validar; sugerencia, nunca imposición automática. |
+| Detección/sugerencia automática de tonalidad | Incluida en el cierre del editor | Auditar el código existente; analizar acordes con criterio musical, estimar confianza, sugerir solo cuando haya evidencia suficiente y permitir aceptar o elegir manualmente. Nunca imponer cambios ni alterar la tonalidad guardada sin confirmación. |
 
 ## 7. Seguridad, datos y estrategia de publicación
 
@@ -416,6 +416,29 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 
 **Estado de esta fase:** PR #96 integrado en laboratorio y validado manualmente por el usuario en iPhone. El usuario confirmó que el pegado directo, el reconocimiento, la edición y el respaldo de formatos antiguos funcionan correctamente. Se cierra esta etapa.
 
+
+### 4.3 — Cierre del editor: pulido visual superior y sugerencia automática de tonalidad
+
+**Estado:** plan acordado por el usuario el 26 de noviembre de 2026. Trabajo aún no implementado; exclusivamente en laboratorio.
+
+**Base ya cerrada:** la edición estructurada, el pegado directo, la conversión conservadora, el respaldo literal, la edición de acordes/letras/bloques, la preservación de offsets y el panel contextual adaptable al teclado fueron validados por el usuario. El primer pulido visual (v1.3.20, PR #100) también fue validado en iPhone y quedó registrado por PR #101.
+
+**Orden de cierre acordado:**
+1. **Actualizar esta hoja de ruta:** corregir estados históricos que seguían presentando como pendientes funciones ya validadas y separar el trabajo restante del editor.
+2. **Pulido visual — iteración 2:** revisar título, autor/grupo, selector y ayuda de tonalidad, superficie de escritura/pegado y respaldo de texto heredado. Cambios de presentación pequeños; no modificar IDs, eventos, conversión, guardado, lógica musical, posiciones, offsets, métricas tipográficas ni geometría de la vista previa.
+3. **Sugerencia automática de tonalidad:** auditar primero el analizador y las capacidades existentes. No duplicar lógica ni asumir que el primer acorde determina la tonalidad. Diseñar una propuesta basada en el conjunto de acordes y contexto armónico disponible, contemplando inversiones, acordes de paso, tonalidades relativas y casos ambiguos. Mostrar una sugerencia solo cuando la confianza sea suficiente; explicar cuando no haya evidencia concluyente. La decisión final siempre corresponde al usuario.
+4. **Validación manual final en iPhone:** probar canciones nuevas, pegadas completas y por fragmentos, formatos antiguos/no convertibles, tonalidades claras y ambiguas, aceptación/rechazo/cambio manual de sugerencia, guardado y reapertura.
+
+**Criterios de aceptación de la sugerencia de tonalidad:**
+- No cambiar silenciosamente la tonalidad original ni transponer la canción.
+- No tratar el primer acorde como tonalidad definitiva.
+- La sugerencia debe poder aceptarse, ignorarse o sustituirse manualmente.
+- Si el análisis es ambiguo o insuficiente, no presentar una respuesta como segura.
+- El análisis no debe reescribir canciones, acordes, offsets, secuencias ni datos existentes.
+- Añadir pruebas automatizadas con progresiones representativas, inversiones, acordes cromáticos/de paso, tonalidades relativas y casos ambiguos.
+- Mantener compatibilidad con canciones pegadas de Internet y formatos heredados.
+
+**Regla de cierre:** el editor no se declarará terminado hasta completar y validar ambas iteraciones restantes en laboratorio. No se modificará producción ni Firebase de producción.
 
 ### Etapa siguiente: panel flotante contextual de acordes
 
