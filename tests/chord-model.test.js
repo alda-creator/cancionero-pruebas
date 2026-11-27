@@ -84,10 +84,10 @@ test('importa un fragmento representativo del himno Santo Santo Santo con acorde
   const result = ChordModel.convertLegacy(raw);
   assert.equal(result.ok, true, JSON.stringify(result.warnings));
   const rows = result.structuredContent.blocks[0].rows;
-  assert.deepEqual(rows[2].chords.map(chord => chord.root), ['G','C','F','G','D','G']);
-  assert.deepEqual(rows[4].chords.map(chord => chord.root), ['A','G','F','C','D','G','C']);
-  assert.equal(rows[6].lyric, '');
-  assert.deepEqual(rows[6].chords.map(chord => chord.root), ['G','C']);
+  assert.deepEqual(rows[1].chords.map(chord => chord.root), ['G','C','F','G','D','G']);
+  assert.deepEqual(rows[2].chords.map(chord => chord.root), ['A','G','F','C','D','G','C']);
+  assert.equal(rows[3].lyric, '');
+  assert.deepEqual(rows[3].chords.map(chord => chord.root), ['G','C']);
 });
 
 test('convierte líneas heredadas y conserva la posición Unicode del acorde', () => {
