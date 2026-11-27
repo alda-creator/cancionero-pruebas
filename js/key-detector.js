@@ -159,6 +159,16 @@
     const best = candidates[0];
     const runnerUp = candidates[1];
     const margin = best.score - runnerUp.score;
+    if (best.score < 0.58) {
+      return {
+        ok: true,
+        suggestion: null,
+        reason: 'low-confidence',
+        confidence: 'low',
+        margin,
+        candidates: candidates.slice(0, 3).map(({ tonicName, mode, label, score }) => ({ tonicName, mode, label, score }))
+      };
+    }
     if (margin < 0.045) {
       return {
         ok: true,
