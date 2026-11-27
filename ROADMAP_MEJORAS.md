@@ -93,7 +93,7 @@ La regla es conservadora: primero se valida el token completo y solo si falla se
 
 ### 3.5 — P0: auditoría integral de compatibilidad de canciones heredadas y nuevas
 
-<badge>Completada</badge> **Validación manual confirmada por el usuario el 27 de noviembre de 2026**, sobre la versión estable v1.3.27.
+**Estado: completada.** Validación manual confirmada por el usuario el 27 de noviembre de 2026, sobre la versión estable v1.3.27.
 
 Se revisaron canciones antiguas, canciones pegadas desde Internet y canciones creadas en el editor. El usuario confirmó que las pruebas propuestas funcionan correctamente, incluyendo:
 - Formatos mixtos, encabezados, acordes sobre la letra y al final de frase.
