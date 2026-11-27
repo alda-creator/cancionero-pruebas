@@ -472,6 +472,56 @@
       font-size:12px;
       line-height:1.45;
     }
+    .key-suggestion-card {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      gap:9px;
+      margin-top:5px;
+      padding:10px;
+      border:1px solid var(--accent);
+      border-radius:10px;
+      background:var(--bg);
+    }
+    .key-suggestion-card[hidden] { display:none; }
+    .key-suggestion-copy {
+      display:flex;
+      flex:1 1 170px;
+      flex-direction:column;
+      gap:3px;
+      min-width:0;
+    }
+    .key-suggestion-title {
+      color:var(--text);
+      font-size:13px;
+      font-weight:700;
+    }
+    .key-suggestion-detail {
+      color:var(--text-muted);
+      font-size:12px;
+      line-height:1.4;
+    }
+    .key-suggestion-actions {
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+    }
+    .key-suggestion-button {
+      min-height:36px;
+      padding:8px 10px;
+      border:1px solid var(--card-border);
+      border-radius:8px;
+      background:var(--card);
+      color:var(--text);
+      font-size:12px;
+      font-weight:600;
+    }
+    .key-suggestion-button.primary {
+      border-color:var(--accent);
+      background:var(--accent);
+      color:#fff;
+    }
     .editor-container:focus-within {
       border-color:var(--accent);
     }
@@ -614,7 +664,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.3.23 · Ocultar selector técnico de campos · (PRUEBAS)</div>
+        <div class="app-version">v1.3.24 · Sugerencia automática de tonalidad · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -756,6 +806,7 @@
         <option value="C">C</option><option value="C#">C#</option><option value="Db">Db</option><option value="D">D</option><option value="D#">D#</option><option value="Eb">Eb</option><option value="E">E</option><option value="F">F</option><option value="F#">F#</option><option value="Gb">Gb</option><option value="G">G</option><option value="G#">G#</option><option value="Ab">Ab</option><option value="A">A</option><option value="A#">A#</option><option value="Bb">Bb</option><option value="B">B</option>
       </select>
       <div class="editor-key-help">Ajusta la tonalidad aquí.</div>
+      <div id="key-suggestion" class="key-suggestion-card" hidden aria-live="polite"></div>
     </div>  
 
     <div id="field-selector-container" style="display:none; background: var(--card); border: 1px solid var(--accent); padding: 10px; border-radius: 10px; margin-bottom: 12px;">
@@ -836,6 +887,7 @@
 
 <!-- Modelo y proyección normalizada: deben cargarse antes del código principal. -->
 <script src="./js/chord-model.js"></script>
+<script src="./js/key-detector.js"></script>
 <script src="./js/song-adapter.js"></script>
 <script src="./js/song-document.js"></script>
 
@@ -959,6 +1011,8 @@
   let structuredDraftSource = null;
   let structuredDraftDirty = false;
   let structuredDraftSyncError = null;
+  let keySuggestionSignature = '';
+  let keySuggestionDismissedSignature = '';
   let selectedDraftRowId = null;
   let selectedDraftChordId = null;
   let editingDraftRowId = null;
@@ -1896,6 +1950,8 @@
   }
 
   function openEditor() {
+    keySuggestionSignature = '';
+    keySuggestionDismissedSignature = '';
     structuredDraft = null;
     structuredDraftDirty = false;
     selectedDraftRowId = null;
@@ -1923,6 +1979,8 @@
   }  
 
   function editCurrentSong() {
+    keySuggestionSignature = '';
+    keySuggestionDismissedSignature = '';
     structuredDraftDirty = false;
     structuredDraftSyncError = null;
     const editorAdapted = currentSong && window.SongAdapter && window.ChordModel
@@ -2092,6 +2150,7 @@
       deleteButton.disabled = true;
       document.getElementById('structured-chord-left').disabled = true;
       document.getElementById('structured-chord-right').disabled = true;
+      updateKeySuggestion();
       return;
     }
     let rowCount = 0;
@@ -2468,6 +2527,112 @@
     document.getElementById('structured-chord-left').disabled = !selectedDraftChordId;
     document.getElementById('structured-chord-right').disabled = !selectedDraftChordId;
     saveButton.textContent = selectedDraftChordId ? '✓' : '＋';
+    updateKeySuggestion();
+  }
+
+  function updateKeySuggestion() {
+    const host = document.getElementById('key-suggestion');
+    if (!host) return;
+    const raw = document.getElementById('edit-raw')?.value || '';
+    if (!raw.trim() || !window.KeyDetector || !window.ChordModel) {
+      host.hidden = true;
+      keySuggestionSignature = '';
+      keySuggestionDismissedSignature = '';
+      return;
+    }
+
+    let content = structuredDraft && window.ChordModel.validateStructuredContent(structuredDraft).valid
+      ? structuredDraft
+      : null;
+    if (!content) {
+      const converted = window.ChordModel.convertLegacy(raw);
+      if (converted && converted.ok && window.ChordModel.validateStructuredContent(converted.structuredContent).valid) {
+        content = converted.structuredContent;
+      }
+    }
+    if (!content) {
+      host.hidden = true;
+      keySuggestionSignature = '';
+      keySuggestionDismissedSignature = '';
+      return;
+    }
+
+    const signature = content.blocks.flatMap(block => block.rows.flatMap(row =>
+      row.chords.map(chord => [chord.root, chord.quality, chord.bass || ''].join('/'))
+    )).join('|');
+    if (!signature) {
+      host.hidden = true;
+      keySuggestionSignature = '';
+      keySuggestionDismissedSignature = '';
+      return;
+    }
+    if (signature !== keySuggestionSignature) {
+      keySuggestionSignature = signature;
+      keySuggestionDismissedSignature = '';
+    }
+
+    const analysis = window.KeyDetector.analyze(content);
+    if (!analysis.ok || keySuggestionDismissedSignature === signature) {
+      host.hidden = true;
+      return;
+    }
+    if (!analysis.suggestion) {
+      const message = analysis.reason === 'ambiguous'
+        ? 'La progresión puede corresponder a tonalidades relativas. Elige la tonalidad manualmente.'
+        : analysis.reason === 'insufficient-chords'
+          ? 'Aún no hay suficientes acordes para sugerir una tonalidad.'
+          : analysis.reason === 'low-confidence'
+            ? 'Los acordes no muestran una tonalidad suficientemente clara. Ajusta la tonalidad manualmente.'
+            : '';
+      if (!message) {
+        host.hidden = true;
+        return;
+      }
+      host.replaceChildren();
+      const note = document.createElement('div');
+      note.className = 'key-suggestion-detail';
+      note.textContent = message;
+      host.append(note);
+      host.hidden = false;
+      return;
+    }
+
+    const suggestion = analysis.suggestion;
+    host.replaceChildren();
+    const copy = document.createElement('div');
+    copy.className = 'key-suggestion-copy';
+    const heading = document.createElement('div');
+    heading.className = 'key-suggestion-title';
+    heading.textContent = 'Sugerencia: ' + suggestion.label;
+    const detail = document.createElement('div');
+    detail.className = 'key-suggestion-detail';
+    detail.textContent = (suggestion.confidence === 'high' ? 'Confianza alta' : 'Confianza moderada') +
+      ' · Se analizaron las raíces y calidades de los acordes.';
+    copy.append(heading, detail);
+
+    const actions = document.createElement('div');
+    actions.className = 'key-suggestion-actions';
+    const useButton = document.createElement('button');
+    useButton.type = 'button';
+    useButton.className = 'key-suggestion-button primary';
+    useButton.textContent = 'Usar ' + suggestion.tonic;
+    useButton.addEventListener('click', () => {
+      const selector = document.getElementById('edit-original-key');
+      if (selector) selector.value = suggestion.tonic;
+      keySuggestionDismissedSignature = signature;
+      host.hidden = true;
+    });
+    const dismissButton = document.createElement('button');
+    dismissButton.type = 'button';
+    dismissButton.className = 'key-suggestion-button';
+    dismissButton.textContent = 'Ocultar';
+    dismissButton.addEventListener('click', () => {
+      keySuggestionDismissedSignature = signature;
+      host.hidden = true;
+    });
+    actions.append(useButton, dismissButton);
+    host.append(copy, actions);
+    host.hidden = false;
   }
 
   function confirmRawTextWillReplaceStructuredDraft() {
