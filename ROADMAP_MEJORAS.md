@@ -93,22 +93,22 @@ La regla es conservadora: primero se valida el token completo y solo si falla se
 
 ### 3.5 — P0: auditoría integral de compatibilidad de canciones heredadas y nuevas
 
-**Siguiente etapa recomendada:** antes de añadir otra función visual, realizar una auditoría dirigida de canciones reales para confirmar que el formato estructurado, el respaldo heredado y la vista de lectura interpretan el mismo contenido sin pérdidas. Esta etapa no presupone que exista un fallo: busca detectar formatos históricos que todavía no estén cubiertos por las pruebas.
+<badge>Completada</badge> **Validación manual confirmada por el usuario el 27 de noviembre de 2026**, sobre la versión estable v1.3.27.
 
-**Alcance propuesto:**
-- Revisar una muestra representativa de canciones antiguas, canciones pegadas recientemente desde Internet y canciones creadas directamente en el editor.
-- Incluir formatos mixtos: encabezados entre corchetes, acordes sobre la letra, acordes al final de frase, filas instrumentales sin letra, tabulaciones/espacios amplios, inversiones, acordes menores, sostenidos/bemoles y secuencias separadas por guion.
-- Comparar editor, guardado/reapertura y vista normal; comprobar que letra, bloques, acordes y offsets coincidan.
-- Verificar que los formatos ambiguos o no convertibles conserven intacto el texto heredado de respaldo y no se sobrescriban silenciosamente.
-- Registrar cada caso reproducible como prueba de regresión; corregir solo los fallos demostrados y en PRs pequeños.
+Se revisaron canciones antiguas, canciones pegadas desde Internet y canciones creadas en el editor. El usuario confirmó que las pruebas propuestas funcionan correctamente, incluyendo:
+- Formatos mixtos, encabezados, acordes sobre la letra y al final de frase.
+- Filas instrumentales, espacios/tabulaciones, inversiones, acordes menores, sostenidos y bemoles.
+- Secuencias separadas por guion y conservación de sus posiciones originales.
+- Apertura, edición, guardado, cierre y reapertura sin pérdida de letra, bloques, acordes ni offsets.
+- Conservación del respaldo heredado y compatibilidad entre canciones antiguas y nuevas.
 
-**Criterio de aceptación:** ninguna canción de la muestra pierde texto, acordes, bloques ni posiciones al abrirse, editarse, guardarse y reabrirse. No realizar migración masiva ni modificar registros existentes automáticamente.
+**Resultado:** auditoría cerrada sin incidencias pendientes. No se requirió migración masiva ni modificación automática de registros existentes. Se conserva la política de corregir solo regresiones demostradas.
 
-**Límites:** solo repositorio y Firebase de pruebas cuando sea imprescindible; no tocar producción ni Firebase de producción. Mantener intactos el renderizador y la geometría musical salvo que una regresión concreta justifique un cambio aislado.
+**Límites respetados:** las pruebas se realizaron en laboratorio. Producción, Firebase de producción y sus reglas permanecen intactas hasta la promoción controlada.
 
 ## 4. Editor unificado — cierre de etapa
 
-**Estado:** completado y validado manualmente en laboratorio hasta v1.3.26. Incluye edición estructurada, importación de canciones completas y fragmentos, panel contextual adaptable al teclado, pulido visual, selector mayor/menor, sugerencia automática de tonalidad y corrección de secuencias de acordes separadas por guion. La compatibilidad con formatos heredados continúa como auditoría transversal; no queda pendiente otra función del editor ya acordada.
+**Estado:** completado y validado manualmente en laboratorio hasta v1.3.27. Incluye edición estructurada, importación de canciones completas y fragmentos, panel contextual adaptable al teclado, pulido visual, selector mayor/menor, sugerencia automática de tonalidad, corrección de secuencias de acordes separadas por guion y cancelación mediante gesto de regreso. La auditoría integral de compatibilidad quedó cerrada con validación manual del usuario el 27 de noviembre de 2026. No queda pendiente ninguna función del editor acordada.
 
 Objetivo: integrar las superficies superior e inferior actuales en una sola experiencia coherente. La letra, los acordes y los bloques deben sentirse como elementos del mismo editor, sin obligar al usuario a cambiar de panel para completar operaciones relacionadas.
 
