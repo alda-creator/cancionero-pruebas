@@ -664,7 +664,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.3.27 · Cancelación por gesto · (PRUEBAS)</div>
+        <div class="app-version">v1.3.28 · Aislamiento local y caché · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -909,7 +909,7 @@
   let firebaseAuthError = null;
   let songsUnsubscribe = null;
   let pendingFirestoreSync = Promise.resolve();
-  const PENDING_SYNC_KEY = 'church_firestore_pending_sync_v1';
+  const PENDING_SYNC_KEY = 'cancionero_lab_firestore_pending_sync_v1';
 
   try {  
     if (typeof firebase !== 'undefined') {  
@@ -1000,7 +1000,7 @@
   const latinoToAngloMap = { 'DO':'C', 'RE':'D', 'MI':'E', 'FA':'F', 'SOL':'G', 'LA':'A', 'SI':'B', 'DO#':'C#', 'RE#':'D#', 'FA#':'F#', 'SOL#':'G#', 'LA#':'A#' };  
 
   let songs = [];  
-  let songSetIds = JSON.parse(localStorage.getItem('church_song_set') || '[]');  
+  let songSetIds = JSON.parse(localStorage.getItem('cancionero_lab_song_set') || '[]');  
   let currentTab = 'all';  
   let currentSong = null;
   // Contexto de origen de la canción abierta: permite que los gestos
@@ -1018,8 +1018,8 @@
   let editingDraftRowId = null;
   let editingDraftBlockId = null;
   let currentTransposeSteps = 0;
-  const SET_TONE_STORAGE_KEY = 'church_song_set_transpose_v1';
-  const SET_SEQUENCE_STORAGE_KEY = 'church_song_set_sequences_v1';
+  const SET_TONE_STORAGE_KEY = 'cancionero_lab_song_set_transpose_v1';
+  const SET_SEQUENCE_STORAGE_KEY = 'cancionero_lab_song_set_sequences_v1';
   let remoteSequenceOverride = null;
   let sequenceSortableInstance = null;
 
@@ -1102,7 +1102,7 @@
     localStorage.setItem(SET_TONE_STORAGE_KEY, JSON.stringify(preferences));
   }
   
-  let useLatinoNotation = localStorage.getItem('church_notation') === 'latino';  
+  let useLatinoNotation = localStorage.getItem('cancionero_lab_notation') === 'latino';  
   let scrollAnimationFrame = null;  
   let scrollAnimationLastTime = 0;  
   let scrollTargetContainer = null;  
@@ -1158,7 +1158,7 @@
         }
       });
 
-      localStorage.setItem('church_songs', JSON.stringify(songs));
+      localStorage.setItem('cancionero_lab_songs', JSON.stringify(songs));
       if (document.getElementById('list-view').style.display !== 'none') renderCurrentTab();
       updateSyncStatus();
     }, error => {
@@ -1170,7 +1170,7 @@
   }  
 
   function loadLocalSongs() {  
-    const saved = localStorage.getItem('church_songs');  
+    const saved = localStorage.getItem('cancionero_lab_songs');  
     if (saved) { songs = JSON.parse(saved); renderCurrentTab(); }  
   }  
 
@@ -1216,7 +1216,7 @@
     } else {
       songSetIds.push(id);
     }  
-    localStorage.setItem('church_song_set', JSON.stringify(songSetIds));  
+    localStorage.setItem('cancionero_lab_song_set', JSON.stringify(songSetIds));  
     renderCurrentTab();  
   }  
 
@@ -1228,7 +1228,7 @@
     const cleanedSetIds = songSetIds.filter(id => validSongIds.has(id));
     if (cleanedSetIds.length !== songSetIds.length) {
       songSetIds = cleanedSetIds;
-      localStorage.setItem('church_song_set', JSON.stringify(songSetIds));
+      localStorage.setItem('cancionero_lab_song_set', JSON.stringify(songSetIds));
     }
 
     document.getElementById('set-count').innerText = songSetIds.length;  
@@ -1310,7 +1310,7 @@
             return visibleOrderIds[visibleIndex++];
           });
 
-          localStorage.setItem('church_song_set', JSON.stringify(songSetIds));
+          localStorage.setItem('cancionero_lab_song_set', JSON.stringify(songSetIds));
         }
       });
     }
@@ -1862,7 +1862,7 @@
 
   function toggleNotation() {  
     useLatinoNotation = !useLatinoNotation;
-    localStorage.setItem('church_notation', useLatinoNotation ? 'latino' : 'anglo');
+    localStorage.setItem('cancionero_lab_notation', useLatinoNotation ? 'latino' : 'anglo');
     document.getElementById('notation-btn').innerText = useLatinoNotation ? "Do»C" : "C»Do";  
     renderTransposedContent();  
   }  
@@ -3576,8 +3576,8 @@
       songSetIds = songSetIds.filter(id => id !== deleteId);
       removeSetTonePreference(deleteId);
       removeSetSongSequence(deleteId);
-      localStorage.setItem('church_songs', JSON.stringify(songs));
-      localStorage.setItem('church_song_set', JSON.stringify(songSetIds));
+      localStorage.setItem('cancionero_lab_songs', JSON.stringify(songs));
+      localStorage.setItem('cancionero_lab_song_set', JSON.stringify(songSetIds));
       showList();
       if (songsCollection) queueFirestoreSync({ type: 'delete', firestoreId });
     }
@@ -3622,7 +3622,7 @@
     const localSongData = firestoreId === newId ? songData : { ...songData, firestoreId };
     if (index >= 0) songs[index] = localSongData;
     else songs.push(localSongData);
-    localStorage.setItem('church_songs', JSON.stringify(songs));
+    localStorage.setItem('cancionero_lab_songs', JSON.stringify(songs));
     showList();
     if (songsCollection) queueFirestoreSync({ type: 'set', firestoreId, data: songData });
   }
