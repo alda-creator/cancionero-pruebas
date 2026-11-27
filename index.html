@@ -2581,7 +2581,9 @@
         ? 'La progresión puede corresponder a tonalidades relativas. Elige la tonalidad manualmente.'
         : analysis.reason === 'insufficient-chords'
           ? 'Aún no hay suficientes acordes para sugerir una tonalidad.'
-          : '';
+          : analysis.reason === 'low-confidence'
+            ? 'Los acordes no muestran una tonalidad suficientemente clara. Ajusta la tonalidad manualmente.'
+            : '';
       if (!message) {
         host.hidden = true;
         return;
