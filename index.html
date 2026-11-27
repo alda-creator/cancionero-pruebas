@@ -2625,23 +2625,20 @@
     }
   }
 
-  function importStructuredSongFromText() {
-    const field = document.getElementById('structured-import-text');
-    const rawText = field ? field.value : '';
-    if (!rawText.trim()) {
-      alert('Pega primero el contenido de la canción.');
-      return;
-    }
+  function applyStructuredSongFromText(rawText, options = {}) {
+    if (!rawText || !rawText.trim()) return false;
     const conversion = window.ChordModel && window.ChordModel.convertLegacy(rawText);
     if (!conversion || !conversion.ok) {
-      const warnings = conversion && conversion.warnings ? conversion.warnings.join(' ') : 'No fue posible iniciar el reconocimiento.';
-      alert('No se pudo reconocer la canción de forma segura. El contenido actual permanece intacto. ' + warnings);
-      return;
+      if (options.showErrors) {
+        const warnings = conversion && conversion.warnings ? conversion.warnings.join(' ') : 'No fue posible iniciar el reconocimiento.';
+        alert('No se pudo reconocer la canción de forma segura. El contenido actual permanece intacto. ' + warnings);
+      }
+      return false;
     }
     const validation = window.ChordModel.validateStructuredContent(conversion.structuredContent);
     if (!validation.valid) {
-      alert('La conversión produjo una estructura no válida. El contenido actual permanece intacto. ' + validation.errors.join(' '));
-      return;
+      if (options.showErrors) alert('La conversión produjo una estructura no válida. El contenido actual permanece intacto. ' + validation.errors.join(' '));
+      return false;
     }
     const currentRaw = document.getElementById('edit-raw').value;
     const hasMeaningfulStructuredContent = !!(structuredDraft && structuredDraft.blocks.some(block =>
@@ -2650,7 +2647,7 @@
     const hasUnstructuredRawContent = !structuredDraft && !!currentRaw.trim();
     if ((hasMeaningfulStructuredContent || hasUnstructuredRawContent) &&
         !confirm('¿Reemplazar todo el contenido actual por la canción pegada? Esta acción sustituirá las secciones, letras y acordes del borrador actual.')) {
-      return;
+      return false;
     }
     structuredDraft = JSON.parse(JSON.stringify(conversion.structuredContent));
     structuredDraftSource = 'legacy';
@@ -2662,13 +2659,40 @@
     editingDraftBlockId = null;
     document.getElementById('edit-raw').value = rawText;
     renderRawEditorPreview();
+    const field = document.getElementById('structured-import-text');
     if (field) field.value = '';
     const importPanel = document.getElementById('structured-import-panel');
     if (importPanel) importPanel.open = false;
     renderStructuredEditor();
     const rowCount = structuredDraft.blocks.reduce((total, block) => total + block.rows.length, 0);
-    document.getElementById('structured-editor-status').textContent =
-      conversion.structuredContent.blocks.length + ' secciones y ' + rowCount + ' renglones reconocidos.';
+    const status = document.getElementById('structured-editor-status');
+    if (status) status.textContent = conversion.structuredContent.blocks.length + ' secciones y ' + rowCount + ' renglones reconocidos.';
+    return true;
+  }
+
+  function importStructuredSongFromText() {
+    const field = document.getElementById('structured-import-text');
+    const rawText = field ? field.value : '';
+    if (!rawText.trim()) {
+      alert('Pega primero el contenido de la canción.');
+      return;
+    }
+    if (!applyStructuredSongFromText(rawText, { showErrors: true })) return;
+    if (field) field.value = '';
+  }
+
+  function handleRawEditorPaste(event) {
+    const clipboard = event.clipboardData || window.clipboardData;
+    const pastedText = clipboard && clipboard.getData ? clipboard.getData('text/plain') : '';
+    if (!pastedText || !pastedText.trim()) return;
+    // Si el reconocimiento no es seguro, dejamos que el navegador pegue el
+    // texto literalmente. handleEditorInput conservará ese respaldo sin
+    // fabricar una estructura ni descartar acordes existentes.
+    const conversion = window.ChordModel && window.ChordModel.convertLegacy(pastedText);
+    if (!conversion || !conversion.ok ||
+        !window.ChordModel.validateStructuredContent(conversion.structuredContent).valid) return;
+    event.preventDefault();
+    applyStructuredSongFromText(pastedText);
   }
 
   function handleEditorInput() {
@@ -2752,6 +2776,7 @@
     if (leftButton) leftButton.addEventListener('click', () => moveSelectedDraftChord(-1));
     if (rightButton) rightButton.addEventListener('click', () => moveSelectedDraftChord(1));
     const rawEditor = document.getElementById('edit-raw');
+    if (rawEditor) rawEditor.addEventListener('paste', handleRawEditorPaste);
     // La edición de letra se reconcilia con el borrador estructurado; no se descartan acordes.
   });
 
