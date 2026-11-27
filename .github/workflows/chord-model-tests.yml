@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "js/chord-model.js"
+      - "js/key-detector.js"
       - "js/song-diagnostics.js"
       - "js/song-adapter.js"
       - "js/song-document.js"
@@ -36,6 +37,8 @@ jobs:
           node-version: 22
       - name: Test chord model
         run: node tests/chord-model.test.js
+      - name: Test automatic key detection
+        run: node tests/key-detector.test.js
       - name: Test Director repeated block navigation
         run: node tests/director-navigation.test.js
       - name: Test live song navigation scroll reset

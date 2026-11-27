@@ -421,6 +421,8 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 
 **Estado:** pulido visual superior cerrado y validado manualmente por el usuario en iPhone hasta v1.3.23 (PR #103–#105). Pendiente únicamente implementar y validar la sugerencia automática de tonalidad; exclusivamente en laboratorio.
 
+**Avance de la sugerencia automática — núcleo de análisis (PR #107):** implementado en un módulo independiente (`js/key-detector.js`), pendiente de integrar con la interfaz. Analiza todos los acordes de una estructura válida, considera raíz/calidad/inversiones, ajuste diatónico, perfiles de tonalidad y resolución; devuelve modo mayor/menor y confianza o se abstiene ante datos insuficientes/ambiguos. Pruebas automatizadas cubren Sol mayor, La menor, inversiones, cromatismos, ambigüedad relativa, calidades extendidas y contenido inválido. CI completa correctamente. Este módulo no cambia `originalKey`, no transpone ni reescribe canciones, offsets o secuencias.
+
 **Base ya cerrada:** la edición estructurada, el pegado directo, la conversión conservadora, el respaldo literal, la edición de acordes/letras/bloques, la preservación de offsets y el panel contextual adaptable al teclado fueron validados por el usuario. El pulido visual completo (v1.3.21–v1.3.23, PR #103–#105) también fue validado en iPhone; el selector técnico heredado quedó oculto sin eliminar su lógica de recuperación.
 
 **Orden de cierre acordado:**
