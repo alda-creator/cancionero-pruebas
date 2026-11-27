@@ -439,4 +439,6 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 
 **Protecciones:** no cambiar modelo de acordes, offsets, selección, validación, guardado, movimiento, eliminación ni importación. No tocar producción ni Firebase.
 
-**Estado:** implementación en rama fix/keyboard-aware-chord-panel; pendiente de revisión automatizada, integración en laboratorio y validación manual en iPhone.
+**Estado:** completado, integrado en laboratorio y validado manualmente por el usuario en iPhone (PR #98, v1.3.19; commit 8758d9c24a4f56f5003f9d8026ed795b0f7dae84). CI de PR y pruebas posteriores a la integración completadas correctamente; GitHub Pages publicó la versión. El usuario confirmó que el panel se mantiene por encima del teclado y permite seguir editando canciones largas sin quedar oculto. Observó desplazamientos ocasionales de pantalla, considerados compatibles con el reajuste de viewport de iOS y no bloqueantes mientras no afecten la edición. Se cierra esta iteración sin añadir burbuja permanente ni arrastre manual.
+
+**Siguiente etapa acordada:** pulido visual del editor. Se limita a jerarquía visual, espaciado, alineación, consistencia de controles, estados y accesibilidad táctil. No modificar el modelo musical, offsets, conversión/importación, selección, validación, guardado, movimiento, eliminación, ni el comportamiento del panel contextual ya validado. Antes de tocar código, auditar la interfaz actual y definir cambios visuales pequeños y verificables; mantener compatibilidad con canciones pegadas desde Internet y formatos heredados.
