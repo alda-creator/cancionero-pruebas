@@ -372,7 +372,8 @@
     #structured-chord-offset { display:none; }
     .structured-editor-actions { display:flex; gap:4px; flex-wrap:nowrap; margin:0; }
     .structured-editor-actions .btn-action { min-width:36px; min-height:38px; padding:7px 9px; }
-    .structured-editor-panel.has-selection { padding-bottom:78px; }
+    /* El panel fijo no reserva espacio en el documento: evita empujar la canción al abrirse. */
+     .structured-editor-panel.has-selection { padding-bottom:0; }
     .structured-editor-help { line-height:1.4; margin:5px 0 0; }
     .structured-row-edit-toggle { margin:4px 0 0; padding:5px 9px; border:1px solid var(--card-border); border-radius:7px; background:var(--card); color:var(--text-muted); font-size:12px; cursor:pointer; }
     .structured-row-lyric-editor { display:grid; gap:7px; margin-top:8px; }
@@ -486,7 +487,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.3.18 · Panel flotante de acordes · (PRUEBAS)</div>
+        <div class="app-version">v1.3.19 · Panel adaptable al teclado · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -2762,6 +2763,49 @@
     if (rightButton) rightButton.addEventListener('click', () => moveSelectedDraftChord(1));
     const rawEditor = document.getElementById('edit-raw');
     if (rawEditor) rawEditor.addEventListener('paste', handleRawEditorPaste);
+
+    // El panel sigue siendo contextual: cerrado sin selección y visible solo
+    // durante la edición. Al abrirse el teclado, se coloca sobre el viewport
+    // visible sin reservar espacio ni desplazar el contenido de la canción.
+    const chordPanel = document.querySelector('.structured-editor-controls');
+    const chordPanelInputs = chordPanel ? chordPanel.querySelectorAll('input') : [];
+    const visualViewport = window.visualViewport;
+    let chordPanelPositionFrame = 0;
+    const updateChordPanelPosition = () => {
+      if (!chordPanel) return;
+      if (chordPanelPositionFrame) cancelAnimationFrame(chordPanelPositionFrame);
+      chordPanelPositionFrame = requestAnimationFrame(() => {
+        chordPanelPositionFrame = 0;
+        const panelIsOpen = document.getElementById('structured-editor-panel')?.classList.contains('has-selection');
+        if (!panelIsOpen) {
+          chordPanel.style.bottom = '';
+          return;
+        }
+        const viewport = window.visualViewport;
+        if (!viewport) {
+          chordPanel.style.bottom = 'calc(env(safe-area-inset-bottom, 0px) + 12px)';
+          return;
+        }
+        const visibleBottom = viewport.offsetTop + viewport.height;
+        const keyboardOverlap = Math.max(0, window.innerHeight - visibleBottom);
+        chordPanel.style.bottom = Math.max(8, keyboardOverlap + 8) + 'px';
+      });
+    };
+    if (visualViewport) {
+      visualViewport.addEventListener('resize', updateChordPanelPosition);
+      visualViewport.addEventListener('scroll', updateChordPanelPosition);
+    }
+    window.addEventListener('resize', updateChordPanelPosition);
+    if (chordPanelInputs.length) {
+      chordPanelInputs.forEach(input => {
+        input.addEventListener('focus', updateChordPanelPosition);
+        input.addEventListener('blur', () => {
+          // Espera a que iOS termine de ocultar el teclado antes de recalcular.
+          setTimeout(updateChordPanelPosition, 80);
+        });
+      });
+    }
+    updateChordPanelPosition();
     // La edición de letra se reconcilia con el borrador estructurado; no se descartan acordes.
   });
 
