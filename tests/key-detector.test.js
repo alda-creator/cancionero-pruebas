@@ -46,6 +46,7 @@ test('detecta una progresión clara en La menor', () => {
   assert.equal(result.reason, 'detected');
   assert.equal(result.suggestion.tonic, 'A');
   assert.equal(result.suggestion.mode, 'minor');
+  assert.equal(result.suggestion.label, 'A menor');
 });
 
 test('las inversiones no cambian la raíz armónica de la sugerencia', () => {
