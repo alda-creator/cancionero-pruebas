@@ -45,6 +45,8 @@ jobs:
         run: node tests/director-navigation.test.js
       - name: Test live song navigation scroll reset
         run: node tests/live-navigation.test.js
+      - name: Test editor cancel and back gesture navigation
+        run: node tests/editor-cancel-navigation.test.js
       - name: Test song diagnostics
         run: node tests/song-diagnostics.test.js
       - name: Test song adapter
