@@ -410,4 +410,8 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 
 **Protecciones obligatorias:** conservar `rawText` como respaldo; no descartar ni reordenar acordes, offsets, IDs o filas instrumentales; no alterar canciones existentes al abrirlas; no quitar el camino de recuperación para canciones no convertibles; no modificar producción ni Firebase de producción.
 
+**Avance técnico inicial (PR #96, aún en revisión):** menú de secciones implementado; el área de texto original ahora intercepta el pegado y, cuando `convertLegacy()` produce una estructura válida, importa directamente en el borrador estructurado sin exigir el panel de importación. Si el reconocimiento falla, el pegado normal del navegador permanece intacto y el texto no se descarta. La importación existente se refactorizó en una función compartida para conservar el mismo flujo de validación y confirmación.
+
+**Verificación automatizada:** workflow «Chord model tests» #141 (run `45914937943`) completado con éxito: modelo de acordes, navegación repetida, scroll de lectura, diagnósticos, adaptador, documento y sintaxis JavaScript inline.
+
 **Estado de esta fase:** diseño funcional acordado, incluido el menú de secciones predefinidas y etiqueta personalizada; auditoría técnica iniciada en la rama `feat/editor-visual-unificado`. Sin cambios de código aplicados todavía.
