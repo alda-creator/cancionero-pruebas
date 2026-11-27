@@ -414,4 +414,13 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 
 **Verificación automatizada:** workflow «Chord model tests» #141 (run `45914937943`) completado con éxito: modelo de acordes, navegación repetida, scroll de lectura, diagnósticos, adaptador, documento y sintaxis JavaScript inline.
 
-**Estado de esta fase:** diseño funcional acordado, incluido el menú de secciones predefinidas y etiqueta personalizada; auditoría técnica iniciada en la rama `feat/editor-visual-unificado`. Sin cambios de código aplicados todavía.
+**Estado de esta fase:** PR #96 integrado en laboratorio y validado manualmente por el usuario en iPhone. El usuario confirmó que el pegado directo, el reconocimiento, la edición y el respaldo de formatos antiguos funcionan correctamente. Se cierra esta etapa.
+
+
+### Etapa siguiente: panel flotante contextual de acordes
+
+**PR #97 integrado en laboratorio:** los controles de acorde aparecen ahora en un panel flotante fijo, centrado y adaptable al ancho de pantalla, con margen para el área segura inferior de iOS. El panel solo se muestra al seleccionar una línea o un acorde. Se añadió una acción explícita para cancelar/cerrar sin modificar el borrador; aceptar guarda y oculta el panel, mientras que eliminar conserva su acción independiente. Se mantienen las validaciones y los controles de desplazamiento existentes.
+
+**Verificación automatizada:** workflow «Chord model tests» #149 (run `45917136269`) completado con éxito, incluidas pruebas de modelo, navegación, adaptador, documento y sintaxis JavaScript inline.
+
+**Versión preparada para laboratorio:** v1.3.18, caché SW v56. **Pendiente:** confirmar despliegue de Pages y validar manualmente en iPhone la inserción, edición, movimiento, aceptación, cancelación y eliminación de acordes en distintas partes de canciones largas.
