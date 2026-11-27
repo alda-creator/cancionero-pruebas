@@ -70,7 +70,7 @@ test('no propone tonalidad cuando hay datos insuficientes', () => {
 });
 
 test('rechaza estructuras inválidas sin intentar inferir una tonalidad', () => {
-  const result = KeyDetector.analyze({ version: 2, blocks: [{ id: 'bad', label: 'CORO', rows: [] }] });
+  const result = KeyDetector.analyze({ version: 1, blocks: [] });
   assert.equal(result.ok, false);
   assert.equal(result.reason, 'invalid-content');
   assert.equal(result.suggestion, null);
