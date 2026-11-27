@@ -70,7 +70,7 @@ test('no propone tonalidad cuando hay datos insuficientes', () => {
 });
 
 test('rechaza estructuras inválidas sin intentar inferir una tonalidad', () => {
-  const result = KeyDetector.analyze({ version: 2, blocks: [] });
+  const result = KeyDetector.analyze({ version: 2, blocks: [{ id: 'bad', label: 'CORO', rows: [] }] });
   assert.equal(result.ok, false);
   assert.equal(result.reason, 'invalid-content');
   assert.equal(result.suggestion, null);
@@ -81,4 +81,12 @@ test('reconoce la calidad de acordes extendidos sin perder su función básica',
   assert.equal(KeyDetector.qualityKind('m7b5'), 'minor');
   assert.equal(KeyDetector.qualityKind('dim7'), 'diminished');
   assert.equal(KeyDetector.qualityKind('sus4'), 'suspended');
+});
+
+
+test('no fuerza una tonalidad cuando la progresión relativa mayor/menor no resuelve con claridad', () => {
+  const result = KeyDetector.analyze(song(['C', 'Am', 'F', 'G']));
+  assert.equal(result.ok, true);
+  assert.equal(result.reason, 'ambiguous');
+  assert.equal(result.suggestion, null);
 });
