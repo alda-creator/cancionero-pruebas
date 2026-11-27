@@ -424,3 +424,19 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 **Verificación automatizada:** workflow «Chord model tests» #149 (run `45917136269`) completado con éxito, incluidas pruebas de modelo, navegación, adaptador, documento y sintaxis JavaScript inline.
 
 **Versión preparada para laboratorio:** v1.3.18, caché SW v56. **Pendiente:** confirmar despliegue de Pages y validar manualmente en iPhone la inserción, edición, movimiento, aceptación, cancelación y eliminación de acordes en distintas partes de canciones largas.
+
+
+### Iteración de teclado — panel contextual adaptable (v1.3.19)
+
+**Decisión confirmada por el usuario:** probar el comportamiento tipo AssistiveTouch solo como referencia de interacción, sin dejar un botón flotante permanente. El panel debe seguir cerrado cuando no hay selección y desaparecer al aceptar o cancelar, igual que en la versión anterior.
+
+**Alcance de esta iteración:**
+- Mantener el panel contextual actual y todos sus controles.
+- Dejar de reservar espacio inferior en el editor cuando aparece el panel, para que no empuje el contenido de canciones largas.
+- Escuchar los cambios del viewport visual de iOS (visualViewport) y elevar el panel por encima del teclado cuando este aparece.
+- Restablecer su posición normal al cerrar el teclado o la selección.
+- No introducir burbuja persistente ni arrastre manual en esta primera prueba.
+
+**Protecciones:** no cambiar modelo de acordes, offsets, selección, validación, guardado, movimiento, eliminación ni importación. No tocar producción ni Firebase.
+
+**Estado:** implementación en rama fix/keyboard-aware-chord-panel; pendiente de revisión automatizada, integración en laboratorio y validación manual en iPhone.
