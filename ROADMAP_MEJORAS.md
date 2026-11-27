@@ -6,7 +6,7 @@
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Última versión validada manualmente por el usuario:** v1.3.16 (PR #95), con pegado inteligente de canciones completas y fragmentos desde el editor; el usuario confirmó pruebas satisfactorias. **Siguiente trabajo:** rediseño visual y unificación real de la superficie de edición, exclusivamente en laboratorio.
+**Última versión validada manualmente por el usuario:** v1.3.19 (PR #98), con panel contextual adaptable al teclado validado en iPhone. **Siguiente trabajo:** pulido visual del editor, exclusivamente en laboratorio y sin modificar la lógica musical estabilizada.
 
 ## 1. Reglas permanentes de trabajo
 
@@ -442,3 +442,20 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 **Estado:** completado, integrado en laboratorio y validado manualmente por el usuario en iPhone (PR #98, v1.3.19; commit 8758d9c24a4f56f5003f9d8026ed795b0f7dae84). CI de PR y pruebas posteriores a la integración completadas correctamente; GitHub Pages publicó la versión. El usuario confirmó que el panel se mantiene por encima del teclado y permite seguir editando canciones largas sin quedar oculto. Observó desplazamientos ocasionales de pantalla, considerados compatibles con el reajuste de viewport de iOS y no bloqueantes mientras no afecten la edición. Se cierra esta iteración sin añadir burbuja permanente ni arrastre manual.
 
 **Siguiente etapa acordada:** pulido visual del editor. Se limita a jerarquía visual, espaciado, alineación, consistencia de controles, estados y accesibilidad táctil. No modificar el modelo musical, offsets, conversión/importación, selección, validación, guardado, movimiento, eliminación, ni el comportamiento del panel contextual ya validado. Antes de tocar código, auditar la interfaz actual y definir cambios visuales pequeños y verificables; mantener compatibilidad con canciones pegadas desde Internet y formatos heredados.
+
+### 4.2 — Pulido visual del editor (iteración 1, candidata v1.3.20)
+
+**Objetivo:** mejorar la legibilidad y la comodidad táctil de la superficie estructurada, manteniendo una interfaz minimalista, sencilla y práctica.
+
+**Alcance de esta iteración (solo CSS):**
+- Dar más jerarquía visual a los encabezados de sección.
+- Aumentar el tamaño y la claridad de los controles para agregar, reordenar y editar secciones.
+- Separar ligeramente las filas y hacer más legibles sus etiquetas.
+- Mejorar los estados de foco visibles y las áreas táctiles, sin añadir complejidad visual.
+- Mantener compatibilidad con tema claro y oscuro.
+
+**Límites de seguridad:** no cambiar HTML funcional, JavaScript, modelo musical, offsets, conversión/importación, selección, validación, guardado, movimiento, eliminación ni secuencias de Mi Set. No modificar las métricas tipográficas, el ancho, el espaciado horizontal ni la geometría de la vista previa de acordes/letra, porque participan en la correspondencia entre posición visual y posición musical. No alterar el panel contextual adaptable al teclado ya validado.
+
+**Validación pendiente:** comprobar en iPhone que los encabezados se distinguen mejor, que los controles son cómodos de tocar, que las filas siguen siendo fáciles de leer y que no se produce desplazamiento horizontal ni cambios en la colocación/arrastre de acordes. Revisar tema claro y oscuro. Producción y Firebase de producción permanecen intactas.
+
+- **v1.3.19 (PR #98):** panel contextual adaptable al teclado; validación manual satisfactoria en iPhone. PR #99 registra el cierre y delimita el pulido visual.

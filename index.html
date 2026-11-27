@@ -476,6 +476,85 @@
       margin: 0 auto;
       width: 100%;
     }
+  
+    
+    /* Pulido visual 1: jerarquía, legibilidad y áreas táctiles.
+       Se conserva intacta la geometría tipográfica de letra y acordes. */
+    #structured-editor-panel .structured-add-block-button {
+      min-height:40px;
+      padding:9px 12px;
+      border-radius:10px;
+      font-size:13px;
+      font-weight:700;
+    }
+    #structured-editor-panel .structured-editor-rows {
+      gap:8px;
+      margin-bottom:12px;
+    }
+    #structured-editor-panel .structured-editor-block-card {
+      padding:6px 0 10px;
+      margin-bottom:4px;
+    }
+    #structured-editor-panel .structured-editor-block-heading {
+      gap:8px;
+      margin:10px 0 6px;
+      min-height:40px;
+    }
+    #structured-editor-panel .structured-editor-block-heading strong {
+      color:var(--text);
+      font-size:13px;
+      font-weight:700;
+    }
+    #structured-editor-panel .structured-block-drag-handle,
+    #structured-editor-panel .structured-block-order-button,
+    #structured-editor-panel .structured-block-edit-button {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:38px;
+      min-height:38px;
+      box-sizing:border-box;
+      padding:6px;
+      border-radius:9px;
+    }
+    #structured-editor-panel .structured-block-drag-handle {
+      background:var(--card);
+      font-size:18px;
+    }
+    #structured-editor-panel .structured-block-order-button,
+    #structured-editor-panel .structured-block-edit-button {
+      font-size:14px;
+    }
+    #structured-editor-panel .structured-editor-row {
+      padding:8px 9px;
+      border-radius:10px;
+    }
+    #structured-editor-panel .structured-editor-row-label {
+      margin-bottom:4px;
+      font-size:12px;
+      line-height:1.35;
+    }
+    #structured-editor-panel .structured-editor-help {
+      margin-top:8px;
+      font-size:12px;
+      line-height:1.45;
+    }
+    #structured-editor-panel .structured-add-menu > button {
+      min-height:40px;
+      padding:9px 12px;
+      font-size:13px;
+    }
+    #structured-editor-panel .structured-add-custom-fields button,
+    #structured-editor-panel .structured-row-edit-toggle {
+      min-height:38px;
+      padding:8px 12px;
+      font-size:13px;
+    }
+    #structured-editor-panel button:focus-visible {
+      outline:2px solid var(--accent);
+      outline-offset:2px;
+    }
+
   </style>  
 </head>  
 <body>  
@@ -487,7 +566,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.3.19 · Panel adaptable al teclado · (PRUEBAS)</div>
+        <div class="app-version">v1.3.20 · Pulido visual del editor · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
