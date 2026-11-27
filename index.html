@@ -2572,8 +2572,26 @@
     }
 
     const analysis = window.KeyDetector.analyze(content);
-    if (!analysis.ok || !analysis.suggestion || keySuggestionDismissedSignature === signature) {
+    if (!analysis.ok || keySuggestionDismissedSignature === signature) {
       host.hidden = true;
+      return;
+    }
+    if (!analysis.suggestion) {
+      const message = analysis.reason === 'ambiguous'
+        ? 'La progresión puede corresponder a tonalidades relativas. Elige la tonalidad manualmente.'
+        : analysis.reason === 'insufficient-chords'
+          ? 'Aún no hay suficientes acordes para sugerir una tonalidad.'
+          : '';
+      if (!message) {
+        host.hidden = true;
+        return;
+      }
+      host.replaceChildren();
+      const note = document.createElement('div');
+      note.className = 'key-suggestion-detail';
+      note.textContent = message;
+      host.append(note);
+      host.hidden = false;
       return;
     }
 
