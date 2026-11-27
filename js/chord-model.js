@@ -79,10 +79,27 @@
 
   function chordLineTokens(line) {
     const tokens = [];
-    const re = /\S+(?:[ \t]+\/[A-G](?:#|b)?)?/g;
+    const re = /\\S+(?:[ \\t]+\\/[A-G](?:#|b)?)?/g;
     let match;
     while ((match = re.exec(String(line || ''))) !== null) {
-      tokens.push({ symbol: match[0].replace(/[ \t]+/g, ''), index: match.index });
+      const symbol = match[0].replace(/[ \\t]+/g, '');
+      // Valida primero el token completo para conservar notaciones como C-
+      // (Do menor). Solo después intenta separar secuencias unidas por guion.
+      if (parseChordSymbol(symbol)) {
+        tokens.push({ symbol, index: match.index });
+        continue;
+      }
+      const parts = symbol.split('-');
+      const parsedParts = parts.length > 1 ? parts.map(part => parseChordSymbol(part)) : [];
+      if (parsedParts.length > 1 && parsedParts.every(Boolean)) {
+        let offset = 0;
+        parts.forEach(part => {
+          tokens.push({ symbol: part, index: match.index + offset });
+          offset += part.length + 1;
+        });
+      } else {
+        tokens.push({ symbol, index: match.index });
+      }
     }
     return tokens;
   }
