@@ -100,3 +100,11 @@ test('el análisis no modifica la estructura ni sus acordes originales', () => {
   KeyDetector.analyze(content);
   assert.equal(JSON.stringify(content), before);
 });
+
+
+test('no propone tonalidad cuando los acordes son demasiado cromáticos', () => {
+  const result = KeyDetector.analyze(song(['C', 'F#', 'Bb', 'E', 'Ab']));
+  assert.equal(result.ok, true);
+  assert.equal(result.reason, 'low-confidence');
+  assert.equal(result.suggestion, null);
+});
