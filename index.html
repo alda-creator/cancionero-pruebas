@@ -664,7 +664,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.3.24 · Sugerencia automática de tonalidad · (PRUEBAS)</div>
+        <div class="app-version">v1.3.25 · Tonalidades mayores y menores · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -803,7 +803,7 @@
     <div class="editor-key-card">
       <label class="editor-key-label" for="edit-original-key">Tonalidad original</label>
       <select id="edit-original-key" class="search-bar" aria-label="Seleccionar tonalidad original">
-        <option value="C">C</option><option value="C#">C#</option><option value="Db">Db</option><option value="D">D</option><option value="D#">D#</option><option value="Eb">Eb</option><option value="E">E</option><option value="F">F</option><option value="F#">F#</option><option value="Gb">Gb</option><option value="G">G</option><option value="G#">G#</option><option value="Ab">Ab</option><option value="A">A</option><option value="A#">A#</option><option value="Bb">Bb</option><option value="B">B</option>
+        <option value="C|major">C</option><option value="C|minor">Cm</option><option value="C#|major">C#</option><option value="C#|minor">C#m</option><option value="Db|major">Db</option><option value="Db|minor">Dbm</option><option value="D|major">D</option><option value="D|minor">Dm</option><option value="D#|major">D#</option><option value="D#|minor">D#m</option><option value="Eb|major">Eb</option><option value="Eb|minor">Ebm</option><option value="E|major">E</option><option value="E|minor">Em</option><option value="F|major">F</option><option value="F|minor">Fm</option><option value="F#|major">F#</option><option value="F#|minor">F#m</option><option value="Gb|major">Gb</option><option value="Gb|minor">Gbm</option><option value="G|major">G</option><option value="G|minor">Gm</option><option value="G#|major">G#</option><option value="G#|minor">G#m</option><option value="Ab|major">Ab</option><option value="Ab|minor">Abm</option><option value="A|major">A</option><option value="A|minor">Am</option><option value="A#|major">A#</option><option value="A#|minor">A#m</option><option value="Bb|major">Bb</option><option value="Bb|minor">Bbm</option><option value="B|major">B</option><option value="B|minor">Bm</option>
       </select>
       <div class="editor-key-help">Ajusta la tonalidad aquí.</div>
       <div id="key-suggestion" class="key-suggestion-card" hidden aria-live="polite"></div>
@@ -1273,7 +1273,7 @@
           <div class="song-card-author">${song.author || 'Iglesia de Dios 7d'}</div>  
         </div>  
         <div style="display:flex; align-items:center;">  
-          <span class="badge-key">${formatKeyDisplay(song.originalKey)}</span>  
+          <span class="badge-key">${formatKeyDisplay(song.originalKey, song.originalMode || 'major')}</span>  
           <button class="btn-set ${inSet ? 'active' : ''}" onclick="toggleSetItem(event, '${song.id}')">  
             ${inSet ? '★' : '☆'}  
           </button>  
@@ -1318,9 +1318,10 @@
 
   function filterSongs() { renderCurrentTab(); }  
 
-  function formatKeyDisplay(key) {  
-    if (!key) return 'C';  
-    return useLatinoNotation ? (angloToLatinoMap[key] || key) : key;  
+  function formatKeyDisplay(key, mode = 'major') {  
+    const root = key || 'C';
+    const displayRoot = useLatinoNotation ? (angloToLatinoMap[root] || root) : root;
+    return mode === 'minor' ? displayRoot + 'm' : displayRoot;
   }  
 
   // Motor unificado: analiza la nota raíz, calidad/extensión y bajo opcional.
@@ -1838,7 +1839,7 @@
   function renderTransposedContent() {  
     if (!currentSong) return;  
     const baseKey = transposeNote(currentSong.originalKey || 'C', currentTransposeSteps);  
-    document.getElementById('current-key-display').innerText = formatKeyDisplay(baseKey);  
+    document.getElementById('current-key-display').innerText = formatKeyDisplay(baseKey, currentSong.originalMode || 'major');  
     buildBlocksHTML(document.getElementById('song-content'));
     updateSequenceEditorUI();
   }  
@@ -1968,7 +1969,7 @@
     document.getElementById('edit-title').value = '';  
     document.getElementById('edit-author').value = '';  
     document.getElementById('edit-raw').value = '';  
-    document.getElementById('edit-original-key').value = 'C';
+    document.getElementById('edit-original-key').value = 'C|major';
     handleEditorInput();
     const importPanel = document.getElementById('structured-import-panel');
     if (importPanel) importPanel.open = false;
@@ -2006,14 +2007,14 @@
     document.getElementById('editor-heading').innerText = "Editar Canción";  
     document.getElementById('edit-title').value = currentSong.title || '';  
     document.getElementById('edit-author').value = currentSong.author || '';  
-    document.getElementById('edit-original-key').value = currentSong.originalKey || parseRawSongWithBlocks(getSongRawText(currentSong)).key || 'C';
+    document.getElementById('edit-original-key').value = (currentSong.originalKey || parseRawSongWithBlocks(getSongRawText(currentSong)).key || 'C') + '|' + (currentSong.originalMode === 'minor' ? 'minor' : 'major');
     
     const container = document.getElementById('field-selector-container');
     const buttonsDiv = document.getElementById('field-buttons');
     buttonsDiv.innerHTML = '';
     
     const availableKeys = Object.keys(currentSong).filter(k =>
-      k !== 'id' && k !== 'title' && k !== 'author' && k !== 'originalKey' && k !== 'firestoreId' && k !== 'editorVersion' && k !== 'structuredContent'
+      k !== 'id' && k !== 'title' && k !== 'author' && k !== 'originalKey' && k !== 'originalMode' && k !== 'firestoreId' && k !== 'editorVersion' && k !== 'structuredContent'
     );
     
     if (availableKeys.length > 0) {
@@ -2603,7 +2604,8 @@
     copy.className = 'key-suggestion-copy';
     const heading = document.createElement('div');
     heading.className = 'key-suggestion-title';
-    heading.textContent = 'Sugerencia: ' + suggestion.label;
+    const suggestedKeyDisplay = formatKeyDisplay(suggestion.tonic, suggestion.mode);
+    heading.textContent = 'Sugerencia: ' + suggestedKeyDisplay;
     const detail = document.createElement('div');
     detail.className = 'key-suggestion-detail';
     detail.textContent = (suggestion.confidence === 'high' ? 'Confianza alta' : 'Confianza moderada') +
@@ -2615,10 +2617,10 @@
     const useButton = document.createElement('button');
     useButton.type = 'button';
     useButton.className = 'key-suggestion-button primary';
-    useButton.textContent = 'Usar ' + suggestion.tonic;
+    useButton.textContent = 'Usar ' + suggestedKeyDisplay;
     useButton.addEventListener('click', () => {
       const selector = document.getElementById('edit-original-key');
-      if (selector) selector.value = suggestion.tonic;
+      if (selector) selector.value = suggestion.tonic + '|' + suggestion.mode;
       keySuggestionDismissedSignature = signature;
       host.hidden = true;
     });
@@ -3564,8 +3566,10 @@
     const parsed = parseRawSongWithBlocks(rawText);
     const newId = editingSongId || ('song_' + (typeof crypto !== 'undefined' && crypto.randomUUID
       ? crypto.randomUUID() : Date.now() + '_' + Math.random().toString(36).slice(2)));
-    const selectedOriginalKey = document.getElementById('edit-original-key').value || parsed.key || 'C';
-    const songData = { id: newId, title, author: author || "Iglesia de Dios 7d", originalKey: selectedOriginalKey, rawText };
+    const selectedKeyParts = (document.getElementById('edit-original-key').value || 'C|major').split('|');
+    const selectedOriginalKey = selectedKeyParts[0] || parsed.key || 'C';
+    const selectedOriginalMode = selectedKeyParts[1] === 'minor' ? 'minor' : 'major';
+    const songData = { id: newId, title, author: author || "Iglesia de Dios 7d", originalKey: selectedOriginalKey, originalMode: selectedOriginalMode, rawText };
 
     // Guardamos una representación estructurada paralela solo cuando la
     // conversión es inequívoca. rawText se conserva siempre como respaldo.

@@ -6,7 +6,7 @@
 **Fecha objetivo:** preparación para el evento del 20 de diciembre de 2026  
 **Laboratorio:** `alda-creator/cancionero-pruebas`  
 **Producción:** `alda-creator/cancionero`  
-**Última versión validada manualmente por el usuario:** v1.3.23 (PR #105), con la segunda iteración de pulido visual y el ocultamiento del selector técnico heredado validados en iPhone. **Siguiente trabajo:** auditoría y desarrollo de la sugerencia automática de tonalidad, exclusivamente en laboratorio.
+**Última versión validada manualmente por el usuario:** v1.3.23 (PR #105), con la segunda iteración de pulido visual y el ocultamiento del selector técnico heredado validados en iPhone. **Siguiente trabajo:** validación manual en iPhone de la selección y persistencia de tonalidades mayores y menores, exclusivamente en laboratorio.
 
 ## 1. Reglas permanentes de trabajo
 
@@ -488,3 +488,15 @@ El usuario comprobó en iPhone que los cambios editoriales de la canción origin
 **Siguiente revisión visual propuesta:** auditar la zona superior del editor (selector de tonalidad, indicaciones de ayuda y entrada de edición/pegado) y la consistencia visual entre editor estructurado y respaldo de texto antiguo. La siguiente iteración debe limitarse a la presentación y claridad de esos controles, conservando el pegado directo de canciones completas, la conversión automática segura y el respaldo literal cuando no se pueda convertir. Antes de implementarla, identificar selectores/estilos reales y evitar cambios funcionales o en la geometría de letra/acordes.
 
 - **v1.3.19 (PR #98):** panel contextual adaptable al teclado; validación manual satisfactoria en iPhone. PR #99 registra el cierre y delimita el pulido visual.
+
+
+### 4.1 — Tonalidades mayores y menores en el editor
+
+**Estado:** implementación preparada en rama `feat/minor-key-signatures`; pendiente de CI, revisión e integración.
+
+- El detector ya analiza y distingue modos mayor/menor. La interfaz ahora representa ambos modos de forma explícita.
+- El selector ofrece las 17 grafías de raíz que ya existían, cada una en mayor y menor (34 opciones; 12 clases de altura con equivalentes enarmónicos conservados).
+- Se conserva `originalKey` como raíz para la transposición y se añade `originalMode` (`major`/`minor`) para mostrar y guardar el modo.
+- Los registros antiguos sin `originalMode` se interpretan como mayores; no se migran ni modifican al abrirlos.
+- La sugerencia automática aplica tanto la raíz como el modo. El modo no altera el cálculo de transposición.
+- Se mantiene la compatibilidad de letras, acordes, offsets, estructuras y texto heredado.
