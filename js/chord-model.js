@@ -79,10 +79,10 @@
 
   function chordLineTokens(line) {
     const tokens = [];
-    const re = /\\S+(?:[ \\t]+\\/[A-G](?:#|b)?)?/g;
+    const re = /\S+(?:[ \t]+\/[A-G](?:#|b)?)?/g;
     let match;
     while ((match = re.exec(String(line || ''))) !== null) {
-      const symbol = match[0].replace(/[ \\t]+/g, '');
+      const symbol = match[0].replace(/[ \t]+/g, '');
       // Valida primero el token completo para conservar notaciones como C-
       // (Do menor). Solo después intenta separar secuencias unidas por guion.
       if (parseChordSymbol(symbol)) {
