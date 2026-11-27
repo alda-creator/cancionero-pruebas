@@ -365,13 +365,14 @@
     .structured-editor-preview-chord:active { cursor:grabbing; }
     .structured-editor-preview-chord.selected { background:var(--accent); color:#fff; border-radius:4px; padding:0 2px; }
     .structured-editor-preview-lyric { display:block; width:max-content; min-width:100%; white-space:pre; color:var(--text); cursor:text; }
-    .structured-editor-controls { display:none; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:7px; padding:8px; border:1px solid var(--card-border); border-radius:10px; background:var(--card); }
+    .structured-editor-controls { display:none; position:fixed; z-index:1000; left:50%; bottom:calc(env(safe-area-inset-bottom, 0px) + 12px); transform:translateX(-50%); grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:7px; width:min(560px, calc(100vw - 24px)); box-sizing:border-box; padding:9px; border:1px solid var(--card-border); border-radius:13px; background:var(--card); box-shadow:0 8px 32px rgba(0,0,0,.38); }
     .structured-editor-panel.has-selection .structured-editor-controls { display:grid; }
     .structured-editor-controls label { display:none; }
-    .structured-editor-controls input { min-width:0; width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid var(--card-border); border-radius:8px; background:var(--bg); color:var(--text); font:inherit; }
+    .structured-editor-controls input { min-width:0; width:100%; box-sizing:border-box; padding:9px 10px; border:1px solid var(--card-border); border-radius:8px; background:var(--bg); color:var(--text); font:inherit; font-size:16px; }
     #structured-chord-offset { display:none; }
     .structured-editor-actions { display:flex; gap:4px; flex-wrap:nowrap; margin:0; }
-    .structured-editor-actions .btn-action { min-width:34px; padding:7px 9px; }
+    .structured-editor-actions .btn-action { min-width:36px; min-height:38px; padding:7px 9px; }
+    .structured-editor-panel.has-selection { padding-bottom:78px; }
     .structured-editor-help { line-height:1.4; margin:5px 0 0; }
     .structured-row-edit-toggle { margin:4px 0 0; padding:5px 9px; border:1px solid var(--card-border); border-radius:7px; background:var(--card); color:var(--text-muted); font-size:12px; cursor:pointer; }
     .structured-row-lyric-editor { display:grid; gap:7px; margin-top:8px; }
@@ -655,14 +656,15 @@
         </div>
       </div>
       <div id="structured-editor-rows" class="structured-editor-rows"></div>
-      <div class="structured-editor-controls">
+      <div class="structured-editor-controls" role="group" aria-label="Edición de acorde">
         <input id="structured-chord-symbol" type="text" placeholder="Acorde (ej. G, Am7)" autocomplete="off" aria-label="Símbolo del acorde">
         <input id="structured-chord-offset" type="number" min="0" step="1" value="0" inputmode="numeric" aria-label="Posición del acorde">
         <div class="structured-editor-actions">
           <button type="button" class="btn-action" id="structured-chord-left" disabled aria-label="Mover acorde a la izquierda">←</button>
-          <button type="button" class="btn-action primary" id="structured-chord-save">＋</button>
+          <button type="button" class="btn-action primary" id="structured-chord-save" aria-label="Aceptar acorde">✓</button>
           <button type="button" class="btn-action" id="structured-chord-right" disabled aria-label="Mover acorde a la derecha">→</button>
-          <button type="button" class="btn-action" id="structured-chord-delete" disabled aria-label="Eliminar acorde">×</button>
+          <button type="button" class="btn-action" id="structured-chord-delete" disabled aria-label="Eliminar acorde">⌫</button>
+          <button type="button" class="btn-action" id="structured-chord-cancel" aria-label="Cancelar edición">×</button>
         </div>
       </div>
       <p class="structured-editor-help">Toca la letra para colocar un acorde; toca un acorde para editarlo.</p>
@@ -2369,6 +2371,16 @@
     renderStructuredEditor();
   }
 
+  function cancelStructuredDraftChord() {
+    selectedDraftRowId = null;
+    selectedDraftChordId = null;
+    const symbol = document.getElementById('structured-chord-symbol');
+    const offset = document.getElementById('structured-chord-offset');
+    if (symbol) symbol.value = '';
+    if (offset) offset.value = '0';
+    renderStructuredEditor();
+  }
+
   function saveStructuredDraftChord() {
     const row = draftRowById();
     if (!row) {
@@ -2428,6 +2440,10 @@
     }
     row.chords.sort((left, right) => left.position.offset - right.position.offset);
     structuredDraftDirty = true;
+    selectedDraftRowId = null;
+    selectedDraftChordId = null;
+    document.getElementById('structured-chord-symbol').value = '';
+    document.getElementById('structured-chord-offset').value = '0';
     renderStructuredEditor();
   }
 
@@ -2436,6 +2452,7 @@
     if (!row || !selectedDraftChordId) return;
     row.chords = row.chords.filter(chord => chord.id !== selectedDraftChordId);
     selectedDraftChordId = null;
+    selectedDraftRowId = null;
     structuredDraftDirty = true;
     document.getElementById('structured-chord-symbol').value = '';
     renderStructuredEditor();
@@ -2692,6 +2709,8 @@
     const addButton = document.getElementById('structured-chord-save');
     const deleteButton = document.getElementById('structured-chord-delete');
     if (addButton) addButton.addEventListener('click', saveStructuredDraftChord);
+    const cancelChordButton = document.getElementById('structured-chord-cancel');
+    if (cancelChordButton) cancelChordButton.addEventListener('click', cancelStructuredDraftChord);
     const addBlockButton = document.getElementById('structured-add-block');
     const addMenu = document.getElementById('structured-add-menu');
     const customFields = document.getElementById('structured-add-custom-fields');
