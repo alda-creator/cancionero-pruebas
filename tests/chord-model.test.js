@@ -36,6 +36,60 @@ test('reconoce acordes anglosajones, latinos, extensiones e inversiones', () => 
   assert.equal(ChordModel.parseChordSymbol('C/E/G'), null);
 });
 
+test('reconoce secuencias de acordes separadas por guion sin perder posiciones', () => {
+  const cases = [
+    ['F-G\\nLetra', ['F','G'], [0,2]],
+    ['F-C\\nLetra', ['F','C'], [0,2]],
+    ['G-C\\nLetra', ['G','C'], [0,2]],
+    ['Am-G\\nLetra', ['A','G'], [0,3]],
+    ['Dm-G-C\\nLetra', ['D','G','C'], [0,3,5]],
+    ['C#m-F#-G#\\nLetra', ['C#','F#','G#'], [0,4,7]],
+    ['C/E-G/B\\nLetra', ['C','G'], [0,4]]
+  ];
+  for (const [raw, roots, offsets] of cases) {
+    const result = ChordModel.convertLegacy(raw);
+    assert.equal(result.ok, true, raw + ': ' + JSON.stringify(result.warnings));
+    const row = result.structuredContent.blocks[0].rows[0];
+    assert.deepEqual(row.chords.map(chord => chord.root), roots, raw);
+    assert.deepEqual(row.chords.map(chord => chord.position.offset), offsets, raw);
+    assert.equal(row.lyric, 'Letra');
+    assert.equal(ChordModel.validateStructuredContent(result.structuredContent).valid, true);
+  }
+});
+
+test('reconoce secuencias con guion en filas instrumentales y conserva C- como acorde menor', () => {
+  const instrumental = ChordModel.convertLegacy('[INTRO]\\nG-C');
+  assert.equal(instrumental.ok, true, JSON.stringify(instrumental.warnings));
+  const row = instrumental.structuredContent.blocks[0].rows[0];
+  assert.equal(row.lyric, '');
+  assert.deepEqual(row.chords.map(chord => chord.root), ['G','C']);
+  assert.deepEqual(row.chords.map(chord => chord.position.offset), [0,2]);
+
+  const minor = ChordModel.convertLegacy('C-\\nLetra');
+  assert.equal(minor.ok, true, JSON.stringify(minor.warnings));
+  assert.equal(minor.structuredContent.blocks[0].rows[0].chords.length, 1);
+  assert.equal(minor.structuredContent.blocks[0].rows[0].chords[0].quality, '-');
+});
+
+test('importa un fragmento representativo del himno Santo Santo Santo con acordes unidos por guion', () => {
+  const raw = [
+    'C                F                 C',
+    'Santo! ¡Santo! ¡Santo! Señor Omnipotente,',
+    'G          C      F-G      D      G',
+    'Siempre el labio mío loores te dará;',
+    'Am      G       F-C      Dm    G     C',
+    'Dios en tres personas, bendita Trinidad.',
+    'G-C'
+  ].join('\\n');
+  const result = ChordModel.convertLegacy(raw);
+  assert.equal(result.ok, true, JSON.stringify(result.warnings));
+  const rows = result.structuredContent.blocks[0].rows;
+  assert.deepEqual(rows[2].chords.map(chord => chord.root), ['G','C','F','G','D','G']);
+  assert.deepEqual(rows[4].chords.map(chord => chord.root), ['A','G','F','C','D','G','C']);
+  assert.equal(rows[6].lyric, '');
+  assert.deepEqual(rows[6].chords.map(chord => chord.root), ['G','C']);
+});
+
 test('convierte líneas heredadas y conserva la posición Unicode del acorde', () => {
   const raw = '[CORO]\nC       G\nSublime gracia del Señor';
   const result = ChordModel.convertLegacy(raw);
