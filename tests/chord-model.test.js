@@ -855,7 +855,8 @@ test('reordena secciones por ID y conserva intactos contenido e identificadores'
 });
 
 test('pega un fragmento de varias líneas directamente en la sección elegida', () => {
-  const original = ChordModel.convertLegacy('[ESTROFA 1]\\nPrimera\\n[CORO]\\n').structuredContent;
+  const base = ChordModel.convertLegacy('Primera').structuredContent;
+  const original = ChordModel.addBlock(base, 'CORO').structuredContent;
   const chorus = original.blocks[1];
   const fragment = 'G-C\\nCantamos con gozo\\nAm\\nAl Señor';
   const result = ChordModel.appendLegacyFragmentToBlock(original, chorus.id, fragment);
