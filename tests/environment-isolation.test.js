@@ -20,7 +20,7 @@ for (const sharedKey of ['church_songs', 'church_song_set', 'church_notation']) 
 }
 
 // El Service Worker solo limpia sus propias cachés y la caché anterior conocida del laboratorio.
-assert(serviceWorker.includes("const CACHE_NAME = 'cancionero-lab-cache-v66'"));
+assert(serviceWorker.includes("const CACHE_NAME = 'cancionero-lab-cache-v67'"));
 assert(serviceWorker.includes("const LEGACY_CACHE_NAMES = ['cancionero-cache-v65']"));
 assert(serviceWorker.includes("cacheName.startsWith('cancionero-lab-cache-')"));
 assert(serviceWorker.includes('LEGACY_CACHE_NAMES.includes(cacheName)'));
