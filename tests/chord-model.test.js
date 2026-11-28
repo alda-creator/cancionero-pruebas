@@ -874,7 +874,7 @@ test('pega un fragmento de varias líneas directamente en la sección elegida', 
 });
 
 test('divide una sección desde la fila elegida hasta el final y conserva IDs, acordes y offsets', () => {
-  const original = ChordModel.convertLegacy('C     G\\nPrimera\\nDm     A\\nSegunda\\nF\\nTercera').structuredContent;
+  const original = ChordModel.convertLegacy('C     G\nPrimera\nDm     A\nSegunda\nF\nTercera').structuredContent;
   const source = original.blocks[0];
   const firstRow = source.rows[0];
   const movedRows = source.rows.slice(1);
