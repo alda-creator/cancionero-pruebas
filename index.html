@@ -2935,7 +2935,7 @@
 
   function applyStructuredFragmentToBlock(blockId, rawText) {
     if (!structuredDraft || !window.ChordModel || typeof window.ChordModel.appendLegacyFragmentToBlock !== 'function') return;
-    const result = window.ChordModel.appendLegacyFragmentToBlock(structuredDraft, blockId, String(rawText || '').replace(/\\r\\n?/g, '\\n'));
+    const result = window.ChordModel.appendLegacyFragmentToBlock(structuredDraft, blockId, String(rawText || '').replace(/\r\n?/g, '\n'));
     if (!result.ok) {
       alert('No se pudo pegar el contenido en esta sección. ' + result.warnings.join(' '));
       return;
