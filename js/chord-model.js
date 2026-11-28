@@ -743,6 +743,57 @@
     return { ok: true, structuredContent: nextContent, insertedRows: importedRows.length, targetBlockId: blockId, warnings: [] };
   }
 
+  // Divide una sección antes de una fila: la fila elegida y todo lo posterior
+  // pasan al nuevo bloque, conservando íntegros los IDs, acordes y offsets.
+  function splitBlockAtRow(existingContent, blockId, rowId, nextLabel) {
+    const validation = validateStructuredContent(existingContent);
+    if (!validation.valid) return { ok: false, structuredContent: null, warnings: validation.errors };
+    if (typeof nextLabel !== 'string') {
+      return { ok: false, structuredContent: null, warnings: ['El nombre de la sección debe ser texto.'] };
+    }
+    const label = nextLabel.trim();
+    if (!label || label.length > 60 || label.includes('[') || label.includes(']') || /[\\r\\n]/.test(label)) {
+      return { ok: false, structuredContent: null, warnings: ['Usa un nombre de 1 a 60 caracteres, sin corchetes ni saltos de línea.'] };
+    }
+    const sourceBlockIndex = existingContent.blocks.findIndex(block => block.id === blockId);
+    if (sourceBlockIndex < 0) return { ok: false, structuredContent: null, warnings: ['No se encontró la sección que se desea dividir.'] };
+    const sourceBlock = existingContent.blocks[sourceBlockIndex];
+    const splitIndex = sourceBlock.rows.findIndex(row => row.id === rowId);
+    if (splitIndex <= 0) {
+      return { ok: false, structuredContent: null, warnings: ['La división debe comenzar después de al menos un renglón de la sección.'] };
+    }
+    const usedIds = new Set();
+    existingContent.blocks.forEach(block => {
+      usedIds.add(block.id);
+      block.rows.forEach(row => {
+        usedIds.add(row.id);
+        row.chords.forEach(chord => usedIds.add(chord.id));
+      });
+    });
+    let sequence = 1;
+    let newBlockId = 'block-split-' + sequence;
+    while (usedIds.has(newBlockId)) newBlockId = 'block-split-' + (++sequence);
+    const nextContent = JSON.parse(JSON.stringify(existingContent));
+    const target = nextContent.blocks[sourceBlockIndex];
+    const movedRows = target.rows.splice(splitIndex);
+    if (!target.rows.length || !movedRows.length) {
+      return { ok: false, structuredContent: null, warnings: ['No se puede crear una sección vacía.'] };
+    }
+    const newBlock = { id: newBlockId, label, rows: movedRows };
+    nextContent.blocks.splice(sourceBlockIndex + 1, 0, newBlock);
+    const nextValidation = validateStructuredContent(nextContent);
+    if (!nextValidation.valid) return { ok: false, structuredContent: null, warnings: nextValidation.errors };
+    return {
+      ok: true,
+      structuredContent: nextContent,
+      sourceBlockId: blockId,
+      newBlockId,
+      splitRowId: rowId,
+      movedRows: movedRows.length,
+      warnings: []
+    };
+  }
+
   // Renombra un bloque sin cambiar su identidad, filas ni acordes.
   // El nombre debe poder representarse como una etiqueta heredada [NOMBRE].
   function updateBlockLabel(existingContent, blockId, nextLabel) {
@@ -898,6 +949,7 @@
     updateRowLyric,
     replaceRowWithLegacyFragment,
     appendLegacyFragmentToBlock,
+    splitBlockAtRow,
     updateBlockLabel,
     addBlock,
     removeBlock,
