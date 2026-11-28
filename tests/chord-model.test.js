@@ -873,6 +873,27 @@ test('pega un fragmento de varias líneas directamente en la sección elegida', 
   assert.equal(original.blocks[1].rows[0].lyric, '');
 });
 
+test('divide una sección desde la fila elegida hasta el final y conserva IDs, acordes y offsets', () => {
+  const original = ChordModel.convertLegacy('C     G\nPrimera\nDm     A\nSegunda\nF\nTercera').structuredContent;
+  const source = original.blocks[0];
+  const firstRow = source.rows[0];
+  const movedRows = source.rows.slice(1);
+  const before = JSON.stringify(original);
+  const result = ChordModel.splitBlockAtRow(original, source.id, movedRows[0].id, 'CORO');
+  assert.equal(result.ok, true, JSON.stringify(result.warnings));
+  assert.equal(result.movedRows, 2);
+  assert.deepEqual(result.structuredContent.blocks.map(block => block.label), ['ESTROFA 1', 'CORO']);
+  assert.deepEqual(result.structuredContent.blocks[0].rows.map(row => row.id), [firstRow.id]);
+  assert.deepEqual(result.structuredContent.blocks[1].rows.map(row => row.id), movedRows.map(row => row.id));
+  assert.deepEqual(result.structuredContent.blocks[1].rows[0].chords.map(chord => [chord.id, chord.position.offset]),
+    movedRows[0].chords.map(chord => [chord.id, chord.position.offset]));
+  assert.equal(JSON.stringify(original), before);
+  assert.equal(ChordModel.validateStructuredContent(result.structuredContent).valid, true);
+  assert.equal(ChordModel.splitBlockAtRow(original, source.id, firstRow.id, 'INTRO').ok, false);
+  assert.equal(ChordModel.splitBlockAtRow(original, 'missing', movedRows[0].id, 'CORO').ok, false);
+  assert.equal(ChordModel.splitBlockAtRow(original, source.id, movedRows[0].id, '').ok, false);
+});
+
 test('reordena al inicio y al final, y rechaza IDs o destinos inválidos', () => {
   const original = ChordModel.convertLegacy('[ESTROFA 1]\nUno\n[CORO]\nDos\n[PUENTE]\nTres').structuredContent;
   const first = ChordModel.moveBlock(original, original.blocks[2].id, 0);
