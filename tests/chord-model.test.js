@@ -858,7 +858,7 @@ test('pega un fragmento de varias líneas directamente en la sección elegida', 
   const base = ChordModel.convertLegacy('Primera').structuredContent;
   const original = ChordModel.addBlock(base, 'CORO').structuredContent;
   const chorus = original.blocks[1];
-  const fragment = 'G-C\\nCantamos con gozo\\nAm\\nAl Señor';
+  const fragment = 'G-C\nCantamos con gozo\nAm\nAl Señor';
   const result = ChordModel.appendLegacyFragmentToBlock(original, chorus.id, fragment);
   assert.equal(result.ok, true, JSON.stringify(result.warnings));
   assert.equal(result.insertedRows, 2);
@@ -869,7 +869,7 @@ test('pega un fragmento de varias líneas directamente en la sección elegida', 
   assert.deepEqual(pasted[0].chords.map(chord => chord.position.offset), [0, 2]);
   assert.equal(ChordModel.validateStructuredContent(result.structuredContent).valid, true);
   assert.equal(ChordModel.appendLegacyFragmentToBlock(original, 'missing', fragment).ok, false);
-  assert.equal(ChordModel.appendLegacyFragmentToBlock(original, chorus.id, '[CORO]\\nUno\\n[PUENTE]\\nDos').ok, false);
+  assert.equal(ChordModel.appendLegacyFragmentToBlock(original, chorus.id, '[CORO]\nUno\n[PUENTE]\nDos').ok, false);
   assert.equal(original.blocks[1].rows[0].lyric, '');
 });
 
