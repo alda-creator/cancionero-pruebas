@@ -2292,6 +2292,46 @@
       const blockTitle = document.createElement('strong');
       blockTitle.textContent = block.label;
       blockHeading.appendChild(blockTitle);
+      const pasteBlockButton = document.createElement('button');
+      pasteBlockButton.type = 'button';
+      pasteBlockButton.className = 'structured-block-edit-button';
+      pasteBlockButton.textContent = 'Pegar';
+      pasteBlockButton.setAttribute('aria-label', 'Pegar contenido en ' + block.label);
+      pasteBlockButton.title = 'Pegar varias líneas directamente en esta sección';
+      pasteBlockButton.addEventListener('click', () => {
+        const existing = blockCard.querySelector('.structured-block-paste-panel');
+        if (existing) {
+          existing.remove();
+          return;
+        }
+        const pastePanel = document.createElement('div');
+        pastePanel.className = 'structured-block-paste-panel structured-row-lyric-editor';
+        const field = document.createElement('textarea');
+        field.rows = 5;
+        field.setAttribute('aria-label', 'Contenido para ' + block.label);
+        field.placeholder = 'Pega aquí las líneas de esta sección. Se reconocerán los acordes y se conservarán sus posiciones…';
+        pastePanel.appendChild(field);
+        const actions = document.createElement('div');
+        actions.className = 'structured-row-lyric-actions';
+        const cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.className = 'btn-action';
+        cancel.textContent = 'Cancelar';
+        cancel.addEventListener('click', () => pastePanel.remove());
+        const apply = document.createElement('button');
+        apply.type = 'button';
+        apply.className = 'btn-action primary';
+        apply.textContent = 'Pegar en esta sección';
+        apply.addEventListener('click', () => {
+          if (!field.value.trim()) { field.focus(); return; }
+          applyStructuredFragmentToBlock(block.id, field.value);
+        });
+        actions.append(cancel, apply);
+        pastePanel.appendChild(actions);
+        blockCard.insertBefore(pastePanel, blockCard.children[1] || null);
+        field.focus({ preventScroll: true });
+      });
+      blockHeading.appendChild(pasteBlockButton);
       const editBlockButton = document.createElement('button');
       editBlockButton.type = 'button';
       editBlockButton.className = 'structured-block-edit-button';
@@ -2889,6 +2929,31 @@
       renderRawEditorPreview();
     }
     renderStructuredEditor();
+  }
+
+  function applyStructuredFragmentToBlock(blockId, rawText) {
+    if (!structuredDraft || !window.ChordModel || typeof window.ChordModel.appendLegacyFragmentToBlock !== 'function') return;
+    const result = window.ChordModel.appendLegacyFragmentToBlock(structuredDraft, blockId, String(rawText || '').replace(/\\r\\n?/g, '\\n'));
+    if (!result.ok) {
+      alert('No se pudo pegar el contenido en esta sección. ' + result.warnings.join(' '));
+      return;
+    }
+    structuredDraft = result.structuredContent;
+    structuredDraftDirty = true;
+    structuredDraftSyncError = null;
+    editingDraftRowId = null;
+    selectedDraftRowId = null;
+    selectedDraftChordId = null;
+    const serialized = window.ChordModel.serializeLegacy(structuredDraft);
+    if (serialized.ok) {
+      document.getElementById('edit-raw').value = serialized.rawText;
+      renderRawEditorPreview();
+    }
+    renderStructuredEditor();
+    const status = document.getElementById('structured-editor-status');
+    if (status) status.textContent = result.insertedRows + (result.insertedRows === 1
+      ? ' renglón pegado en la sección.'
+      : ' renglones pegados en la sección.');
   }
 
   function applyStructuredRowLyric(rowId, nextLyric) {
