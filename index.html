@@ -380,6 +380,8 @@
     /* El panel fijo no reserva espacio en el documento: evita empujar la canción al abrirse. */
      .structured-editor-panel.has-selection { padding-bottom:0; }
     .structured-editor-help { line-height:1.4; margin:5px 0 0; }
+    .structured-row-split-button { display:block; margin-top:5px; padding:5px 7px; border:0; border-radius:7px; background:transparent; color:var(--accent); font-size:11px; font-weight:600; cursor:pointer; }
+    .structured-row-split-button:active { background:var(--card); }
     .structured-row-edit-toggle { margin:4px 0 0; padding:5px 9px; border:1px solid var(--card-border); border-radius:7px; background:var(--card); color:var(--text-muted); font-size:12px; cursor:pointer; }
     .structured-row-lyric-editor { display:grid; gap:7px; margin-top:8px; }
     .structured-row-lyric-editor textarea { box-sizing:border-box; width:100%; min-height:68px; padding:9px 10px; border:1px solid var(--accent); border-radius:8px; background:var(--bg); color:var(--text); font:16px/1.45 'Courier New',Courier,monospace; resize:vertical; }
@@ -1013,6 +1015,7 @@
   let structuredDraftSource = null;
   let structuredDraftDirty = false;
   let structuredDraftSyncError = null;
+  let pendingStructuredSplitRowId = null;
   let keySuggestionSignature = '';
   let keySuggestionDismissedSignature = '';
   let selectedDraftRowId = null;
@@ -1703,7 +1706,7 @@
       blockDiv.appendChild(label);
 
       if (usesNormalizedDocument && Array.isArray(block.rows)) {
-        block.rows.forEach(row => {
+        block.rows.forEach((row, rowIndex) => {
           const pair = document.createElement('div');
           pair.className = 'line-pair structured-line-pair' + ((row.chords || []).length ? ' has-chords' : '');
           pair.dataset.rowId = row.id;
@@ -2550,6 +2553,25 @@
         });
         card.appendChild(editLyricButton);
 
+        if (rowIndex > 0) {
+          const splitButton = document.createElement('button');
+          splitButton.type = 'button';
+          splitButton.className = 'structured-row-split-button';
+          splitButton.textContent = '＋ Crear sección desde aquí';
+          splitButton.setAttribute('aria-label', 'Crear una nueva sección desde este renglón');
+          splitButton.addEventListener('click', event => {
+            event.stopPropagation();
+            pendingStructuredSplitRowId = row.id;
+            const addMenu = document.getElementById('structured-add-menu');
+            const addBlockButton = document.getElementById('structured-add-block');
+            const customFields = document.getElementById('structured-add-custom-fields');
+            if (customFields) customFields.hidden = true;
+            if (addMenu) addMenu.hidden = false;
+            if (addBlockButton) addBlockButton.setAttribute('aria-expanded', 'true');
+          });
+          card.appendChild(splitButton);
+        }
+
         if (editingDraftRowId === row.id) {
           const editor = document.createElement('div');
           editor.className = 'structured-row-lyric-editor';
@@ -2869,6 +2891,33 @@
     if (field) { field.focus({ preventScroll: true }); field.select(); }
   }
 
+  function applyStructuredSplitAtRow(rowId, nextLabel) {
+    if (!structuredDraft || !window.ChordModel || typeof window.ChordModel.splitBlockAtRow !== 'function') return;
+    const sourceBlock = structuredDraft.blocks.find(block => block.rows.some(row => row.id === rowId));
+    if (!sourceBlock) return;
+    const result = window.ChordModel.splitBlockAtRow(structuredDraft, sourceBlock.id, rowId, nextLabel);
+    if (!result.ok) {
+      alert('No se pudo crear la sección: ' + result.warnings.join(' '));
+      return;
+    }
+    structuredDraft = result.structuredContent;
+    structuredDraftDirty = true;
+    structuredDraftSyncError = null;
+    pendingStructuredSplitRowId = null;
+    selectedDraftRowId = null;
+    selectedDraftChordId = null;
+    editingDraftRowId = null;
+    editingDraftBlockId = null;
+    const serialized = window.ChordModel.serializeLegacy(structuredDraft);
+    if (serialized.ok) {
+      document.getElementById('edit-raw').value = serialized.rawText;
+      renderRawEditorPreview();
+    }
+    renderStructuredEditor();
+    const status = document.getElementById('structured-editor-status');
+    if (status) status.textContent = 'Nueva sección creada: ' + nextLabel + '. ' + result.movedRows + ' renglones pasaron al nuevo bloque.';
+  }
+
   function reorderStructuredDraftBlock(blockId, targetIndex) {
     if (!structuredDraft || !window.ChordModel || typeof window.ChordModel.moveBlock !== 'function') return;
     const result = window.ChordModel.moveBlock(structuredDraft, blockId, targetIndex);
@@ -3106,21 +3155,25 @@
     const addMenu = document.getElementById('structured-add-menu');
     const customFields = document.getElementById('structured-add-custom-fields');
     const customName = document.getElementById('structured-add-custom-name');
-    const closeAddMenu = () => {
+    const closeAddMenu = (clearPending = false) => {
       if (addMenu) addMenu.hidden = true;
       if (addBlockButton) addBlockButton.setAttribute('aria-expanded', 'false');
       if (customFields) customFields.hidden = true;
       if (customName) customName.value = '';
+      if (clearPending) pendingStructuredSplitRowId = null;
     };
     if (addBlockButton && addMenu) addBlockButton.addEventListener('click', () => {
+      pendingStructuredSplitRowId = null;
       addMenu.hidden = !addMenu.hidden;
       addBlockButton.setAttribute('aria-expanded', String(!addMenu.hidden));
     });
     if (addMenu) addMenu.addEventListener('click', event => {
       const option = event.target.closest('[data-section-label]');
       if (!option) return;
-      closeAddMenu();
-      addStructuredDraftBlock(option.dataset.sectionLabel);
+      const pendingRowId = pendingStructuredSplitRowId;
+      closeAddMenu(false);
+      if (pendingRowId) applyStructuredSplitAtRow(pendingRowId, option.dataset.sectionLabel);
+      else addStructuredDraftBlock(option.dataset.sectionLabel);
     });
     const customButton = document.getElementById('structured-add-custom');
     if (customButton && customFields) customButton.addEventListener('click', () => {
@@ -3131,18 +3184,20 @@
     if (confirmCustom) confirmCustom.addEventListener('click', () => {
       const label = customName ? customName.value.trim() : '';
       if (!label) { if (customName) customName.focus(); return; }
-      closeAddMenu();
-      addStructuredDraftBlock(label);
+      const pendingRowId = pendingStructuredSplitRowId;
+      closeAddMenu(false);
+      if (pendingRowId) applyStructuredSplitAtRow(pendingRowId, label);
+      else addStructuredDraftBlock(label);
     });
     if (customName) customName.addEventListener('keydown', event => {
       if (event.key === 'Enter') {
         event.preventDefault();
         confirmCustom && confirmCustom.click();
       }
-      if (event.key === 'Escape') closeAddMenu();
+      if (event.key === 'Escape') closeAddMenu(true);
     });
     document.addEventListener('click', event => {
-      if (!event.target.closest('.structured-add-menu-wrap')) closeAddMenu();
+      if (!event.target.closest('.structured-add-menu-wrap') && !event.target.closest('.structured-row-split-button')) closeAddMenu(true);
     });
     const importButton = document.getElementById('structured-import-apply');
     if (importButton) importButton.addEventListener('click', importStructuredSongFromText);
