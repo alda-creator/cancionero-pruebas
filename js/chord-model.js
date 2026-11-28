@@ -700,6 +700,49 @@
     };
   }
 
+  // Agrega un fragmento heredado directamente al final de una sección elegida.
+  // El fragmento debe representar una sola sección; se conservan sus acordes y offsets.
+  function appendLegacyFragmentToBlock(existingContent, blockId, rawText) {
+    const validation = validateStructuredContent(existingContent);
+    if (!validation.valid) return { ok: false, structuredContent: null, warnings: validation.errors };
+    const converted = convertLegacy(rawText);
+    if (!converted.ok) return { ok: false, structuredContent: null, warnings: converted.warnings };
+    if (converted.structuredContent.blocks.length !== 1) {
+      return { ok: false, structuredContent: null, warnings: ['El fragmento contiene varias secciones. Pega el contenido de una sola sección a la vez.'] };
+    }
+    const nextContent = JSON.parse(JSON.stringify(existingContent));
+    const targetBlock = nextContent.blocks.find(block => block.id === blockId);
+    if (!targetBlock) return { ok: false, structuredContent: null, warnings: ['No se encontró la sección que recibirá el fragmento.'] };
+    const importedRows = converted.structuredContent.blocks[0].rows.map(row => JSON.parse(JSON.stringify(row)));
+    if (!importedRows.length) return { ok: false, structuredContent: null, warnings: ['El fragmento no contiene renglones editables.'] };
+    const usedIds = new Set();
+    nextContent.blocks.forEach(block => {
+      usedIds.add(block.id);
+      block.rows.forEach(row => {
+        usedIds.add(row.id);
+        row.chords.forEach(chord => usedIds.add(chord.id));
+      });
+    });
+    const makeUniqueId = prefix => {
+      let sequence = 1;
+      let candidate = prefix + '-' + sequence;
+      while (usedIds.has(candidate)) candidate = prefix + '-' + (++sequence);
+      usedIds.add(candidate);
+      return candidate;
+    };
+    const emptyPlaceholder = targetBlock.rows.length === 1 &&
+      targetBlock.rows[0].lyric === '' && targetBlock.rows[0].chords.length === 0;
+    importedRows.forEach((row, index) => {
+      row.id = emptyPlaceholder && index === 0 ? targetBlock.rows[0].id : makeUniqueId('row-paste');
+      row.chords.forEach(chord => { chord.id = makeUniqueId('chord-paste'); });
+    });
+    if (emptyPlaceholder) targetBlock.rows.splice(0, 1, ...importedRows);
+    else targetBlock.rows.push(...importedRows);
+    const nextValidation = validateStructuredContent(nextContent);
+    if (!nextValidation.valid) return { ok: false, structuredContent: null, warnings: nextValidation.errors };
+    return { ok: true, structuredContent: nextContent, insertedRows: importedRows.length, targetBlockId: blockId, warnings: [] };
+  }
+
   // Renombra un bloque sin cambiar su identidad, filas ni acordes.
   // El nombre debe poder representarse como una etiqueta heredada [NOMBRE].
   function updateBlockLabel(existingContent, blockId, nextLabel) {
@@ -854,6 +897,7 @@
     reconcileLyrics,
     updateRowLyric,
     replaceRowWithLegacyFragment,
+    appendLegacyFragmentToBlock,
     updateBlockLabel,
     addBlock,
     removeBlock,
