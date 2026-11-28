@@ -668,7 +668,7 @@
       <div>
         <h1 class="brand-title">Cancionero Iglesia de Dios 7d</h1>  
         <div class="brand-subtitle">Alabanzas con transposición</div>
-        <div class="app-version">v1.3.30 · División de secciones · (PRUEBAS)</div>
+        <div class="app-version">v1.3.31 · Corrección del editor · (PRUEBAS)</div>
       </div>
       <button class="btn-action" onclick="toggleDarkMode()" id="theme-btn">🌙</button>  
     </header>  
@@ -1706,7 +1706,7 @@
       blockDiv.appendChild(label);
 
       if (usesNormalizedDocument && Array.isArray(block.rows)) {
-        block.rows.forEach((row, rowIndex) => {
+        block.rows.forEach(row => {
           const pair = document.createElement('div');
           pair.className = 'line-pair structured-line-pair' + ((row.chords || []).length ? ' has-chords' : '');
           pair.dataset.rowId = row.id;
@@ -2383,7 +2383,7 @@
         editor.append(field, cancel, apply, remove);
         blockCard.appendChild(editor);
       }
-      block.rows.forEach(row => {
+      block.rows.forEach((row, rowIndex) => {
         rowCount++;
         const card = document.createElement('div');
         card.className = 'structured-editor-row' + (row.id === selectedDraftRowId ? ' selected' : '');
