@@ -22,13 +22,12 @@ new vm.Script(serviceWorker, { filename: 'sw.js' });
 console.log('✓ sintaxis del Service Worker');
 
 const editorStart = html.indexOf('function renderStructuredEditor()');
-const editorEnd = html.indexOf('\\n  function ', editorStart + 1);
+const editorEnd = html.indexOf('\n  function ', editorStart + 1);
 if (editorStart < 0 || editorEnd < 0) {
   throw new Error('No se pudo localizar renderStructuredEditor para verificar su recorrido de filas');
 }
 const editorSource = html.slice(editorStart, editorEnd);
-if (!/block\\.rows\\.forEach\\(\\(row,\\s*rowIndex\\)\\s*=>/.test(editorSource)) {
+if (!/block\.rows\.forEach\(\(row,\s*rowIndex\)\s*=>/.test(editorSource)) {
   throw new Error('renderStructuredEditor debe declarar rowIndex en el recorrido que lo utiliza');
 }
 console.log('✓ rowIndex declarado en el recorrido de filas del editor estructurado');
-
