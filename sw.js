@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cancionero-lab-cache-v67';
+const CACHE_NAME = 'cancionero-lab-cache-v68';
 const LEGACY_CACHE_NAMES = ['cancionero-cache-v65'];
 const ASSETS_TO_CACHE = [
   './',
