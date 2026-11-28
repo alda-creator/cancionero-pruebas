@@ -361,6 +361,8 @@
     .structured-block-order-button:disabled { opacity:.3; cursor:default; }
     .structured-editor-block-heading strong { font-size:11px; color:var(--text-muted); }
     .structured-block-edit-button { border:0; background:transparent; color:var(--text-muted); padding:2px 5px; font-size:12px; cursor:pointer; }
+    .structured-block-paste-panel { margin:6px 0 10px; padding:9px; border:1px solid var(--card-border); border-radius:9px; background:var(--card); }
+    .structured-block-paste-panel textarea { min-height:110px; }
     .structured-block-label-editor { display:flex; gap:6px; align-items:center; margin:4px 0 6px; }
     .structured-block-label-editor input { flex:1; min-width:0; box-sizing:border-box; padding:7px 9px; border:1px solid var(--accent); border-radius:7px; background:var(--bg); color:var(--text); font:16px/1.3 -apple-system,BlinkMacSystemFont,sans-serif; }
     .structured-editor-preview { position:relative; box-sizing:border-box; width:100%; max-width:100%; padding:1.35em 0 3px; margin:0; font:14px/1.5 "Courier New",Courier,monospace; white-space:nowrap; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:thin; overscroll-behavior-x:contain; }
@@ -2294,7 +2296,7 @@
       blockHeading.appendChild(blockTitle);
       const pasteBlockButton = document.createElement('button');
       pasteBlockButton.type = 'button';
-      pasteBlockButton.className = 'structured-block-edit-button';
+      pasteBlockButton.className = 'structured-block-edit-button structured-block-paste-button';
       pasteBlockButton.textContent = 'Pegar';
       pasteBlockButton.setAttribute('aria-label', 'Pegar contenido en ' + block.label);
       pasteBlockButton.title = 'Pegar varias líneas directamente en esta sección';
